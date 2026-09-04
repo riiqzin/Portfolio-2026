@@ -10262,6 +10262,56 @@ body.about-lightbox-open{
   }
 }
 
+
+/* ============================================================
+   V70 — CONTINUOUS INTRO / NO DEAD GAP AFTER CLICK
+   ============================================================ */
+
+/* Faster first response, while preserving the same circular reveal language. */
+.folder-boot.opening .folder-blackout{
+  animation-duration:1.08s!important;
+  animation-timing-function:cubic-bezier(.16,.9,.24,1)!important;
+}
+
+@keyframes folderLayerMaskOpen{
+  0%{--folder-hole:0px}
+  7%{--folder-hole:64px}
+  100%{--folder-hole:165vmax}
+}
+
+/* Avoid extra blur rasterization exactly while the heavy mask is expanding. */
+.folder-boot.opening .intro-folder-wrap{
+  filter:none!important;
+  transition:
+    opacity .28s ease .24s,
+    transform .52s cubic-bezier(.16,1,.3,1)!important;
+}
+
+/* Main hero still moves in, but without costly blur during the mask animation. */
+body.folder-home-enter .word,
+body.folder-home-enter .script{
+  filter:none!important;
+}
+
+/* Give the blackout its own paint/compositing boundary. */
+.folder-blackout{
+  contain:paint;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+}
+
+@media(max-width:700px){
+  .folder-boot.opening .folder-blackout{
+    animation-duration:.94s!important;
+  }
+
+  @keyframes folderLayerMaskOpen{
+    0%{--folder-hole:0px}
+    7%{--folder-hole:54px}
+    100%{--folder-hole:185vmax}
+  }
+}
+
 </style>
 </head>
 <body>
@@ -11610,38 +11660,82 @@ if(!introIsMobile){
   });
 }
 
-const folderOpenAt=introIsMobile?980:1260;
-const homeEnterAt=introIsMobile?1060:1360;
-const bootFadeAt=introIsMobile?2140:2580;
-const bootGoneAt=introIsMobile?2380:2880;
+let introOpeningStarted=false;
+let introHomeStarted=false;
+let introFinished=false;
 
-setTimeout(()=>{
+const introPointer=document.querySelector('.intro-pointer');
+const introBlackout=introBoot?.querySelector('.folder-blackout');
+
+function startIntroHome(){
+  if(introHomeStarted)return;
+  introHomeStarted=true;
+
+  // The real page begins on the very next paint after the folder reacts.
+  // There is no independent "home timer" anymore.
+  requestAnimationFrame(()=>{
+    document.body.classList.add('folder-home-enter');
+
+    if(!introIsMobile){
+      document.querySelectorAll('.decor-item').forEach((el)=>{
+        const delay=parseFloat(getComputedStyle(el).getPropertyValue('--spawn-delay'))||.36;
+        setTimeout(()=>{
+          el.classList.add('file-landed');
+        },(delay+.98)*1000);
+      });
+    }
+  });
+}
+
+function beginFolderOpening(){
+  if(introOpeningStarted)return;
+  introOpeningStarted=true;
+
+  // One action: click starts -> folder reacts -> reveal starts.
   introBoot?.classList.add('opening');
   document.body.classList.add('folder-cursor-live');
-},folderOpenAt);
+  startIntroHome();
+}
 
-// Home starts animating while the circular mask is still opening.
-setTimeout(()=>{
-  document.body.classList.add('folder-home-enter');
+function finishFolderIntro(){
+  if(introFinished)return;
+  introFinished=true;
 
-  if(!introIsMobile){
-    document.querySelectorAll('.decor-item').forEach((el)=>{
-      const delay=parseFloat(getComputedStyle(el).getPropertyValue('--spawn-delay'))||.36;
-      setTimeout(()=>{
-        el.classList.add('file-landed');
-      },(delay+1.02)*1000);
-    });
-  }
-},homeEnterAt);
-
-setTimeout(()=>{
   introBoot?.classList.add('phase-out');
-},bootFadeAt);
+
+  // At this point the mask has already uncovered the page.
+  // This cleanup is deliberately non-critical to what the user sees.
+  setTimeout(()=>{
+    introBoot?.classList.add('out');
+    document.body.classList.remove('folder-intro');
+  },300);
+}
+
+// Synchronize to the ACTUAL visual click animation, not page-load time.
+introPointer?.addEventListener('animationstart',e=>{
+  if(
+    e.animationName==='introPointerPress' ||
+    e.animationName==='v39MobilePointerPress'
+  ){
+    beginFolderOpening();
+  }
+});
+
+// Finish when the circular reveal itself finishes.
+introBlackout?.addEventListener('animationend',e=>{
+  if(e.animationName==='folderLayerMaskOpen'){
+    finishFolderIntro();
+  }
+});
+
+// Safety fallback only. It is not the normal animation driver.
+setTimeout(()=>{
+  if(!introOpeningStarted)beginFolderOpening();
+},introIsMobile?1180:1440);
 
 setTimeout(()=>{
-  introBoot?.classList.add('out');
-  document.body.classList.remove('folder-intro');
-},bootGoneAt);const cursor=document.getElementById('cursor');window.addEventListener('pointermove',e=>{
+  if(!introFinished)finishFolderIntro();
+},introIsMobile?2450:2750);const cursor=document.getElementById('cursor');window.addEventListener('pointermove',e=>{
   // Desktop-only visual effect. On touch this caused a full-screen repaint
   // on virtually every finger movement and made native scrolling feel locked.
   if(e.pointerType==='touch' || window.matchMedia('(pointer:coarse)').matches) return;
