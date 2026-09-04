@@ -4,7 +4,8 @@ export default {
   async fetch(request) {
     let body = {};
     try { body = await request.json(); } catch {}
-    const key = String(body.key || "");
+    const url = new URL(request.url);
+    const key = String(body.key || url.searchParams.get("k") || "");
     if (!key.startsWith("sb_publishable_")) {
       return Response.json({ ok: false, error: "missing_key" }, { status: 400 });
     }
