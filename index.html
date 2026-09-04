@@ -9403,6 +9403,732 @@ body.about-lightbox-open{
   clip-path:circle(0 at var(--wx) var(--wy))!important;
 }
 
+
+/* ============================================================
+   V67 — MOBILE REBUILD
+   Authoritative mobile layer. Desktop remains unchanged.
+   ============================================================ */
+
+/* Custom desktop cursor must never appear on touch/mobile.
+   This DOES NOT affect the fake mouse used by the opening animation. */
+@media (max-width:760px), (pointer:coarse){
+  html, body,
+  button, a, input, textarea, select,
+  .project-card, .close, .scene-dot,
+  .main-action, .visit-project, .more-info-toggle{
+    cursor:auto!important;
+  }
+
+  .cursor,
+  body .cursor,
+  body.folder-intro .cursor,
+  body.folder-cursor-live .cursor,
+  body.folder-intro.folder-cursor-live .cursor,
+  body.folder-home-enter .cursor,
+  body.about-mode .cursor{
+    display:none!important;
+    visibility:hidden!important;
+    opacity:0!important;
+    pointer-events:none!important;
+  }
+}
+
+@media(max-width:760px){
+  :root{
+    --m-pad:16px;
+    --m-radius:18px;
+  }
+
+  html{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden!important;
+    scroll-snap-type:none!important;
+  }
+  body{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden!important;
+  }
+
+  /* ---------- HOME ---------- */
+  .menu{
+    min-width:0;
+    padding-left:14px!important;
+    padding-right:14px!important;
+  }
+  .menu-left,.menu-right{min-width:0}
+  .menu .logo{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+  .desktop{
+    max-width:100vw!important;
+  }
+  .action-dock{
+    left:12px!important;
+    right:12px!important;
+    width:auto!important;
+  }
+  .main-action{
+    min-width:0!important;
+  }
+  .mobile-action-title{
+    overflow-wrap:anywhere;
+  }
+
+  /* ---------- ALL WINDOWS ---------- */
+  .window,
+  #works,
+  #about,
+  #request{
+    width:100%!important;
+    max-width:100%!important;
+    overflow:hidden!important;
+  }
+
+  .window-bar,
+  #works .window-bar,
+  .about-bar{
+    box-sizing:border-box!important;
+    width:100%!important;
+    min-width:0!important;
+    padding-left:16px!important;
+    padding-right:12px!important;
+  }
+
+  .window-title{
+    min-width:0!important;
+    max-width:calc(100% - 58px);
+  }
+  .window-title>span:last-child{
+    min-width:0;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  .close{
+    width:42px!important;
+    height:42px!important;
+    flex:0 0 42px!important;
+  }
+
+  .window-content,
+  #works .window-content,
+  #about .window-content{
+    box-sizing:border-box!important;
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:hidden!important;
+    scroll-snap-type:none!important;
+  }
+
+  /* ==========================================================
+     SITES QUE CRIEI
+     ========================================================== */
+  #works .window-content{
+    padding:24px var(--m-pad) calc(52px + env(safe-area-inset-bottom))!important;
+  }
+
+  /* Mobile hero: one clean column, no desktop split feeling */
+  #works .work-head-v59{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:12px 0 26px!important;
+    display:block!important;
+    border-bottom:1px solid rgba(255,255,255,.09)!important;
+  }
+  #works .work-head-v59-main{
+    min-height:0!important;
+    padding:0!important;
+    display:block!important;
+  }
+  #works .work-head-v59-kicker{
+    margin-bottom:12px!important;
+    font-size:8px!important;
+    letter-spacing:.14em!important;
+  }
+  #works .work-head-v59 h2{
+    max-width:none!important;
+    margin:0!important;
+    font-size:clamp(46px,14vw,62px)!important;
+    line-height:.88!important;
+    letter-spacing:-.065em!important;
+    white-space:normal!important;
+  }
+  #works .work-head-v59-lead{
+    max-width:34rem!important;
+    margin:17px 0 0!important;
+    font-size:13.5px!important;
+    line-height:1.58!important;
+    color:rgba(255,255,255,.62)!important;
+  }
+
+  /* Secondary explanation becomes a compact supporting block */
+  #works .work-head-v59-side{
+    min-height:0!important;
+    height:auto!important;
+    margin:20px 0 0!important;
+    padding:16px!important;
+    border-radius:14px!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:5px 14px!important;
+    align-items:end!important;
+  }
+  #works .work-head-v59-side:after{display:none!important}
+  #works .work-head-v59-side-label{
+    grid-column:1/-1;
+    font-size:7.5px!important;
+  }
+  #works .work-head-v59-side>strong{
+    max-width:none!important;
+    margin-top:5px!important;
+    font-size:15px!important;
+    line-height:1.28!important;
+  }
+  #works .work-head-v59-side>p{
+    grid-column:1/-1;
+    max-width:none!important;
+    margin:7px 0 0!important;
+    font-size:10.5px!important;
+    line-height:1.5!important;
+  }
+  #works .work-head-v59-count{
+    grid-column:2;
+    grid-row:2;
+    align-self:center;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+    gap:6px!important;
+  }
+  #works .work-head-v59-count>span{
+    font-size:23px!important;
+  }
+  #works .work-head-v59-count>small{
+    display:none!important;
+  }
+
+  #works .project-selection-v58{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    gap:15px!important;
+  }
+
+  #works .project-selection-v59-head{
+    width:100%!important;
+    margin:0 0 14px!important;
+    padding:21px 0 0!important;
+    display:flex!important;
+    align-items:flex-end!important;
+    gap:12px!important;
+  }
+  #works .project-selection-v59-title{
+    min-width:0!important;
+    width:100%!important;
+    display:flex!important;
+    align-items:baseline!important;
+    gap:9px!important;
+  }
+  #works .project-selection-v59-title>span{
+    flex:0 0 auto;
+    font-size:7px!important;
+  }
+  #works .project-selection-v59-title h3{
+    min-width:0!important;
+    max-width:100%!important;
+    font-size:26px!important;
+    line-height:1!important;
+    white-space:normal!important;
+  }
+  #works .project-selection-v59-rule{
+    display:none!important;
+  }
+
+  /* Critical fix: cases are ONE column on mobile. */
+  #works .project-grid,
+  #works .project-grid-v58{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    gap:18px!important;
+  }
+
+  #works .project-grid-v58>.project-card,
+  #works .project-card{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    grid-column:1!important;
+    border-radius:20px!important;
+    overflow:hidden!important;
+  }
+
+  /* Preview gets enough physical size to actually be seen */
+  #works .browser{
+    width:auto!important;
+    max-width:none!important;
+    margin:12px 12px 0!important;
+    aspect-ratio:16/9!important;
+    border-radius:14px!important;
+  }
+  #works .browser-top{
+    height:25px!important;
+  }
+  #works .project-video{
+    inset:25px 0 0!important;
+    height:calc(100% - 25px)!important;
+    object-fit:cover!important;
+    object-position:top center!important;
+  }
+  #works .video-glass{
+    inset:25px 0 0!important;
+  }
+  #works .video-status{
+    left:10px!important;
+    bottom:9px!important;
+    padding:6px 9px!important;
+    font-size:7.5px!important;
+  }
+
+  #works .project-meta{
+    padding:15px 15px 17px!important;
+  }
+
+  /* Client/brand block: label + project type on first row,
+     identity on a full-width second row. No truncated names. */
+  #works .project-grid-v58 .project-identity,
+  #works .project-identity{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    grid-template-areas:
+      "label kind"
+      "person person"!important;
+    gap:10px 10px!important;
+    width:100%!important;
+    min-height:0!important;
+    margin:0 0 18px!important;
+    padding:12px!important;
+    box-sizing:border-box!important;
+  }
+
+  #works .project-identity-label{
+    grid-area:label;
+    align-self:center;
+    margin:0!important;
+    font-size:7.5px!important;
+  }
+
+  #works .project-grid-v58 .project-kind,
+  #works .project-kind{
+    grid-area:kind;
+    position:static!important;
+    inset:auto!important;
+    align-self:center!important;
+    justify-self:end!important;
+    min-height:26px!important;
+    max-width:170px;
+    margin:0!important;
+    padding:6px 9px!important;
+    font-size:6.8px!important;
+    white-space:normal!important;
+    text-align:center!important;
+    line-height:1.15!important;
+  }
+
+  #works .project-identity-person{
+    grid-area:person;
+    width:100%!important;
+    min-width:0!important;
+    gap:11px!important;
+  }
+  #works .project-identity-avatar{
+    width:48px!important;
+    height:48px!important;
+    flex:0 0 48px!important;
+    border-radius:12px!important;
+  }
+  #works .project-identity-copy{
+    min-width:0!important;
+    width:100%!important;
+  }
+  #works .project-identity-copy strong{
+    overflow:visible!important;
+    white-space:normal!important;
+    text-overflow:clip!important;
+    font-size:15px!important;
+    line-height:1.12!important;
+  }
+  #works .project-identity-copy span{
+    margin-top:4px!important;
+    font-size:9px!important;
+    line-height:1.35!important;
+    white-space:normal!important;
+  }
+
+  #works .project-meta-top{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:14px!important;
+    width:100%!important;
+  }
+  #works .project-meta-top>div{
+    min-width:0!important;
+  }
+  #works .project-meta h3{
+    max-width:none!important;
+    margin:0!important;
+    font-size:27px!important;
+    line-height:1.02!important;
+    letter-spacing:-.04em!important;
+    overflow-wrap:normal!important;
+    word-break:normal!important;
+  }
+  #works .project-meta p{
+    max-width:none!important;
+    margin:10px 0 0!important;
+    font-size:12.5px!important;
+    line-height:1.58!important;
+  }
+  #works .project-domain{
+    max-width:100%!important;
+    margin-top:12px!important;
+    font-size:8px!important;
+    line-height:1.3!important;
+    overflow-wrap:anywhere!important;
+  }
+  #works .visit-project,
+  #works .project-access{
+    width:100%!important;
+    max-width:none!important;
+    min-height:46px!important;
+    box-sizing:border-box!important;
+    border-radius:13px!important;
+    font-size:10.5px!important;
+  }
+
+  #works .tags{
+    margin-top:15px!important;
+    gap:6px!important;
+  }
+  #works .tags span{
+    padding:6px 9px!important;
+    font-size:7.8px!important;
+  }
+
+  #works .more-info-toggle{
+    width:100%!important;
+    min-height:50px!important;
+    margin-top:17px!important;
+    padding-top:14px!important;
+  }
+
+  #works .case-details.open{
+    margin-top:14px!important;
+  }
+  #works .case-details-card{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:14px!important;
+    padding:10px!important;
+  }
+  #works .case-detail-media{
+    width:100%!important;
+    min-height:0!important;
+    aspect-ratio:16/10!important;
+  }
+  #works .case-detail-copy{
+    padding:4px 3px 7px!important;
+  }
+  #works .case-detail-copy h4{
+    font-size:15px!important;
+    line-height:1.46!important;
+  }
+  #works .case-detail-copy p{
+    font-size:11.5px!important;
+    line-height:1.65!important;
+  }
+
+  /* ==========================================================
+     SOBRE MIM
+     ========================================================== */
+
+  /* Give scene navigation its own row instead of squeezing it
+     between title and close button. */
+  #about .about-bar{
+    height:104px!important;
+    display:flex!important;
+    align-items:flex-start!important;
+    padding-top:calc(env(safe-area-inset-top) + 10px)!important;
+    position:relative!important;
+  }
+  #about .about-bar .window-title{
+    height:42px!important;
+    display:flex!important;
+    align-items:center!important;
+  }
+  #about .about-bar>.close{
+    margin-top:0!important;
+  }
+  #about .about-scene-nav{
+    position:absolute!important;
+    left:14px!important;
+    right:14px!important;
+    bottom:8px!important;
+    width:auto!important;
+    max-width:none!important;
+    transform:none!important;
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:6px!important;
+    overflow:visible!important;
+  }
+  #about .scene-dot{
+    width:100%!important;
+    min-width:0!important;
+    min-height:32px!important;
+    box-sizing:border-box!important;
+    padding:6px 8px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:5px!important;
+    font-size:7px!important;
+    white-space:nowrap!important;
+  }
+  #about .scene-dot-number{font-size:7px!important}
+  #about .scene-dot-label{
+    display:inline!important;
+    font-size:7.5px!important;
+  }
+  #about .window-content{
+    height:calc(100dvh - 104px - env(safe-area-inset-top))!important;
+    scroll-snap-type:none!important;
+  }
+
+  #about .about-scene{
+    width:100%!important;
+    min-height:0!important;
+    box-sizing:border-box!important;
+    padding-left:16px!important;
+    padding-right:16px!important;
+    scroll-snap-align:none!important;
+  }
+
+  /* Scene 01: copy first, avatar second, metrics last */
+  #about .about-scene-hero{
+    padding-top:26px!important;
+    padding-bottom:34px!important;
+  }
+  #about .about-hero-copy h1{
+    font-size:clamp(42px,12vw,54px)!important;
+    line-height:.88!important;
+  }
+  #about .hero-statement{
+    font-size:19px!important;
+    line-height:1.12!important;
+  }
+  #about .hero-description{
+    max-width:34rem!important;
+    font-size:12.5px!important;
+    line-height:1.6!important;
+  }
+  #about .hero-actions{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:8px!important;
+  }
+  #about .about-scroll-btn,
+  #about .about-inline-project{
+    width:100%!important;
+    min-height:46px!important;
+    box-sizing:border-box!important;
+    border-radius:13px!important;
+  }
+  #about .about-avatar-zone{
+    min-height:220px!important;
+    margin:16px 0 8px!important;
+  }
+  #about .avatar-field{
+    width:min(230px,68vw)!important;
+    max-width:230px!important;
+  }
+  #about .avatar-glass-card{
+    right:-9%!important;
+    bottom:2%!important;
+    width:142px!important;
+  }
+  #about .hero-bottom-line{
+    margin-top:8px!important;
+    gap:0!important;
+  }
+  #about .hero-bottom-line strong{
+    font-size:20px!important;
+  }
+
+  /* Scene 02: experience cards get real reading width */
+  #about .journey-scene{
+    padding-top:30px!important;
+    padding-bottom:40px!important;
+  }
+  #about .scene-heading-block h2{
+    font-size:clamp(39px,11vw,50px)!important;
+    line-height:.92!important;
+  }
+  #about .scene-heading-block>p{
+    max-width:34rem!important;
+    font-size:12px!important;
+    line-height:1.58!important;
+  }
+  #about .journey-layout{
+    margin-top:23px!important;
+  }
+  #about .journey-track{
+    padding-left:0!important;
+    border-left:0!important;
+  }
+  #about .journey-node{
+    width:100%!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    grid-template-columns:58px minmax(0,1fr)!important;
+    gap:9px!important;
+    margin-bottom:9px!important;
+    padding:13px!important;
+    border-radius:15px!important;
+  }
+  #about .journey-year{
+    padding:3px 0 0!important;
+    font-size:11px!important;
+  }
+  #about .journey-title-line{
+    min-width:0!important;
+  }
+  #about .journey-copy{
+    min-width:0!important;
+  }
+  #about .journey-copy strong{
+    font-size:13.5px!important;
+    line-height:1.2!important;
+  }
+  #about .journey-copy p{
+    font-size:10.5px!important;
+    line-height:1.52!important;
+  }
+  #about .journey-toolbox{
+    margin-top:20px!important;
+    padding:15px!important;
+  }
+
+  /* Scene 03: galleries stay horizontal, but give them breathing room
+     and readable captions. */
+  #about .archive-scene-v16{
+    padding-top:30px!important;
+    padding-bottom:calc(52px + env(safe-area-inset-bottom))!important;
+  }
+  #about .archive-subhead h3{
+    font-size:31px!important;
+  }
+  #about .visual-work-grid,
+  #about .thumb-work-grid,
+  #about .motion-real-grid{
+    scroll-padding-left:0!important;
+  }
+  #about .portrait-work{
+    flex-basis:min(78vw,300px)!important;
+  }
+  #about .wide-work{
+    flex-basis:min(87vw,350px)!important;
+  }
+  #about .motion-real-card{
+    flex-basis:min(70vw,270px)!important;
+  }
+  #about .real-work-card figcaption{
+    font-size:10px!important;
+    line-height:1.35!important;
+  }
+  #about .photoshop-proof{
+    width:100%!important;
+    box-sizing:border-box!important;
+  }
+  #about .about-final-cta h3{
+    font-size:40px!important;
+    line-height:.95!important;
+  }
+
+  /* ==========================================================
+     CONTATO
+     ========================================================== */
+  #request .window-content{
+    padding:22px 16px calc(38px + env(safe-area-inset-bottom))!important;
+    overflow-x:hidden!important;
+  }
+  #request .request-grid{
+    width:100%!important;
+    max-width:none!important;
+  }
+  #request .request-copy{
+    padding:6px 1px 22px!important;
+  }
+  #request .request-copy h2{
+    font-size:clamp(43px,12.5vw,56px)!important;
+    line-height:.9!important;
+  }
+  #request .request-copy p{
+    max-width:34rem!important;
+    font-size:12.5px!important;
+    line-height:1.58!important;
+  }
+  #request .formbox{
+    width:100%!important;
+    box-sizing:border-box!important;
+    padding:15px!important;
+    gap:11px!important;
+    border-radius:17px!important;
+  }
+  #request .field{
+    min-width:0!important;
+  }
+  #request .field input,
+  #request .field textarea,
+  #request .field select{
+    box-sizing:border-box!important;
+    max-width:100%!important;
+  }
+
+  /* Touch-only polish */
+  *{
+    -webkit-tap-highlight-color:transparent;
+  }
+}
+
+/* Extra-safe layout for genuinely narrow phones */
+@media(max-width:380px){
+  #works .work-head-v59 h2{
+    font-size:45px!important;
+  }
+  #works .project-meta h3{
+    font-size:24px!important;
+  }
+  #works .project-grid-v58 .project-kind,
+  #works .project-kind{
+    max-width:138px;
+    font-size:6.4px!important;
+  }
+  #about .scene-dot{
+    padding-left:5px!important;
+    padding-right:5px!important;
+  }
+  #about .scene-dot-label{
+    font-size:7px!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -11379,6 +12105,30 @@ document.querySelectorAll('.main-action').forEach(card=>card.addEventListener('p
   });
 })();
 
+
+
+/* V67 — mobile window scroll reset */
+(()=>{
+  const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
+  document.querySelectorAll('[data-target]').forEach(el=>{
+    el.addEventListener('pointerdown',()=>{
+      if(!isMobile())return;
+      const target=el.dataset.target;
+      if(target==='works'){
+        const scroller=document.getElementById('worksScroller');
+        if(scroller)scroller.scrollTop=0;
+      }
+      if(target==='about'){
+        const scroller=document.getElementById('aboutScroller');
+        if(scroller)scroller.scrollTop=0;
+      }
+      if(target==='request'){
+        const scroller=document.querySelector('#request .window-content');
+        if(scroller)scroller.scrollTop=0;
+      }
+    },{passive:true});
+  });
+})();
 
 </script>
 
