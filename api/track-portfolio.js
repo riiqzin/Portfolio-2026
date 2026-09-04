@@ -1,5 +1,3 @@
-import { geolocation, ipAddress } from "@vercel/functions";
-
 const SUPABASE_URL = "https://iwaebalwypjvxxeyvfln.supabase.co";
 const SUPABASE_KEY = "sb_publishable_uwIBBOevkarh4yYzHPPbcw_EH7V65U6";
 
@@ -7,6 +5,15 @@ function clean(value, max = 200) {
   if (value == null) return null;
   const text = String(value).trim();
   return text ? text.slice(0, max) : null;
+}
+
+function decodeHeader(value, max = 200) {
+  if (!value) return null;
+  try {
+    return clean(decodeURIComponent(value), max);
+  } catch {
+    return clean(value, max);
+  }
 }
 
 export default {
@@ -21,8 +28,11 @@ export default {
     try {
       const body = await request.json();
 
-      const ip = clean(ipAddress(request), 80);
-      const geo = geolocation(request) || {};
+      const forwardedFor = request.headers.get("x-forwarded-for") || "";
+      const ip = clean(forwardedFor.split(",")[0], 80);
+      const country = clean(request.headers.get("x-vercel-ip-country"), 2);
+      const region = decodeHeader(request.headers.get("x-vercel-ip-country-region"), 100);
+      const city = decodeHeader(request.headers.get("x-vercel-ip-city"), 150);
 
       const payload = {
         p_event_name: body.event_name,
@@ -41,9 +51,9 @@ export default {
         p_language: body.language || null,
         p_metadata: body.metadata || {},
         p_ip_address: ip,
-        p_country_code: clean(geo.country, 2),
-        p_region: clean(geo.countryRegion, 100),
-        p_city: clean(geo.city, 150)
+        p_country_code: country,
+        p_region: region,
+        p_city: city
       };
 
       const response = await fetch(
@@ -68,7 +78,7 @@ export default {
         );
 
         return Response.json(
-          { ok: false, error: "supabase_error" },
+          { ok: false, error: "supabase_error", detail },
           { status: 502 }
         );
       }
