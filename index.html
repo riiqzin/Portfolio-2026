@@ -10129,6 +10129,72 @@ body.about-lightbox-open{
   }
 }
 
+
+/* ============================================================
+   V68 — ABOUT MOBILE TOUCH SCROLL FIX
+   ============================================================ */
+@media(max-width:760px), (pointer:coarse){
+
+  /* The About content is the only vertical gesture owner. */
+  #about .window-content,
+  #aboutScroller{
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    touch-action:pan-y pinch-zoom!important;
+    overscroll-behavior-x:none!important;
+    overscroll-behavior-y:auto!important;
+    scroll-snap-type:none!important;
+    scroll-behavior:auto!important;
+  }
+
+  /* Nothing inside a normal About section should compete with vertical swipes. */
+  #about .about-scene,
+  #about .about-scene-hero,
+  #about .journey-scene,
+  #about .archive-scene-v16,
+  #about .about-hero-copy,
+  #about .about-avatar-zone,
+  #about .journey-layout,
+  #about .journey-track,
+  #about .journey-node,
+  #about .career-refined-card,
+  #about .tilt-card,
+  #about img,
+  #about video{
+    touch-action:pan-y pinch-zoom!important;
+  }
+
+  /* Remove hover/tilt transforms that can visually fight the finger on touch. */
+  #about .tilt-card{
+    transform:none!important;
+    will-change:auto!important;
+  }
+
+  /* Horizontal work galleries may still be swiped sideways, but diagonal /
+     vertical gestures are allowed to continue scrolling the About page. */
+  #about .visual-work-grid,
+  #about .thumb-work-grid,
+  #about .motion-real-grid,
+  #about .selected-work-grid,
+  #about .real-work-grid{
+    touch-action:pan-x pan-y pinch-zoom!important;
+    overscroll-behavior-x:contain!important;
+    overscroll-behavior-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+
+  /* Buttons should not create a gesture dead-zone around themselves. */
+  #about button,
+  #about a,
+  #about .scene-dot,
+  #about .about-scroll-btn,
+  #about .about-inline-project,
+  #about .final-project-btn{
+    touch-action:manipulation!important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -11723,6 +11789,7 @@ document.querySelectorAll('[data-scene-target]').forEach(btn=>{
 });
 
 aboutScroller?.addEventListener('pointermove',e=>{
+  if(e.pointerType==='touch' || window.matchMedia('(pointer:coarse)').matches) return;
   const r=aboutScroller.getBoundingClientRect();
   const x=(e.clientX-r.left)/r.width-.5;
   const y=(e.clientY-r.top)/r.height-.5;
@@ -11750,6 +11817,7 @@ aboutScroller?.addEventListener('scroll',()=>{
 
 document.querySelectorAll('#about .tilt-card').forEach(card=>{
   card.addEventListener('pointermove',e=>{
+    if(e.pointerType==='touch' || window.matchMedia('(pointer:coarse)').matches) return;
     const r=card.getBoundingClientRect();
     const x=(e.clientX-r.left)/r.width-.5;
     const y=(e.clientY-r.top)/r.height-.5;
