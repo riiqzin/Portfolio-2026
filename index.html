@@ -12467,5 +12467,239 @@ if(introIsMobile && introBoot && introPointer){
   </div>
 </div>
 
+
+<script>
+/* ============================================================
+   V72 — RICKY MANGINI PORTFOLIO ANALYTICS
+   Architecture mirrors the Fred Caldeira tracking, but isolated.
+   ============================================================ */
+(()=>{
+  "use strict";
+
+  const ENDPOINT="/api/track-portfolio";
+  const SUPABASE_URL="https://iwaebalwypjvxxeyvfln.supabase.co";
+  const SUPABASE_KEY="sb_publishable_uwIBBOevkarh4yYzHPPbcw_EH7V65U6";
+  const SESSION_TTL=30*60*1000;
+
+  if(location.pathname.toLowerCase().includes("admin")) return;
+  if(navigator.doNotTrack==="1") return;
+
+  const safeUUID=()=>{
+    if(globalThis.crypto && typeof crypto.randomUUID==="function") return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{
+      const r=Math.random()*16|0;
+      const v=c==="x"?r:(r&0x3|0x8);
+      return v.toString(16);
+    });
+  };
+
+  const get=key=>{try{return localStorage.getItem(key)}catch{return null}};
+  const set=(key,val)=>{try{localStorage.setItem(key,val)}catch{}};
+
+  function normalizedPath(){
+    const p=location.pathname||"/";
+    return p==="/index.html"?"/":p;
+  }
+
+  let visitorId=get("rm_analytics_visitor");
+  if(!visitorId){
+    visitorId=safeUUID();
+    set("rm_analytics_visitor",visitorId);
+  }
+
+  const now=Date.now();
+  let sessionId=get("rm_analytics_session");
+  const lastActivity=Number(get("rm_analytics_last")||0);
+  const newSession=!sessionId || !lastActivity || (now-lastActivity)>SESSION_TTL;
+
+  if(newSession){
+    sessionId=safeUUID();
+    set("rm_analytics_session",sessionId);
+  }
+  set("rm_analytics_last",String(now));
+
+  const params=new URLSearchParams(location.search);
+  const referrer=document.referrer||"";
+  let referrerHost="";
+  try{
+    if(referrer) referrerHost=new URL(referrer).hostname.replace(/^www\./,"");
+  }catch{}
+
+  function browserName(){
+    const ua=navigator.userAgent;
+    if(/Edg\//.test(ua)) return "Edge";
+    if(/OPR\//.test(ua)) return "Opera";
+    if(/Firefox\//.test(ua)) return "Firefox";
+    if(/Chrome\//.test(ua)&&!/Edg\//.test(ua)) return "Chrome";
+    if(/Safari\//.test(ua)&&!/Chrome\//.test(ua)) return "Safari";
+    return "Outro";
+  }
+
+  function osName(){
+    const ua=navigator.userAgent;
+    if(/iPhone|iPad|iPod/.test(ua)) return "iOS";
+    if(/Android/.test(ua)) return "Android";
+    if(/Windows/.test(ua)) return "Windows";
+    if(/Mac OS X/.test(ua)) return "macOS";
+    if(/Linux/.test(ua)) return "Linux";
+    return "Outro";
+  }
+
+  function deviceType(){
+    const ua=navigator.userAgent;
+    if(/iPad|Tablet/.test(ua)) return "Tablet";
+    if(/Mobi|Android|iPhone|iPod/.test(ua)) return "Mobile";
+    return "Desktop";
+  }
+
+  function destinationFor(link,url){
+    const explicit=link.dataset.analyticsLabel||link.getAttribute("aria-label")||"";
+    const text=(link.textContent||"").replace(/\s+/g," ").trim();
+    const host=url.hostname.replace(/^www\./,"").toLowerCase();
+
+    if(host==="wa.me" || host.includes("whatsapp")) return "WhatsApp — contato";
+    if(host.includes("fredcaldeira.com.br")) return "Fred Caldeira — site";
+    if(host.includes("fandomfashionhouse.com.br")) return "Fandom Fashion House — e-commerce";
+    if(host.includes("instagram.com")) return "Instagram";
+    if(host.includes("behance.net")) return "Behance";
+    if(host.includes("linkedin.com")) return "LinkedIn";
+    if(explicit) return explicit;
+    if(text) return text.slice(0,100);
+    return host||"Link externo";
+  }
+
+  const base={
+    visitor_id:visitorId,
+    session_id:sessionId,
+    path:normalizedPath(),
+    page_title:document.title||"",
+    referrer,
+    referrer_host:referrerHost,
+    utm_source:params.get("utm_source"),
+    utm_medium:params.get("utm_medium"),
+    utm_campaign:params.get("utm_campaign"),
+    device_type:deviceType(),
+    browser:browserName(),
+    os:osName(),
+    language:navigator.language||""
+  };
+
+  function track(eventName,metadata={}){
+    set("rm_analytics_last",String(Date.now()));
+
+    fetch(ENDPOINT,{
+      method:"POST",
+      keepalive:true,
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({...base,event_name:eventName,metadata})
+    }).catch(()=>{});
+  }
+
+  /* Visitors right now — separate Presence channel from Fred's site. */
+  async function startPortfolioPresence(){
+    try{
+      const {createClient}=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+
+      const encoded=new TextEncoder().encode(visitorId);
+      const digest=await crypto.subtle.digest("SHA-256",encoded);
+      const presenceKey=[...new Uint8Array(digest)]
+        .map(b=>b.toString(16).padStart(2,"0"))
+        .join("")
+        .slice(0,32);
+
+      const presenceClient=createClient(SUPABASE_URL,SUPABASE_KEY,{
+        auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+      });
+
+      const channel=presenceClient.channel("ricky-portfolio-presence",{
+        config:{presence:{key:presenceKey}}
+      });
+
+      channel.subscribe(async status=>{
+        if(status==="SUBSCRIBED"){
+          await channel.track({online_at:new Date().toISOString()});
+        }
+      });
+
+      window.addEventListener("pagehide",()=>{
+        channel.untrack().catch(()=>{});
+      },{once:true});
+    }catch(err){
+      console.warn("Portfolio Presence indisponível:",err);
+    }
+  }
+
+  startPortfolioPresence();
+
+  if(newSession) track("session_start");
+  track("page_view");
+
+  /* External destinations. */
+  document.addEventListener("click",e=>{
+    const link=e.target.closest("a[href]");
+    if(!link) return;
+
+    let url;
+    try{url=new URL(link.href,location.href)}catch{return}
+
+    if(url.hostname && url.hostname!==location.hostname){
+      track("outbound_click",{
+        destination:destinationFor(link,url),
+        host:url.hostname.replace(/^www\./,""),
+        href:url.href.slice(0,1000),
+        label:(link.dataset.analyticsLabel||link.getAttribute("aria-label")||link.textContent||"")
+          .replace(/\s+/g," ").trim().slice(0,180)
+      });
+    }
+  },{capture:true});
+
+  /* Single-page portfolio interactions — these tell us what people actually open. */
+  document.addEventListener("click",e=>{
+    const targetBtn=e.target.closest("[data-target]");
+    if(targetBtn){
+      const target=targetBtn.dataset.target||"";
+      const names={
+        works:"Sites que criei",
+        about:"Sobre mim",
+        request:"Contato"
+      };
+      track("cta_click",{
+        action:"open_section",
+        target,
+        label:names[target]||target
+      });
+      return;
+    }
+
+    const details=e.target.closest(".more-info-toggle");
+    if(details){
+      const card=details.closest(".project-card");
+      const title=card?.querySelector(".project-meta-top h3")?.textContent?.trim()||"Projeto";
+      track("cta_click",{
+        action:"project_details",
+        project:title,
+        expanded:details.getAttribute("aria-expanded")!=="true"
+      });
+      return;
+    }
+
+    const language=e.target.closest("[data-lang]");
+    if(language){
+      track("cta_click",{
+        action:"language_change",
+        language:language.dataset.lang||""
+      });
+    }
+  },{capture:true});
+
+  /* Expose a tiny debug hook without putting anything in the UI. */
+  window.__rmAnalytics={
+    track,
+    visitorId,
+    sessionId
+  };
+})();
+</script>
+
 </body>
 </html>
