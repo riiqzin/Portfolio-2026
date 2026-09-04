@@ -5115,15 +5115,33 @@ body.folder-home-enter .decor-item:not(.file-landed)>div:first-child{
     height:33px!important;
     opacity:0;
     transform:translate(150px,120px) rotate(-7deg);
-    animation:
-      v39MobilePointerMove .88s cubic-bezier(.22,.8,.18,1) .16s forwards,
-      v39MobilePointerPress .20s ease .94s!important;
+    /* Mobile first moves only. JS turns the arrival into the click. */
+    animation:v39MobilePointerMove .88s cubic-bezier(.22,.8,.18,1) .16s forwards!important;
   }
   .intro-click-ring{
     display:block!important;
     left:calc(50% + 16px)!important;
     top:calc(50% + 7px)!important;
-    animation:v39MobileClickRing .42s ease .92s forwards!important;
+    animation:none!important;
+  }
+
+  /* Added exactly when the movement finishes. */
+  .folder-boot.mobile-click-now .intro-pointer{
+    opacity:1!important;
+    animation:v39MobilePointerPress .20s ease both!important;
+  }
+  .folder-boot.mobile-click-now .intro-click-ring{
+    animation:v39MobileClickRing .42s ease forwards!important;
+  }
+
+  /* Keep the fake cursor visible through the tiny press itself. */
+  .folder-boot.opening.mobile-click-now:not(.mobile-click-done) .intro-pointer{
+    opacity:1!important;
+    transition:none!important;
+  }
+  .folder-boot.opening.mobile-click-done .intro-pointer{
+    opacity:0!important;
+    transition:opacity .16s ease!important;
   }
 
   @keyframes v39MobilePointerMove{
@@ -11711,15 +11729,48 @@ function finishFolderIntro(){
   },300);
 }
 
-// Synchronize to the ACTUAL visual click animation, not page-load time.
-introPointer?.addEventListener('animationstart',e=>{
-  if(
-    e.animationName==='introPointerPress' ||
-    e.animationName==='v39MobilePointerPress'
-  ){
-    beginFolderOpening();
-  }
-});
+// Desktop: synchronize to the real visual press animation.
+if(!introIsMobile){
+  introPointer?.addEventListener('animationstart',e=>{
+    if(e.animationName==='introPointerPress'){
+      beginFolderOpening();
+    }
+  });
+}
+
+// Mobile: wait for the ACTUAL cursor movement to finish, then perform the
+// click immediately. CSSAnimation.finished resolves even if JS attached late,
+// so there is no missed-event + delayed-fallback gap after the cursor arrives.
+if(introIsMobile && introPointer && introBoot){
+  requestAnimationFrame(()=>{
+    const moveAnimation=introPointer.getAnimations().find(anim=>
+      anim instanceof CSSAnimation &&
+      anim.animationName==='v39MobilePointerMove'
+    );
+
+    const performMobileClick=()=>{
+      if(introOpeningStarted)return;
+
+      introBoot.classList.add('mobile-click-now');
+
+      // Let the pressed frame paint, then open the folder in the same gesture.
+      requestAnimationFrame(()=>{
+        beginFolderOpening();
+
+        setTimeout(()=>{
+          introBoot.classList.add('mobile-click-done');
+        },150);
+      });
+    };
+
+    if(moveAnimation){
+      moveAnimation.finished.then(performMobileClick).catch(performMobileClick);
+    }else{
+      // Extremely old browser fallback: no additional wait once initialized.
+      performMobileClick();
+    }
+  });
+}
 
 // Finish when the circular reveal itself finishes.
 introBlackout?.addEventListener('animationend',e=>{
@@ -11728,14 +11779,17 @@ introBlackout?.addEventListener('animationend',e=>{
   }
 });
 
-// Safety fallback only. It is not the normal animation driver.
-setTimeout(()=>{
-  if(!introOpeningStarted)beginFolderOpening();
-},introIsMobile?1180:1440);
+// Desktop-only safety fallback. Mobile uses the movement animation promise
+// above, which is reliable even if initialization happens late.
+if(!introIsMobile){
+  setTimeout(()=>{
+    if(!introOpeningStarted)beginFolderOpening();
+  },1440);
+}
 
 setTimeout(()=>{
   if(!introFinished)finishFolderIntro();
-},introIsMobile?2450:2750);const cursor=document.getElementById('cursor');window.addEventListener('pointermove',e=>{
+},introIsMobile?2100:2750);const cursor=document.getElementById('cursor');window.addEventListener('pointermove',e=>{
   // Desktop-only visual effect. On touch this caused a full-screen repaint
   // on virtually every finger movement and made native scrolling feel locked.
   if(e.pointerType==='touch' || window.matchMedia('(pointer:coarse)').matches) return;
@@ -12384,6 +12438,24 @@ document.querySelectorAll('.main-action').forEach(card=>card.addEventListener('p
     },{passive:true});
   });
 })();
+
+
+/* V71 mobile intro immediate-arrival safety */
+if(introIsMobile && introBoot && introPointer){
+  setTimeout(()=>{
+    if(introOpeningStarted)return;
+
+    const r=introPointer.getBoundingClientRect();
+    const folder=introBoot.querySelector('.intro-folder-wrap')?.getBoundingClientRect();
+
+    // If the cursor is already visually at the folder but an unusual browser
+    // failed to expose CSSAnimation.finished, click immediately.
+    if(folder && Math.abs((r.left+r.width/2)-(folder.left+folder.width/2))<70){
+      introBoot.classList.add('mobile-click-now');
+      requestAnimationFrame(()=>beginFolderOpening());
+    }
+  },1150);
+}
 
 </script>
 
