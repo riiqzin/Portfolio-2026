@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ZAC TOP — por Brunox</title>
-<meta name="description" content="Uma landing page conceito para um produto de Zac Top por Brunox.">
+<meta name="description" content="Projeto conceito de um produto para subir de elo jogando Zac Top e Mid com Brunox.">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@500;600;700&display=swap');
 
@@ -381,6 +381,36 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
 }
 @keyframes orbMorph{50%{border-radius:61% 39% 49% 51% / 40% 59% 41% 60%;transform:rotate(16deg) scale(1.05)}}
 
+/* highlighted concept notice */
+.concept-notice{padding:26px 0 14px;position:relative;z-index:15;background:linear-gradient(180deg,rgba(98,255,113,.018),transparent)}
+.concept-card{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:30px;align-items:center;
+  padding:22px 24px;border:1px solid rgba(var(--lime-rgb),.24);border-radius:24px;
+  background:
+    radial-gradient(460px 160px at 0% 0%,rgba(var(--lime-rgb),.09),transparent 64%),
+    rgba(6,13,8,.86);
+  box-shadow:0 18px 60px rgba(0,0,0,.24);backdrop-filter:blur(12px)
+}
+.concept-info{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start;min-width:0}
+.concept-badge{
+  display:inline-flex;align-items:center;justify-content:center;min-height:31px;padding:0 10px;border-radius:999px;
+  background:var(--slime);color:#041008;font-size:9px;line-height:1;font-weight:950;letter-spacing:.13em;text-transform:uppercase;white-space:nowrap
+}
+.concept-text h3{font:600 21px/1.05 Oswald,sans-serif;text-transform:uppercase;letter-spacing:-.015em;margin:1px 0 7px}
+.concept-text p{margin:0;color:#aeb9b0;font-size:12px;line-height:1.65;max-width:760px}
+.concept-text p strong{color:#eef4ef}
+.concept-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.desktop-note{
+  min-height:42px;display:inline-flex;align-items:center;gap:9px;padding:0 13px;border:1px solid var(--line);border-radius:13px;
+  color:#9da99f;background:rgba(255,255,255,.018);font-size:10px;font-weight:750;letter-spacing:.06em;white-space:nowrap
+}
+.desktop-note::before{content:"▣";font-size:13px;color:var(--slime)}
+.portfolio-cta{
+  min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:0 16px;border-radius:13px;
+  border:1px solid rgba(var(--lime-rgb),.28);background:rgba(var(--lime-rgb),.075);font-size:11px;font-weight:900;letter-spacing:.05em;white-space:nowrap;transition:.2s ease
+}
+.portfolio-cta:hover{background:var(--slime);color:#041008;transform:translateY(-2px)}
+
 /* concept footer */
 .concept-footer{padding:34px 0 42px}
 .concept-inner{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:end;border-top:1px solid var(--line);padding-top:26px}
@@ -470,6 +500,107 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
   .secondary-link{margin:auto}
   .match-preview h3{font-size:43px}
 }
+@media(max-width:760px){
+  html{scroll-padding-top:70px}
+  body{background:var(--bg)}
+  .wrap{width:min(100% - 24px,1240px)}
+  .nav{padding:12px 0}
+  .nav-inner{gap:12px}
+  .brand{gap:9px}.brand-glyph{width:39px;height:39px;font-size:21px}.brand-copy strong{font-size:11px}
+  .nav-cta{min-height:40px;padding:0 13px;font-size:9px;letter-spacing:.035em}
+  .goo-field{opacity:.68}
+  .goo-b,.goo-c{display:none}
+  .goo-a{width:190px;height:190px;right:-45px;top:16%}
+
+  .hero{min-height:880px;height:auto}
+  .hero .wrap{min-height:880px}
+  .hero-bg{
+    background-image:
+      linear-gradient(0deg,#030604 0 35%,rgba(3,6,4,.30) 66%,rgba(3,6,4,.52)),
+      url("https://static.bigbrain.gg/assets/lol/riot_static/16.1.1/img/splash/Zac_0.jpg");
+    background-position:59% 8%;background-size:auto 60%;background-repeat:no-repeat
+  }
+  .hero-copy{left:0;right:0;bottom:82px;width:100%}
+  .hero-kicker{font-size:9px;line-height:1.3;letter-spacing:.1em;margin-bottom:13px}.hero-kicker:before{width:26px}
+  .hero h1{font-size:clamp(46px,13.2vw,60px);line-height:.84;margin-bottom:18px;max-width:100%}
+  .hero-sub{font-size:13px;line-height:1.55;max-width:100%}
+  .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:15px}
+  .hero-stat{min-width:0;padding:9px 10px;border-radius:11px}
+  .hero-stat b{font-size:19px}.hero-stat span{font-size:8px}
+  .hero-actions{display:grid;grid-template-columns:1fr;gap:13px;margin-top:18px}
+  .primary{width:100%;min-height:52px;justify-content:center;padding:0 18px;font-size:12px}
+  .secondary-link{justify-self:center;margin:0;font-size:10px}
+  .hero-proof{right:0;top:86px;bottom:auto;align-items:flex-start}
+  .bruno-cut{width:94px;height:118px}
+  .proof-tag{display:none}
+  .scroll-cue{bottom:22px;font-size:8px}.scroll-cue i{width:26px}
+
+  .concept-notice{padding:14px 0 4px}
+  .concept-card{grid-template-columns:1fr;gap:16px;padding:17px;border-radius:18px}
+  .concept-info{grid-template-columns:1fr;gap:10px}
+  .concept-badge{justify-self:start;min-height:28px;font-size:8px}
+  .concept-text h3{font-size:19px;margin-bottom:6px}
+  .concept-text p{font-size:11px;line-height:1.55}
+  .concept-actions{display:grid;grid-template-columns:1fr;gap:8px;width:100%}
+  .desktop-note,.portfolio-cta{width:100%;min-height:42px;justify-content:center;white-space:normal;text-align:center}
+
+  .pain,.method,.matchup,.vod,.about{padding-top:72px;padding-bottom:72px}
+  .pain-grid,.matchup-head{gap:28px}
+  .pain h2,.method-head h2,.matchup-head h2,.vod-head h2{font-size:clamp(45px,13vw,55px)}
+  .pain-lead,.matchup-head p,.vod-head p{font-size:13px;line-height:1.55}
+  .pain-row{padding:18px 0;gap:10px}.pain-row b{font-size:14px}
+
+  .method-head{gap:16px;margin-bottom:36px}.method-head p{font-size:13px}
+  .path-stage{grid-template-columns:1fr;gap:10px}
+  .module-node{min-height:190px;padding:21px 20px}
+  .module-node h3{font-size:25px;margin:34px 0 8px}.module-node p{font-size:12px}.module-num b{font-size:30px}
+
+  .matchup-head{margin-bottom:28px}
+  .matchup-shell{grid-template-columns:1fr;border-radius:22px;min-height:0}
+  .champ-list{border-right:0;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:6px;padding:10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .champ-list::-webkit-scrollbar{display:none}
+  .champ-btn{min-width:155px;grid-template-columns:40px 1fr;padding:8px;scroll-snap-align:start;border-radius:14px}
+  .champ-btn img{width:40px;height:40px;border-radius:12px}.champ-btn b{font-size:12px}.champ-btn small{font-size:8px}.champ-btn em{display:none}
+  .match-preview{padding:26px 17px 20px;min-height:465px}
+  .match-preview h3{font-size:clamp(39px,12vw,48px);margin-top:10px}.match-preview .desc{font-size:12px;line-height:1.5}
+  .preview-pills{gap:6px;margin-top:18px}.preview-pills span{padding:7px 9px;font-size:8px}
+  .locked-area{grid-template-columns:1fr;margin-top:32px;gap:8px}.lock-box{min-height:88px;padding:13px}.preview-foot{font-size:9px}
+
+  .vod-head{align-items:flex-start;flex-direction:column;gap:16px;margin-bottom:28px}
+  .vod-player{min-height:540px;aspect-ratio:auto;border-radius:22px}
+  .vod-image{background-position:58% center}
+  .vod-top{left:14px;right:14px;top:14px}.teacher img{width:38px;height:38px}.teacher b{font-size:10px}.teacher span{font-size:8px}.live-chip{font-size:8px;padding:7px 9px}
+  .analysis-card{left:14px;right:14px;width:auto;bottom:91px;padding:17px;border-radius:17px}.analysis-card h3{font-size:23px}.analysis-card p{font-size:11px;line-height:1.45}
+  .timeline{left:14px;right:14px;bottom:24px}.marker-labels button{font-size:8px}
+
+  .about-stage{min-height:790px;display:flex;flex-direction:column}
+  .about-copy{width:100%;padding-top:0}
+  .about-copy h2{font-size:clamp(50px,14vw,66px);margin:12px 0 18px}.about-copy p{font-size:13px;line-height:1.6}.about-quote{font-size:14px;margin-top:22px}
+  .brunox-facts{gap:7px;margin-top:20px}.brunox-facts span{padding:9px 10px;font-size:8px}
+  .about-photo{top:380px;right:0;width:100%;height:350px;clip-path:polygon(5% 0,100% 0,96% 93%,73% 100%,0 91%,2% 10%)}
+  .about-art{right:auto;left:8px;bottom:2px;width:112px;height:112px;border-width:4px}
+  .about-word{display:none}
+
+  .cta{padding:72px 0 36px}
+  .cta-box{min-height:610px;padding:28px 20px;align-items:flex-end;border-radius:24px;background:
+    linear-gradient(0deg,rgba(3,7,4,.97) 0 51%,rgba(3,7,4,.22) 79%),
+    url("https://static.bigbrain.gg/assets/lol/riot_static/16.1.1/img/splash/Zac_0.jpg") 57% 10%/auto 59% no-repeat,#050a06}
+  .cta-content h2{font-size:clamp(48px,14vw,59px);margin:10px 0 18px}.cta-content p{font-size:13px;line-height:1.55}.cta-meta{gap:6px;margin:18px 0 22px}.cta-meta span{font-size:8px;padding:7px 9px}
+  .cta-orb{width:270px;height:270px;right:-110px;bottom:-100px}
+
+  .concept-footer{padding:26px 0 32px}.concept-inner{gap:14px;padding-top:20px}.concept-copy{font-size:10px}.portfolio{font-size:10px}
+}
+@media(max-width:430px){
+  .nav-cta span{display:none}
+  .hero{min-height:850px}.hero .wrap{min-height:850px}
+  .hero h1{font-size:46px}
+  .hero-proof{top:78px}.bruno-cut{width:84px;height:106px}
+  .hero-stat b{font-size:17px}
+  .pain h2,.method-head h2,.matchup-head h2,.vod-head h2{font-size:44px}
+  .match-preview h3{font-size:38px}
+  .about-stage{min-height:760px}.about-photo{top:385px;height:325px}
+  .cta-box{min-height:590px}.cta-content h2{font-size:48px}
+}
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;animation:none!important;transition:none!important}
   [data-reveal]{opacity:1;transform:none}
@@ -542,6 +673,26 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
       <div class="hero-side">top 1 challenger · 2102 pdl · mono zac top/mid</div>
       <div class="hero-ghost">ZAC</div>
       <div class="scroll-cue"><i></i> role para entrar na lane</div>
+    </div>
+  </section>
+
+  <section class="concept-notice" aria-label="Informações sobre este projeto conceito">
+    <div class="wrap">
+      <div class="concept-card" data-reveal>
+        <div class="concept-info">
+          <span class="concept-badge">Projeto conceito</span>
+          <div class="concept-text">
+            <h3>Este é um protótipo reduzido.</h3>
+            <p>
+              A página serve para visualizar a ideia do produto. Em um projeto real, <strong>design, copy, estrutura e experiência seriam refinados com muito mais profundidade</strong>, mantendo a identidade do Brunox e com foco em conversão.
+            </p>
+          </div>
+        </div>
+        <div class="concept-actions">
+          <span class="desktop-note">Melhor experiência no desktop</span>
+          <a class="portfolio-cta magnetic" href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noreferrer">VER MEU PORTFÓLIO <span>↗</span></a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -781,8 +932,7 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
 <footer class="concept-footer">
   <div class="wrap concept-inner">
     <div class="concept-copy">
-      <b>Projeto conceito.</b> Conteúdo, módulos, formato e identidade são ilustrativos.
-      Em um projeto real, tudo seria definido e desenvolvido junto com o Brunox.
+      <b>Projeto conceito não oficial.</b> Conteúdo, formato e identidade apresentados são ilustrativos.
     </div>
     <a class="portfolio magnetic" href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noreferrer">
       RICKY MANGINI · PORTFÓLIO <span>↗</span>
