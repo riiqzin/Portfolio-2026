@@ -184,6 +184,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     <div class="modal-head"><b>NOVO LEAD</b><button type="button" class="x" id="modalClose">×</button></div>
     <div class="modal-body">
       <div class="field" style="margin-top:0"><label>Nome</label><input id="leadName" required placeholder="Ex: Batcaverna"></div>
+      <div class="field"><label>E-mail do prospect</label><input id="leadEmail" type="text" placeholder="contato@empresa.com"><div class="hint">Opcional. É o que permite detectar respostas automaticamente. Pode colocar mais de um separado por vírgula.</div></div>
       <div class="field"><label>URL do projeto</label><input id="leadUrl" required placeholder="https://portfolio.../Projeto"></div>
       <div class="two">
         <div class="field"><label>Slug</label><input id="leadSlug" placeholder="batcaverna"><div class="hint">É preenchido automaticamente.</div></div>
@@ -512,6 +513,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
         <p>${esc(lead.project_url)}</p>
       </div>
 
+      <div class="field" style="margin-top:18px">
+        <label>E-mail(s) para detectar resposta</label>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+          <input id="drawerLeadEmail" type="text" value="${esc(lead.prospect_email || '')}" placeholder="contato@empresa.com">
+          <button class="ghost" id="saveLeadEmail" type="button">SALVAR</button>
+        </div>
+        <div class="hint">Se a pessoa responder por outro endereço, adicione também, separado por vírgula.</div>
+      </div>
+
       ${lead.notes ? `<div class="lead-observation"><b>Observação</b>${esc(lead.notes)}</div>` : ''}
 
       <div class="drawer-actions">
@@ -533,6 +543,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
         <div class="detail"><small>Agendado</small><b>${esc(schedule)}</b></div>
         <div class="detail"><small>Enviado</small><b>${esc(sent)}</b></div>
         <div class="detail"><small>Resposta</small><b>${esc(response)}</b></div>
+        <div class="detail"><small>Detecção de resposta</small><b>${lead.prospect_email ? 'Automática' : 'Sem e-mail'}</b></div>
         <div class="detail"><small>Última atividade</small><b>${esc(relative(lead.last_activity))}</b></div>
       </div>
 
@@ -547,6 +558,22 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       </div>`;
 
     $$('[data-action]').forEach(btn => btn.addEventListener('click', () => updateLead(btn.dataset.action, lead)));
+
+    $('#saveLeadEmail').onclick = async () => {
+      const email = $('#drawerLeadEmail').value.trim();
+      try{
+        await rpc('crm_update_lead',{
+          p_key:state.key,
+          p_lead_id:lead.id,
+          p_patch:{prospect_email:email || null}
+        });
+        toast('E-mail salvo');
+        await loadDashboard({quiet:true});
+      }catch(err){
+        toast('Não foi possível salvar o e-mail');
+      }
+    };
+
     $('#drawerProject').onclick = () => window.open(lead.project_url,'_blank','noopener');
     $('#drawerCopy').onclick = () => copy(trackedUrl(lead));
   }
@@ -605,7 +632,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
         p_name:name,
         p_project_url:url,
         p_slug:slug,
-        p_scheduled_at:scheduledAt
+        p_scheduled_at:scheduledAt,
+        p_email:$('#leadEmail').value.trim() || null
       });
       await copy(created.tracked_url,false);
       toast('Lead criado e link copiado');
