@@ -45,7 +45,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .workspace-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:15px}
 .workspace-title{display:flex;align-items:center;gap:10px}.workspace-title b{font-size:14px}.count-pill{min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:#161c23;display:grid;place-items:center;color:#8b99a6;font:10px ui-monospace,monospace}
 .filters{display:flex;gap:6px;flex-wrap:wrap}.filter{border:0;background:transparent;color:#6d7883;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:750}.filter.active{background:#171c23;color:#e4ebf0}
-.leads{display:grid}.lead-row{display:grid;grid-template-columns:minmax(210px,1.05fr) 155px 1fr 120px 34px;gap:18px;align-items:center;padding:18px 20px;border-bottom:1px solid #1b2028;transition:.18s}
+.leads{display:grid}.lead-row{display:grid;grid-template-columns:minmax(210px,1.05fr) 145px 175px 1fr 92px 34px;gap:16px;align-items:center;padding:18px 20px;border-bottom:1px solid #1b2028;transition:.18s}
 .lead-row:last-child{border-bottom:0}.lead-row:hover{background:#10151b}.lead-main{min-width:0}.lead-name{display:flex;align-items:center;gap:8px;min-width:0}.lead-name b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .new-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(95,201,232,.55);flex:0 0 auto}
 .lead-url{margin-top:5px;color:#596572;font:10px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{display:inline-flex;align-items:center;gap:7px;width:max-content;padding:7px 9px;border-radius:999px;border:1px solid var(--line);font-size:10px;font-weight:850}
@@ -53,7 +53,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .s-interacted{color:var(--green);background:rgba(110,216,166,.05);border-color:rgba(110,216,166,.16)}.s-opened{color:var(--cyan);background:rgba(95,201,232,.05);border-color:rgba(95,201,232,.16)}
 .s-waiting{color:var(--amber);background:rgba(244,184,98,.05);border-color:rgba(244,184,98,.16)}.s-scheduled{color:var(--blue);background:rgba(114,169,255,.05);border-color:rgba(114,169,255,.16)}
 .s-draft{color:#7b8793}.s-archived{color:#66707b}
-.activity{min-width:0}.activity b{display:block;font-size:12px;color:#c2cbd3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.activity span{display:block;color:#697681;font-size:10px;margin-top:5px}.open-count{text-align:right}.open-count b{display:block;font-size:15px}.open-count span{font-size:9px;color:#65717d}
+.activity{min-width:0}.activity b{display:block;font-size:12px;color:#c2cbd3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.activity span{display:block;color:#697681;font-size:10px;margin-top:5px}
+.first-open{min-width:0;padding:9px 11px;border:1px solid rgba(110,216,166,.15);border-radius:12px;background:rgba(110,216,166,.045)}
+.first-open small{display:block;color:#65777a;font-size:8px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}
+.first-open b{display:block;color:#a9e9ca;font-size:12px;margin-top:5px;white-space:nowrap}
+.first-open.empty-first{border-color:var(--line);background:#101419}.first-open.empty-first b{color:#697681}
+.open-count{text-align:right}.open-count b{display:block;font-size:15px}.open-count span{font-size:9px;color:#65717d}
 .chev{color:#4e5a66;font-size:20px;text-align:right}.empty{padding:68px 22px;text-align:center;color:#66727e}.empty b{display:block;color:#bdc6cd;font-size:15px}.empty span{display:block;margin-top:7px;font-size:12px}
 .footer-note{margin-top:14px;display:flex;justify-content:space-between;gap:20px;color:#4f5b67;font:10px ui-monospace,monospace}
 .overlay{position:fixed;inset:0;z-index:1000;background:rgba(3,5,7,.75);backdrop-filter:blur(10px);display:grid;place-items:center;padding:18px}
@@ -80,13 +85,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .toast{position:fixed;right:22px;bottom:22px;z-index:1400;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s;background:#e9f5f8;color:#0b1216;padding:12px 14px;border-radius:12px;font-size:11px;font-weight:850;box-shadow:0 18px 50px rgba(0,0,0,.3)}.toast.show{opacity:1;transform:none}
 @media(max-width:900px){
   .hero{grid-template-columns:1fr;gap:18px}.hero-side{text-align:left;justify-items:start}.metrics{grid-template-columns:1fr 1fr}
-  .lead-row{grid-template-columns:1fr 130px 34px}.activity{grid-column:1/2}.open-count{display:none}.status{justify-self:start}
+  .lead-row{grid-template-columns:1fr 145px 34px}.activity{grid-column:1/2}.first-open{grid-column:2/3;grid-row:2/4}.open-count{display:none}.status{justify-self:start}
 }
 @media(max-width:600px){
   .app{width:min(100% - 20px,1500px)}.topbar{height:58px}.sync{display:none}.hero{padding-top:30px}.hero h1{font-size:48px}
   .metrics{grid-template-columns:1fr 1fr;gap:7px}.metric{min-height:98px;padding:14px}.metric b{font-size:26px}
   .workspace-head{align-items:flex-start;flex-direction:column}.filters{width:100%;overflow:auto;flex-wrap:nowrap}.filter{white-space:nowrap}
-  .lead-row{grid-template-columns:1fr auto;gap:10px;padding:16px}.status{grid-column:1/2}.activity{grid-column:1/2}.chev{grid-row:1/4;grid-column:2/3}.lead-url{max-width:80vw}
+  .lead-row{grid-template-columns:1fr auto;gap:10px;padding:16px}.status{grid-column:1/2}.first-open{grid-column:1/2;grid-row:auto;width:max-content;max-width:100%}.activity{grid-column:1/2}.chev{grid-row:1/5;grid-column:2/3}.lead-url{max-width:80vw}
   .footer-note{flex-direction:column}.detail-grid,.two{grid-template-columns:1fr}.drawer-title h2{font-size:30px}
 }
 </style>
@@ -392,8 +397,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
             <div class="lead-url">${esc(lead.project_url)}</div>
           </div>
           <span class="status ${status.cls}">${esc(status.label)}</span>
+          <div class="first-open ${lead.first_opened_at ? '' : 'empty-first'}">
+            <small>1ª abertura</small>
+            <b>${lead.first_opened_at ? esc(formatDate(lead.first_opened_at)) : 'Ainda não'}</b>
+          </div>
           <div class="activity"><b>${esc(actionText)}</b><span>${esc(actionTime)}</span></div>
-          <div class="open-count"><b>${lead.opened_count || 0}x</b><span>ABERTURA</span></div>
+          <div class="open-count"><b>${lead.opened_count || 0}x</b><span>ABERTURAS</span></div>
           <div class="chev">›</div>
         </article>`;
     }).join('');
@@ -502,6 +511,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       </div>
 
       <div class="detail-grid">
+        <div class="detail"><small>Primeira abertura</small><b>${lead.first_opened_at ? esc(formatDate(lead.first_opened_at)) : '—'}</b></div>
         <div class="detail"><small>Aberturas</small><b>${lead.opened_count || 0}x</b></div>
         <div class="detail"><small>Sessões</small><b>${lead.sessions_count || 0}</b></div>
         <div class="detail"><small>Agendado</small><b>${esc(schedule)}</b></div>
