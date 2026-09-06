@@ -48,7 +48,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .leads{display:grid}.lead-row{display:grid;grid-template-columns:minmax(210px,1.05fr) 145px 175px 1fr 92px 34px;gap:16px;align-items:center;padding:18px 20px;border-bottom:1px solid #1b2028;transition:.18s}
 .lead-row:last-child{border-bottom:0}.lead-row:hover{background:#10151b}.lead-main{min-width:0}.lead-name{display:flex;align-items:center;gap:8px;min-width:0}.lead-name b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .new-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(95,201,232,.55);flex:0 0 auto}
-.lead-url{margin-top:5px;color:#596572;font:10px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{display:inline-flex;align-items:center;gap:7px;width:max-content;padding:7px 9px;border-radius:999px;border:1px solid var(--line);font-size:10px;font-weight:850}
+.lead-url{margin-top:5px;color:#596572;font:10px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lead-note{margin-top:7px;color:#c6924f;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{display:inline-flex;align-items:center;gap:7px;width:max-content;padding:7px 9px;border-radius:999px;border:1px solid var(--line);font-size:10px;font-weight:850}
 .status:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}.s-replied{color:var(--violet);background:rgba(168,141,243,.06);border-color:rgba(168,141,243,.17)}
 .s-interacted{color:var(--green);background:rgba(110,216,166,.05);border-color:rgba(110,216,166,.16)}.s-opened{color:var(--cyan);background:rgba(95,201,232,.05);border-color:rgba(95,201,232,.16)}
 .s-waiting{color:var(--amber);background:rgba(244,184,98,.05);border-color:rgba(244,184,98,.16)}.s-scheduled{color:var(--blue);background:rgba(114,169,255,.05);border-color:rgba(114,169,255,.16)}
@@ -75,6 +77,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .drawer-actions{display:flex;gap:7px;flex-wrap:wrap;margin:18px 0 24px}.drawer-actions button{font-size:11px}
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.detail{border:1px solid var(--line);border-radius:14px;background:#11151a;padding:13px}.detail small{display:block;color:#64707c;font-size:9px;text-transform:uppercase;letter-spacing:.06em}.detail b{display:block;font-size:13px;margin-top:7px}
 .section-title{margin:27px 0 10px;display:flex;align-items:center;justify-content:space-between}.section-title b{font-size:12px}.section-title span{font-size:10px;color:#65717d}
+.lead-observation{margin:18px 0 0;padding:13px 14px;border:1px solid rgba(244,184,98,.20);border-radius:14px;background:rgba(244,184,98,.055);color:#c9a46e;font-size:11px;line-height:1.5}
+.lead-observation b{display:block;color:#e8bf7d;font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
 .timeline{border-top:1px solid var(--line)}.event{display:grid;grid-template-columns:10px 1fr auto;gap:11px;padding:14px 0;border-bottom:1px solid #1b2027}.event-dot{width:8px;height:8px;border-radius:50%;background:#3c4855;margin-top:4px}.event.important .event-dot{background:var(--cyan);box-shadow:0 0 10px rgba(95,201,232,.35)}
 .event b{display:block;font-size:12px}.event span{display:block;color:#687580;font-size:10px;margin-top:4px}.event time{font:9px ui-monospace,monospace;color:#596571}
 .drawer-foot{padding:15px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:#0c0f13}
@@ -289,6 +293,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     }).format(d);
   }
 
+  function formatDateOnly(value){
+    if (!value) return '—';
+    const parts = String(value).slice(0,10).split('-');
+    if (parts.length !== 3) return String(value);
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
   function relative(value){
     if (!value) return 'sem atividade';
     const ms = Date.now() - new Date(value).getTime();
@@ -319,7 +330,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 
     const scheduled = dt(lead.email_scheduled_at);
     const sent = dt(lead.email_sent_at);
-    if (sent || (scheduled && scheduled <= new Date())) {
+    if (sent || lead.email_sent_date || (scheduled && scheduled <= new Date())) {
       return {key:'waiting',label:'Aguardando abertura',cls:'s-waiting'};
     }
     if (scheduled && scheduled > new Date()) return {key:'scheduled',label:'Agendado',cls:'s-scheduled'};
@@ -395,6 +406,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
           <div class="lead-main">
             <div class="lead-name">${news?'<span class="new-dot"></span>':''}<b>${esc(lead.name)}</b></div>
             <div class="lead-url">${esc(lead.project_url)}</div>
+            ${lead.notes ? `<div class="lead-note" title="${esc(lead.notes)}">⚠ ${esc(lead.notes)}</div>` : ''}
           </div>
           <span class="status ${status.cls}">${esc(status.label)}</span>
           <div class="first-open ${lead.first_opened_at ? '' : 'empty-first'}">
@@ -488,7 +500,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     const status = getStatus(lead);
     const events = state.events.filter(e => e.lead_id === lead.id);
     const schedule = lead.email_scheduled_at ? formatDate(lead.email_scheduled_at) : '—';
-    const sent = lead.email_sent_at ? formatDate(lead.email_sent_at) : '—';
+    const sent = lead.email_sent_at
+      ? formatDate(lead.email_sent_at)
+      : (lead.email_sent_date ? formatDateOnly(lead.email_sent_date) : '—');
     const response = lead.responded_at ? formatDate(lead.responded_at) : '—';
 
     $('#drawerBody').innerHTML = `
@@ -497,6 +511,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
         <h2>${esc(lead.name)}</h2>
         <p>${esc(lead.project_url)}</p>
       </div>
+
+      ${lead.notes ? `<div class="lead-observation"><b>Observação</b>${esc(lead.notes)}</div>` : ''}
 
       <div class="drawer-actions">
         ${lead.responded_at
@@ -552,15 +568,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     }
   }
 
-  function openLeadModal(){
+  function resetLeadForm(){
     $('#leadForm').reset();
+    delete $('#leadSlug').dataset.edited;
+    $('#leadSlug').value = '';
     $('#leadSuccess').classList.add('hidden');
+    $('#createdLink').textContent = '';
+    $('#saveLead').disabled = false;
+    $('#saveLead').textContent = 'CRIAR E COPIAR LINK';
+  }
+
+  function openLeadModal(){
+    resetLeadForm();
     $('#leadModal').classList.remove('hidden');
     setTimeout(()=>$('#leadName').focus(),50);
   }
 
   function closeLeadModal(){
     $('#leadModal').classList.add('hidden');
+    setTimeout(resetLeadForm, 220);
   }
 
   async function createLead(event){
@@ -581,12 +607,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
         p_slug:slug,
         p_scheduled_at:scheduledAt
       });
-      $('#createdLink').textContent = created.tracked_url;
-      $('#leadSuccess').classList.remove('hidden');
       await copy(created.tracked_url,false);
-      $('#saveLead').textContent = 'LINK COPIADO ✓';
       toast('Lead criado e link copiado');
       await loadDashboard({quiet:true});
+
+      // Já deixa o formulário limpo e pronto para criar outro lead.
+      resetLeadForm();
+      setTimeout(()=>$('#leadName').focus(),50);
     }catch(err){
       toast('Erro ao criar lead');
       $('#saveLead').textContent = 'CRIAR E COPIAR LINK';
