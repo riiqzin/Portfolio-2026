@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ricky CRM</title>
+<meta name="robots" content="noindex,nofollow,noarchive">
+<style>
+:root{
+  --bg:#080a0d;--panel:#0f1217;--panel2:#141820;--line:#232a34;--line2:#303947;
+  --text:#f4f7f9;--muted:#788391;--soft:#aab3bd;--cyan:#5fc9e8;--cyan2:#177a99;
+  --green:#6ed8a6;--amber:#f4b862;--violet:#a88df3;--red:#f07a78;--blue:#72a9ff;
+  --shadow:0 28px 80px rgba(0,0,0,.34);--r:20px
+}
+*{box-sizing:border-box}
+html{background:var(--bg);color-scheme:dark}
+body{margin:0;background:
+  radial-gradient(circle at 82% -5%,rgba(95,201,232,.08),transparent 28rem),
+  linear-gradient(180deg,#080a0d,#0a0d11 55%,#080a0d);
+  color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  min-height:100vh
+}
+button,input,textarea{font:inherit}button{cursor:pointer}a{color:inherit;text-decoration:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid rgba(95,201,232,.7);outline-offset:2px}
+.hidden{display:none!important}
+.app{width:min(1500px,calc(100% - 34px));margin:auto;padding:20px 0 70px}
+.topbar{height:66px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.brand{display:flex;align-items:center;gap:13px}.brand-mark{width:34px;height:34px;border-radius:11px;border:1px solid var(--line2);display:grid;place-items:center;background:#11161c;box-shadow:inset 0 0 20px rgba(95,201,232,.04)}
+.brand-mark:before{content:"R";font:900 15px ui-monospace,monospace;color:var(--cyan)}
+.brand b{font-size:14px;letter-spacing:-.02em}.brand span{display:block;color:var(--muted);font:10px ui-monospace,monospace;margin-top:2px;letter-spacing:.06em}
+.top-actions{display:flex;align-items:center;gap:9px}.sync{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px}.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 12px rgba(110,216,166,.55)}
+.ghost,.primary,.danger-btn{border:1px solid var(--line);border-radius:12px;background:#11151a;color:#cbd3da;padding:10px 12px;font-size:12px;font-weight:750}
+.ghost:hover{border-color:#3a4655;background:#151a21}.primary{border:0;background:linear-gradient(135deg,#147c9e,#55c9e8);color:#031015;box-shadow:0 12px 28px rgba(28,138,173,.18)}
+.primary:hover{filter:brightness(1.06)}.danger-btn{border-color:rgba(240,122,120,.25);color:#f3a7a5}.danger-btn:hover{background:rgba(240,122,120,.07)}
+.hero{margin-top:25px;border-top:1px solid var(--line);padding:44px 0 28px;display:grid;grid-template-columns:1.2fr .8fr;gap:40px;align-items:end}
+.eyebrow{font:10px ui-monospace,monospace;letter-spacing:.13em;color:#60717f;text-transform:uppercase}
+.hero h1{font-size:clamp(42px,6vw,84px);line-height:.88;letter-spacing:-.065em;margin:9px 0 0;max-width:900px}.hero h1 em{font-style:normal;color:var(--cyan)}
+.hero-side{display:grid;gap:14px;justify-items:end;text-align:right}.hero-side p{max-width:500px;margin:0;color:var(--muted);font-size:14px;line-height:1.55}.updated{font:10px ui-monospace,monospace;color:#64717d}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 26px}
+.metric{min-height:118px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#10141a,#0d1015);padding:18px;position:relative;overflow:hidden}
+.metric:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;right:-42px;bottom:-50px;border:1px solid rgba(255,255,255,.035);box-shadow:0 0 0 18px rgba(255,255,255,.012)}
+.metric small{display:block;color:#66727f;font:10px ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}.metric b{display:block;font-size:31px;letter-spacing:-.05em;margin-top:11px}.metric span{display:block;color:#697580;font-size:11px;margin-top:4px}
+.metric.news b{color:var(--cyan)}.metric.opened b{color:var(--green)}.metric.waiting b{color:var(--amber)}.metric.replied b{color:var(--violet)}
+.workspace{border:1px solid var(--line);border-radius:24px;background:#0c0f13;overflow:hidden;box-shadow:var(--shadow)}
+.workspace-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:15px}
+.workspace-title{display:flex;align-items:center;gap:10px}.workspace-title b{font-size:14px}.count-pill{min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:#161c23;display:grid;place-items:center;color:#8b99a6;font:10px ui-monospace,monospace}
+.filters{display:flex;gap:6px;flex-wrap:wrap}.filter{border:0;background:transparent;color:#6d7883;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:750}.filter.active{background:#171c23;color:#e4ebf0}
+.leads{display:grid}.lead-row{display:grid;grid-template-columns:minmax(210px,1.05fr) 155px 1fr 120px 34px;gap:18px;align-items:center;padding:18px 20px;border-bottom:1px solid #1b2028;transition:.18s}
+.lead-row:last-child{border-bottom:0}.lead-row:hover{background:#10151b}.lead-main{min-width:0}.lead-name{display:flex;align-items:center;gap:8px;min-width:0}.lead-name b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.new-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(95,201,232,.55);flex:0 0 auto}
+.lead-url{margin-top:5px;color:#596572;font:10px ui-monospace,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.status{display:inline-flex;align-items:center;gap:7px;width:max-content;padding:7px 9px;border-radius:999px;border:1px solid var(--line);font-size:10px;font-weight:850}
+.status:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}.s-replied{color:var(--violet);background:rgba(168,141,243,.06);border-color:rgba(168,141,243,.17)}
+.s-interacted{color:var(--green);background:rgba(110,216,166,.05);border-color:rgba(110,216,166,.16)}.s-opened{color:var(--cyan);background:rgba(95,201,232,.05);border-color:rgba(95,201,232,.16)}
+.s-waiting{color:var(--amber);background:rgba(244,184,98,.05);border-color:rgba(244,184,98,.16)}.s-scheduled{color:var(--blue);background:rgba(114,169,255,.05);border-color:rgba(114,169,255,.16)}
+.s-draft{color:#7b8793}.s-archived{color:#66707b}
+.activity{min-width:0}.activity b{display:block;font-size:12px;color:#c2cbd3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.activity span{display:block;color:#697681;font-size:10px;margin-top:5px}.open-count{text-align:right}.open-count b{display:block;font-size:15px}.open-count span{font-size:9px;color:#65717d}
+.chev{color:#4e5a66;font-size:20px;text-align:right}.empty{padding:68px 22px;text-align:center;color:#66727e}.empty b{display:block;color:#bdc6cd;font-size:15px}.empty span{display:block;margin-top:7px;font-size:12px}
+.footer-note{margin-top:14px;display:flex;justify-content:space-between;gap:20px;color:#4f5b67;font:10px ui-monospace,monospace}
+.overlay{position:fixed;inset:0;z-index:1000;background:rgba(3,5,7,.75);backdrop-filter:blur(10px);display:grid;place-items:center;padding:18px}
+.login{width:min(450px,100%);border:1px solid var(--line2);border-radius:24px;background:#0f1318;padding:28px;box-shadow:0 38px 100px rgba(0,0,0,.52)}
+.login-mark{width:42px;height:42px;border-radius:13px;background:#151b22;border:1px solid var(--line2);display:grid;place-items:center;font:900 16px ui-monospace,monospace;color:var(--cyan)}
+.login h2{font-size:31px;letter-spacing:-.045em;margin:20px 0 8px}.login p{margin:0;color:#77838f;font-size:13px;line-height:1.55}
+.field{margin-top:18px}.field label{display:block;font-size:10px;color:#707d89;font-weight:800;margin-bottom:7px;text-transform:uppercase;letter-spacing:.06em}
+.field input,.field textarea{width:100%;border:1px solid var(--line2);border-radius:13px;background:#0b0f13;color:#e7edf1;padding:13px 14px;outline:0}.field textarea{resize:vertical;min-height:86px}.field input:focus,.field textarea:focus{border-color:#397f97}
+.check{display:flex;align-items:center;gap:8px;margin:14px 0;color:#7b8792;font-size:11px}.check input{accent-color:var(--cyan)}.login .primary{width:100%;padding:13px}.login-error{margin-top:11px;color:#f08b89;font-size:11px}
+.drawer-wrap{position:fixed;inset:0;z-index:900;pointer-events:none}.drawer-wrap.open{pointer-events:auto}.drawer-back{position:absolute;inset:0;background:rgba(2,4,6,.55);opacity:0;transition:.25s}.drawer-wrap.open .drawer-back{opacity:1}
+.drawer{position:absolute;right:0;top:0;bottom:0;width:min(560px,100%);background:#0d1014;border-left:1px solid var(--line2);transform:translateX(102%);transition:.34s cubic-bezier(.2,.8,.2,1);box-shadow:-30px 0 80px rgba(0,0,0,.36);display:grid;grid-template-rows:auto 1fr auto}
+.drawer-wrap.open .drawer{transform:none}.drawer-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.drawer-head b{font-size:13px}.x{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#11161b;color:#9aa5af}
+.drawer-body{overflow:auto;padding:22px}.drawer-title h2{font-size:34px;letter-spacing:-.05em;margin:6px 0 7px}.drawer-title p{margin:0;color:#697682;font:10px ui-monospace,monospace;word-break:break-all}
+.drawer-actions{display:flex;gap:7px;flex-wrap:wrap;margin:18px 0 24px}.drawer-actions button{font-size:11px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.detail{border:1px solid var(--line);border-radius:14px;background:#11151a;padding:13px}.detail small{display:block;color:#64707c;font-size:9px;text-transform:uppercase;letter-spacing:.06em}.detail b{display:block;font-size:13px;margin-top:7px}
+.section-title{margin:27px 0 10px;display:flex;align-items:center;justify-content:space-between}.section-title b{font-size:12px}.section-title span{font-size:10px;color:#65717d}
+.timeline{border-top:1px solid var(--line)}.event{display:grid;grid-template-columns:10px 1fr auto;gap:11px;padding:14px 0;border-bottom:1px solid #1b2027}.event-dot{width:8px;height:8px;border-radius:50%;background:#3c4855;margin-top:4px}.event.important .event-dot{background:var(--cyan);box-shadow:0 0 10px rgba(95,201,232,.35)}
+.event b{display:block;font-size:12px}.event span{display:block;color:#687580;font-size:10px;margin-top:4px}.event time{font:9px ui-monospace,monospace;color:#596571}
+.drawer-foot{padding:15px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;background:#0c0f13}
+.modal-wrap{position:fixed;inset:0;z-index:1100;background:rgba(3,5,7,.72);backdrop-filter:blur(10px);display:grid;place-items:center;padding:18px}
+.modal{width:min(560px,100%);border:1px solid var(--line2);border-radius:24px;background:#0f1318;box-shadow:0 38px 100px rgba(0,0,0,.5);overflow:hidden}.modal-head{padding:19px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.modal-head b{font-size:14px}
+.modal-body{padding:22px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.modal-foot{padding:15px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}.hint{font-size:10px;color:#5e6a75;margin-top:6px;line-height:1.45}
+.success-box{margin-top:18px;border:1px solid rgba(110,216,166,.18);background:rgba(110,216,166,.055);border-radius:16px;padding:14px}.success-box b{display:block;color:#aee9cb;font-size:12px}.success-link{margin-top:9px;padding:10px;border-radius:10px;background:#0b1114;color:#8f9ba5;font:10px ui-monospace,monospace;word-break:break-all}
+.toast{position:fixed;right:22px;bottom:22px;z-index:1400;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s;background:#e9f5f8;color:#0b1216;padding:12px 14px;border-radius:12px;font-size:11px;font-weight:850;box-shadow:0 18px 50px rgba(0,0,0,.3)}.toast.show{opacity:1;transform:none}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;gap:18px}.hero-side{text-align:left;justify-items:start}.metrics{grid-template-columns:1fr 1fr}
+  .lead-row{grid-template-columns:1fr 130px 34px}.activity{grid-column:1/2}.open-count{display:none}.status{justify-self:start}
+}
+@media(max-width:600px){
+  .app{width:min(100% - 20px,1500px)}.topbar{height:58px}.sync{display:none}.hero{padding-top:30px}.hero h1{font-size:48px}
+  .metrics{grid-template-columns:1fr 1fr;gap:7px}.metric{min-height:98px;padding:14px}.metric b{font-size:26px}
+  .workspace-head{align-items:flex-start;flex-direction:column}.filters{width:100%;overflow:auto;flex-wrap:nowrap}.filter{white-space:nowrap}
+  .lead-row{grid-template-columns:1fr auto;gap:10px;padding:16px}.status{grid-column:1/2}.activity{grid-column:1/2}.chev{grid-row:1/4;grid-column:2/3}.lead-url{max-width:80vw}
+  .footer-note{flex-direction:column}.detail-grid,.two{grid-template-columns:1fr}.drawer-title h2{font-size:30px}
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div><b>Ricky CRM</b><span>PROSPECÇÃO / CONCEITOS</span></div>
+    </div>
+    <div class="top-actions">
+      <div class="sync"><span class="sync-dot"></span><span id="syncText">atualizando</span></div>
+      <button class="ghost" id="refreshBtn">ATUALIZAR</button>
+      <button class="primary" id="newLeadBtn">+ NOVO LEAD</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">VISÃO RÁPIDA</div>
+      <h1 id="heroTitle">Alguma <em>novidade?</em></h1>
+    </div>
+    <div class="hero-side">
+      <p id="heroText">Entrou, bateu o olho, viu se alguém abriu ou interagiu. É só isso que você precisa fazer aqui.</p>
+      <div class="updated" id="updatedText">CARREGANDO...</div>
+    </div>
+  </section>
+
+  <section class="metrics">
+    <article class="metric news"><small>Novidades</small><b id="mNews">0</b><span>desde sua última visita</span></article>
+    <article class="metric opened"><small>Já abriram</small><b id="mOpened">0</b><span>leads ativos</span></article>
+    <article class="metric waiting"><small>Aguardando</small><b id="mWaiting">0</b><span>sem abertura ainda</span></article>
+    <article class="metric replied"><small>Responderam</small><b id="mReplied">0</b><span>marcados no painel</span></article>
+  </section>
+
+  <section class="workspace">
+    <div class="workspace-head">
+      <div class="workspace-title"><b>Leads</b><span class="count-pill" id="leadCount">0</span></div>
+      <div class="filters" id="filters">
+        <button class="filter active" data-filter="active">ATIVOS</button>
+        <button class="filter" data-filter="news">COM NOVIDADE</button>
+        <button class="filter" data-filter="waiting">AGUARDANDO</button>
+        <button class="filter" data-filter="all">TODOS</button>
+      </div>
+    </div>
+    <div class="leads" id="leadList"></div>
+  </section>
+
+  <div class="footer-note">
+    <span>ATUALIZA AUTOMATICAMENTE A CADA 30S</span>
+    <span>SEM IP, SEM LOCALIZAÇÃO, APENAS EVENTOS DO LINK</span>
+  </div>
+</div>
+
+<div class="overlay hidden" id="loginOverlay">
+  <div class="login">
+    <div class="login-mark">R</div>
+    <h2>Seu painel.</h2>
+    <p>Cole a chave que o Supabase mostrou no final do SQL. Se marcar para lembrar, você só faz isso uma vez neste navegador.</p>
+    <div class="field">
+      <label>Chave do painel</label>
+      <input id="loginKey" type="password" autocomplete="current-password" placeholder="cole a chave aqui">
+    </div>
+    <label class="check"><input id="rememberKey" type="checkbox" checked> lembrar neste navegador</label>
+    <button class="primary" id="loginBtn">ENTRAR</button>
+    <div class="login-error hidden" id="loginError">Chave inválida ou conexão indisponível.</div>
+  </div>
+</div>
+
+<div class="drawer-wrap" id="drawerWrap">
+  <button class="drawer-back" id="drawerBack" aria-label="Fechar"></button>
+  <aside class="drawer">
+    <div class="drawer-head"><b>DETALHES DO LEAD</b><button class="x" id="drawerClose">×</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot">
+      <button class="ghost" id="drawerProject">ABRIR PROJETO</button>
+      <button class="primary" id="drawerCopy">COPIAR LINK</button>
+    </div>
+  </aside>
+</div>
+
+<div class="modal-wrap hidden" id="leadModal">
+  <form class="modal" id="leadForm">
+    <div class="modal-head"><b>NOVO LEAD</b><button type="button" class="x" id="modalClose">×</button></div>
+    <div class="modal-body">
+      <div class="field" style="margin-top:0"><label>Nome</label><input id="leadName" required placeholder="Ex: Batcaverna"></div>
+      <div class="field"><label>URL do projeto</label><input id="leadUrl" required placeholder="https://portfolio.../Projeto"></div>
+      <div class="two">
+        <div class="field"><label>Slug</label><input id="leadSlug" placeholder="batcaverna"><div class="hint">É preenchido automaticamente.</div></div>
+        <div class="field"><label>Envio agendado</label><input id="leadSchedule" type="datetime-local"><div class="hint">Opcional.</div></div>
+      </div>
+      <div class="success-box hidden" id="leadSuccess">
+        <b>Lead criado. Link rastreável pronto:</b>
+        <div class="success-link" id="createdLink"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="ghost" id="cancelLead">CANCELAR</button>
+      <button type="submit" class="primary" id="saveLead">CRIAR E COPIAR LINK</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const SUPABASE_URL = 'https://crjnawbtlwtruwwzbkzk.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_jI_JTaDvip_9t9qCTNqzqQ_eGH03OiR';
+
+  const KEY_STORAGE = 'ricky_crm_dashboard_key';
+  const LAST_SEEN_STORAGE = 'ricky_crm_last_seen';
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const state = {
+    key: localStorage.getItem(KEY_STORAGE) || sessionStorage.getItem(KEY_STORAGE) || '',
+    leads: [],
+    events: [],
+    filter: 'active',
+    selectedId: null,
+    lastSeen: localStorage.getItem(LAST_SEEN_STORAGE) || null,
+    newestEventAt: null,
+    firstLoadDone: false
+  };
+
+  const eventLabels = {
+    opened: 'Abriu o projeto',
+    viewed: 'Ficou pelo menos 5 segundos',
+    return: 'Voltou ao projeto',
+    engaged: 'Passou de 50% da página',
+    concept: 'Abriu “Qual a ideia do site?”',
+    portfolio: 'Clicou no seu portfólio',
+    build_started: 'Começou “Montar meu PC”',
+    upgrade_started: 'Começou “Melhorar meu PC”',
+    pc_scan_started: 'Rodou a análise rápida',
+    recommendation_generated: 'Gerou uma configuração',
+    upgrade_recommendation_generated: 'Gerou recomendação de upgrade'
+  };
+
+  const importantEvents = new Set([
+    'return','engaged','concept','portfolio','build_started','upgrade_started',
+    'pc_scan_started','recommendation_generated','upgrade_recommendation_generated'
+  ]);
+
+  function apiErrorMessage(data){
+    if (!data) return 'Erro desconhecido';
+    return data.message || data.error || data.hint || 'Não foi possível concluir.';
+  }
+
+  async function rpc(name, body){
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SUPABASE_KEY
+      },
+      body:JSON.stringify(body)
+    });
+    let data = null;
+    try { data = await response.json(); } catch {}
+    if (!response.ok) {
+      const err = new Error(apiErrorMessage(data));
+      err.status = response.status;
+      throw err;
+    }
+    return data;
+  }
+
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
+
+  function slugify(value){
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  }
+
+  function trackedUrl(lead){
+    return `${lead.project_url}${lead.project_url.includes('?') ? '&' : '?'}r=${lead.tracking_token}`;
+  }
+
+  function dt(value){
+    return value ? new Date(value) : null;
+  }
+
+  function formatDate(value, withDate=true){
+    if (!value) return '—';
+    const d = new Date(value);
+    return new Intl.DateTimeFormat('pt-BR', {
+      ...(withDate ? {day:'2-digit',month:'2-digit'} : {}),
+      hour:'2-digit',minute:'2-digit'
+    }).format(d);
+  }
+
+  function relative(value){
+    if (!value) return 'sem atividade';
+    const ms = Date.now() - new Date(value).getTime();
+    const min = Math.max(0, Math.floor(ms/60000));
+    if (min < 1) return 'agora';
+    if (min < 60) return `há ${min} min`;
+    const h = Math.floor(min/60);
+    if (h < 24) return `há ${h}h`;
+    const d = Math.floor(h/24);
+    if (d < 7) return `há ${d}d`;
+    return formatDate(value);
+  }
+
+  function isNewEvent(event){
+    if (!state.lastSeen) return false;
+    return new Date(event.created_at) > new Date(state.lastSeen);
+  }
+
+  function leadHasNews(lead){
+    return state.events.some(e => e.lead_id === lead.id && isNewEvent(e));
+  }
+
+  function getStatus(lead){
+    if (!lead.active) return {key:'archived',label:'Arquivado',cls:'s-archived'};
+    if (lead.responded_at) return {key:'replied',label:'Respondeu',cls:'s-replied'};
+    if (+lead.interaction_count > 0) return {key:'interacted',label:'Interagiu',cls:'s-interacted'};
+    if (+lead.opened_count > 0) return {key:'opened',label:'Abriu',cls:'s-opened'};
+
+    const scheduled = dt(lead.email_scheduled_at);
+    const sent = dt(lead.email_sent_at);
+    if (sent || (scheduled && scheduled <= new Date())) {
+      return {key:'waiting',label:'Aguardando abertura',cls:'s-waiting'};
+    }
+    if (scheduled && scheduled > new Date()) return {key:'scheduled',label:'Agendado',cls:'s-scheduled'};
+    return {key:'draft',label:'Não enviado',cls:'s-draft'};
+  }
+
+  function latestMeaningfulEvent(lead){
+    const events = state.events.filter(e => e.lead_id === lead.id);
+    return events.find(e => importantEvents.has(e.event_type)) || events[0] || null;
+  }
+
+  function leadSort(a,b){
+    const an = leadHasNews(a), bn = leadHasNews(b);
+    if (an !== bn) return an ? -1 : 1;
+    const ad = dt(a.last_activity)?.getTime() || dt(a.email_scheduled_at)?.getTime() || dt(a.created_at)?.getTime() || 0;
+    const bd = dt(b.last_activity)?.getTime() || dt(b.email_scheduled_at)?.getTime() || dt(b.created_at)?.getTime() || 0;
+    return bd - ad;
+  }
+
+  function renderMetrics(){
+    const active = state.leads.filter(l => l.active);
+    const newsLeads = active.filter(leadHasNews);
+    const opened = active.filter(l => +l.opened_count > 0).length;
+    const waiting = active.filter(l => getStatus(l).key === 'waiting').length;
+    const replied = active.filter(l => !!l.responded_at).length;
+
+    $('#mNews').textContent = newsLeads.length;
+    $('#mOpened').textContent = opened;
+    $('#mWaiting').textContent = waiting;
+    $('#mReplied').textContent = replied;
+
+    if (newsLeads.length){
+      $('#heroTitle').innerHTML = `${newsLeads.length === 1 ? 'Tem' : 'Tem'} <em>${newsLeads.length} ${newsLeads.length === 1 ? 'novidade' : 'novidades'}.</em>`;
+      $('#heroText').textContent = newsLeads.length === 1
+        ? `${newsLeads[0].name} teve atividade nova desde a sua última visita.`
+        : `${newsLeads.map(l=>l.name).slice(0,3).join(', ')}${newsLeads.length>3?' e outros':''} tiveram atividade nova.`;
+      document.title = `(${newsLeads.length}) Ricky CRM`;
+    } else {
+      $('#heroTitle').innerHTML = `Nada novo <em>por enquanto.</em>`;
+      $('#heroText').textContent = 'Você já está em dia. Pode fechar o painel e voltar depois.';
+      document.title = 'Ricky CRM';
+    }
+  }
+
+  function visibleLeads(){
+    return state.leads.filter(l => {
+      if (state.filter === 'active') return l.active;
+      if (state.filter === 'news') return l.active && leadHasNews(l);
+      if (state.filter === 'waiting') return l.active && getStatus(l).key === 'waiting';
+      return true;
+    }).sort(leadSort);
+  }
+
+  function renderLeads(){
+    const list = $('#leadList');
+    const leads = visibleLeads();
+    $('#leadCount').textContent = leads.length;
+
+    if (!leads.length){
+      list.innerHTML = `<div class="empty"><b>Nada aqui.</b><span>Esse filtro não tem nenhum lead agora.</span></div>`;
+      return;
+    }
+
+    list.innerHTML = leads.map(lead => {
+      const status = getStatus(lead);
+      const recent = latestMeaningfulEvent(lead);
+      const news = leadHasNews(lead);
+      const actionText = recent ? (eventLabels[recent.event_type] || recent.event_type) : status.label;
+      const actionTime = recent ? relative(recent.created_at) :
+        lead.email_scheduled_at ? `envio ${formatDate(lead.email_scheduled_at)}` : 'sem atividade';
+      return `
+        <article class="lead-row" data-id="${esc(lead.id)}">
+          <div class="lead-main">
+            <div class="lead-name">${news?'<span class="new-dot"></span>':''}<b>${esc(lead.name)}</b></div>
+            <div class="lead-url">${esc(lead.project_url)}</div>
+          </div>
+          <span class="status ${status.cls}">${esc(status.label)}</span>
+          <div class="activity"><b>${esc(actionText)}</b><span>${esc(actionTime)}</span></div>
+          <div class="open-count"><b>${lead.opened_count || 0}x</b><span>ABERTURA</span></div>
+          <div class="chev">›</div>
+        </article>`;
+    }).join('');
+
+    $$('.lead-row').forEach(row => row.addEventListener('click', () => openDrawer(row.dataset.id)));
+  }
+
+  function render(){
+    renderMetrics();
+    renderLeads();
+    $('#updatedText').textContent = `ATUALIZADO ${new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date())}`;
+  }
+
+  async function loadDashboard({quiet=false}={}){
+    if (!state.key){
+      $('#loginOverlay').classList.remove('hidden');
+      return;
+    }
+    if (!quiet) $('#syncText').textContent = 'atualizando';
+    try{
+      const data = await rpc('crm_get_dashboard',{p_key:state.key});
+      const oldNewest = state.newestEventAt;
+      state.leads = Array.isArray(data.leads) ? data.leads : [];
+      state.events = Array.isArray(data.events) ? data.events : [];
+      state.newestEventAt = state.events[0]?.created_at || null;
+
+      if (state.firstLoadDone && oldNewest && state.newestEventAt && new Date(state.newestEventAt) > new Date(oldNewest)){
+        toast('Nova atividade chegou');
+      }
+
+      state.firstLoadDone = true;
+      $('#loginOverlay').classList.add('hidden');
+      $('#loginError').classList.add('hidden');
+      $('#syncText').textContent = 'online';
+      render();
+
+      if (state.selectedId) renderDrawer();
+    }catch(err){
+      $('#syncText').textContent = 'offline';
+      if (!quiet){
+        $('#loginOverlay').classList.remove('hidden');
+        $('#loginError').classList.remove('hidden');
+      }
+    }
+  }
+
+  async function login(){
+    const key = $('#loginKey').value.trim();
+    if (!key) return;
+    state.key = key;
+    try{
+      await loadDashboard();
+      if ($('#rememberKey').checked){
+        localStorage.setItem(KEY_STORAGE,key);
+        sessionStorage.removeItem(KEY_STORAGE);
+      }else{
+        sessionStorage.setItem(KEY_STORAGE,key);
+        localStorage.removeItem(KEY_STORAGE);
+      }
+    }catch{}
+  }
+
+  function markSessionSeen(){
+    if (state.newestEventAt) localStorage.setItem(LAST_SEEN_STORAGE,state.newestEventAt);
+  }
+
+  function openDrawer(id){
+    state.selectedId = id;
+    renderDrawer();
+    $('#drawerWrap').classList.add('open');
+    document.body.style.overflow='hidden';
+  }
+
+  function closeDrawer(){
+    $('#drawerWrap').classList.remove('open');
+    document.body.style.overflow='';
+    state.selectedId = null;
+  }
+
+  function renderDrawer(){
+    const lead = state.leads.find(l => l.id === state.selectedId);
+    if (!lead) return;
+    const status = getStatus(lead);
+    const events = state.events.filter(e => e.lead_id === lead.id);
+    const schedule = lead.email_scheduled_at ? formatDate(lead.email_scheduled_at) : '—';
+    const sent = lead.email_sent_at ? formatDate(lead.email_sent_at) : '—';
+    const response = lead.responded_at ? formatDate(lead.responded_at) : '—';
+
+    $('#drawerBody').innerHTML = `
+      <div class="drawer-title">
+        <span class="status ${status.cls}">${esc(status.label)}</span>
+        <h2>${esc(lead.name)}</h2>
+        <p>${esc(lead.project_url)}</p>
+      </div>
+
+      <div class="drawer-actions">
+        ${lead.responded_at
+          ? `<button class="ghost" data-action="unreply">DESMARCAR RESPOSTA</button>`
+          : `<button class="primary" data-action="reply">MARCAR RESPOSTA</button>`}
+        ${lead.email_sent_at
+          ? ''
+          : `<button class="ghost" data-action="sent">MARCAR ENVIADO AGORA</button>`}
+        ${lead.active
+          ? `<button class="danger-btn" data-action="archive">ARQUIVAR</button>`
+          : `<button class="ghost" data-action="activate">REATIVAR</button>`}
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail"><small>Aberturas</small><b>${lead.opened_count || 0}x</b></div>
+        <div class="detail"><small>Sessões</small><b>${lead.sessions_count || 0}</b></div>
+        <div class="detail"><small>Agendado</small><b>${esc(schedule)}</b></div>
+        <div class="detail"><small>Enviado</small><b>${esc(sent)}</b></div>
+        <div class="detail"><small>Resposta</small><b>${esc(response)}</b></div>
+        <div class="detail"><small>Última atividade</small><b>${esc(relative(lead.last_activity))}</b></div>
+      </div>
+
+      <div class="section-title"><b>ATIVIDADE</b><span>${events.length} eventos</span></div>
+      <div class="timeline">
+        ${events.length ? events.map(e => `
+          <div class="event ${importantEvents.has(e.event_type)?'important':''}">
+            <span class="event-dot"></span>
+            <div><b>${esc(eventLabels[e.event_type] || e.event_type)}</b><span>${esc(e.device || 'dispositivo não informado')}</span></div>
+            <time>${esc(formatDate(e.created_at))}</time>
+          </div>`).join('') : `<div class="empty"><b>Nenhuma atividade ainda.</b><span>Quando o link for aberto, vai aparecer aqui.</span></div>`}
+      </div>`;
+
+    $$('[data-action]').forEach(btn => btn.addEventListener('click', () => updateLead(btn.dataset.action, lead)));
+    $('#drawerProject').onclick = () => window.open(lead.project_url,'_blank','noopener');
+    $('#drawerCopy').onclick = () => copy(trackedUrl(lead));
+  }
+
+  async function updateLead(action, lead){
+    let patch = {};
+    if (action === 'reply') patch.responded_at = new Date().toISOString();
+    if (action === 'unreply') patch.responded_at = null;
+    if (action === 'sent') patch.email_sent_at = new Date().toISOString();
+    if (action === 'archive') patch.active = false;
+    if (action === 'activate') patch.active = true;
+
+    try{
+      await rpc('crm_update_lead',{p_key:state.key,p_lead_id:lead.id,p_patch:patch});
+      toast('Atualizado');
+      await loadDashboard({quiet:true});
+    }catch(err){
+      toast('Não foi possível atualizar');
+    }
+  }
+
+  function openLeadModal(){
+    $('#leadForm').reset();
+    $('#leadSuccess').classList.add('hidden');
+    $('#leadModal').classList.remove('hidden');
+    setTimeout(()=>$('#leadName').focus(),50);
+  }
+
+  function closeLeadModal(){
+    $('#leadModal').classList.add('hidden');
+  }
+
+  async function createLead(event){
+    event.preventDefault();
+    const name = $('#leadName').value.trim();
+    const url = $('#leadUrl').value.trim().replace(/[?&]r=[^&]+/,'');
+    const slug = ($('#leadSlug').value.trim() || slugify(name));
+    const scheduleLocal = $('#leadSchedule').value;
+    const scheduledAt = scheduleLocal ? new Date(scheduleLocal).toISOString() : null;
+
+    $('#saveLead').disabled = true;
+    $('#saveLead').textContent = 'CRIANDO...';
+    try{
+      const created = await rpc('crm_create_lead',{
+        p_key:state.key,
+        p_name:name,
+        p_project_url:url,
+        p_slug:slug,
+        p_scheduled_at:scheduledAt
+      });
+      $('#createdLink').textContent = created.tracked_url;
+      $('#leadSuccess').classList.remove('hidden');
+      await copy(created.tracked_url,false);
+      $('#saveLead').textContent = 'LINK COPIADO ✓';
+      toast('Lead criado e link copiado');
+      await loadDashboard({quiet:true});
+    }catch(err){
+      toast('Erro ao criar lead');
+      $('#saveLead').textContent = 'CRIAR E COPIAR LINK';
+    }finally{
+      $('#saveLead').disabled = false;
+    }
+  }
+
+  async function copy(text,notify=true){
+    try{
+      await navigator.clipboard.writeText(text);
+      if (notify) toast('Link copiado');
+    }catch{
+      const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+      if (notify) toast('Link copiado');
+    }
+  }
+
+  let toastTimer;
+  function toast(message){
+    const el=$('#toast');el.textContent=message;el.classList.add('show');
+    clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+  }
+
+  // UI
+  $('#refreshBtn').addEventListener('click',()=>loadDashboard());
+  $('#newLeadBtn').addEventListener('click',openLeadModal);
+  $('#modalClose').addEventListener('click',closeLeadModal);
+  $('#cancelLead').addEventListener('click',closeLeadModal);
+  $('#leadModal').addEventListener('click',e=>{if(e.target===$('#leadModal'))closeLeadModal()});
+  $('#leadForm').addEventListener('submit',createLead);
+  $('#leadName').addEventListener('input',()=>{
+    if (!$('#leadSlug').dataset.edited) $('#leadSlug').value=slugify($('#leadName').value);
+  });
+  $('#leadSlug').addEventListener('input',()=>$('#leadSlug').dataset.edited='1');
+  $('#loginBtn').addEventListener('click',login);
+  $('#loginKey').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+  $('#drawerClose').addEventListener('click',closeDrawer);
+  $('#drawerBack').addEventListener('click',closeDrawer);
+  $('#filters').addEventListener('click',e=>{
+    const btn=e.target.closest('[data-filter]'); if(!btn)return;
+    state.filter=btn.dataset.filter;
+    $$('.filter').forEach(x=>x.classList.toggle('active',x===btn));
+    renderLeads();
+  });
+
+  addEventListener('keydown',e=>{
+    if(e.key==='Escape'){closeDrawer();closeLeadModal()}
+  });
+
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)markSessionSeen()});
+  addEventListener('beforeunload',markSessionSeen);
+
+  // Primeira entrada.
+  if (!state.key) $('#loginOverlay').classList.remove('hidden');
+  else loadDashboard();
+
+  setInterval(()=>{ if(state.key && !document.hidden) loadDashboard({quiet:true}); },30000);
+})();
+</script>
+</body>
+</html>
