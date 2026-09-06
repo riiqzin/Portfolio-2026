@@ -1314,18 +1314,18 @@ footer{padding:30px 0 40px;border-top:1px solid #222;color:#666;font-size:10px}
       <span><strong>A BATCAVERNA</strong><small>HQs & Filmes</small></span>
     </a>
     <nav class="navlinks">
-      <a href="#hqs">HQs</a>
-      <a href="#filmes">Filmes</a>
-      <button class="about-link" id="openAbout">SOBRE O CONCEITO</button>
+      <a href="#hqs" data-track="Explorou HQs">HQs</a>
+      <a href="#filmes" data-track="Explorou filmes">Filmes</a>
+      <button class="about-link" id="openAbout" data-track="concept">SOBRE O CONCEITO</button>
     </nav>
-    <a class="nav-cta" href="#hqs">COMEÇAR</a>
+    <a class="nav-cta" href="#hqs" data-track="Explorou HQs">COMEÇAR</a>
   </div>
 </header>
 
 <nav class="mobile-dock" aria-label="Navegação mobile">
-  <a href="#hqs"><span>▤</span><b>HQs</b></a>
-  <a href="#filmes"><span>★</span><b>Filmes</b></a>
-  <button id="openAboutMobile"><span>◎</span><b>Conceito</b></button>
+  <a href="#hqs" data-track="Explorou HQs"><span>▤</span><b>HQs</b></a>
+  <a href="#filmes" data-track="Explorou filmes"><span>★</span><b>Filmes</b></a>
+  <button id="openAboutMobile" data-track="concept"><span>◎</span><b>Conceito</b></button>
 </nav>
 
 <main id="top">
@@ -1336,8 +1336,8 @@ footer{padding:30px 0 40px;border-top:1px solid #222;color:#666;font-size:10px}
       <h1>Comece por aqui.<span class="serif">ou relembre o que a gente achou.</span></h1>
       <p><strong>HQs:</strong> escolha um herói e veja uma boa porta de entrada, um resumo curto, por que vale ler e o que seguir depois. <strong>Filmes:</strong> veja as notas de Gabriel, Marcelo e Batfamília e abra a review.</p>
       <div class="hero-buttons">
-        <a class="btn primary" href="#hqs">POR ONDE COMEÇO?</a>
-        <a class="btn" href="#filmes">VER FILMES</a>
+        <a class="btn primary" href="#hqs" data-track="Explorou HQs">POR ONDE COMEÇO?</a>
+        <a class="btn" href="#filmes" data-track="Explorou filmes">VER FILMES</a>
       </div>
       <div class="quickline"><span><b>01</b> HQs</span><span><b>02</b> Filmes</span><span><b>03</b> Review no YouTube</span></div>
     </div>
@@ -1521,7 +1521,7 @@ footer{padding:30px 0 40px;border-top:1px solid #222;color:#666;font-size:10px}
         <small>Quem montou</small>
         <h3>Ricky</h3>
         <p>Trabalho com design, motion e desenvolvimento web, criando projetos digitais do visual até a experiência final. Se a ideia fizer sentido pra vocês, dá pra conversar e construir algo bem mais profundo em cima disso.</p>
-        <a class="portfolio-btn" href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noopener">VER MEU PORTFÓLIO ↗</a>
+        <a class="portfolio-btn" href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noopener" data-track="portfolio">VER MEU PORTFÓLIO ↗</a>
       </div>
 
       <div class="author-side">
@@ -1726,5 +1726,134 @@ footer{padding:30px 0 40px;border-top:1px solid #222;color:#666;font-size:10px}
   renderHQ('lanterna');renderMovies();
 })();
 </script>
+
+<script>
+(() => {
+  const SUPABASE_URL = 'https://crjnawbtlwtruwwzbkzk.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_jI_JTaDvip_9t9qCTNqzqQ_eGH03OiR';
+  const DEFAULT_TOKEN = '6db5cdf949b49f56';
+
+  const params = new URLSearchParams(window.location.search);
+
+  // Estes dois projetos já foram enviados por e-mail antes do CRM existir.
+  // Por isso o link antigo, sem ?r=, assume automaticamente o token correto.
+  // Para abrir você mesmo sem registrar nada, use ?preview=1.
+  if (params.get('preview') === '1') return;
+
+  const token = params.get('r') || DEFAULT_TOKEN;
+  if (!token) return;
+
+  const makeId = () => {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  };
+
+  const getStoredId = (storage, key) => {
+    let value = storage.getItem(key);
+    if (!value) {
+      value = makeId();
+      storage.setItem(key, value);
+    }
+    return value;
+  };
+
+  const visitorId = getStoredId(localStorage, 'ricky_lead_visitor_id');
+  const sessionId = getStoredId(sessionStorage, `ricky_lead_session_${token}`);
+  const device =
+    window.innerWidth <= 768 ? 'mobile' :
+    window.innerWidth <= 1100 ? 'tablet' : 'desktop';
+
+  async function track(eventName, metadata = {}) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/track_lead_event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          p_token: token,
+          p_event: eventName,
+          p_session_id: sessionId,
+          p_visitor_id: visitorId,
+          p_page: window.location.pathname,
+          p_device: device,
+          p_metadata: metadata
+        }),
+        keepalive: true
+      });
+
+      if (!response.ok) console.warn('Tracking indisponível:', response.status);
+    } catch (_) {
+      // O tracking nunca deve interferir no protótipo.
+    }
+  }
+
+  track('opened');
+
+  setTimeout(() => {
+    if (!document.hidden) track('viewed', { seconds: 5 });
+  }, 5000);
+
+  const seenKey = `ricky_lead_seen_${token}`;
+  if (localStorage.getItem(seenKey)) {
+    track('return');
+  } else {
+    localStorage.setItem(seenKey, String(Date.now()));
+  }
+
+  let engaged = false;
+  const checkEngagement = () => {
+    if (engaged) return;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    if (maxScroll <= 0) return;
+
+    if (window.scrollY / maxScroll >= 0.5) {
+      engaged = true;
+      track('engaged', { scroll: 50 });
+      window.removeEventListener('scroll', checkEngagement);
+    }
+  };
+
+  window.addEventListener('scroll', checkEngagement, { passive: true });
+
+  document.addEventListener('click', (event) => {
+    const element = event.target.closest('[data-track]');
+    if (!element) return;
+
+    track(element.dataset.track, {
+      text: (element.innerText || element.getAttribute('aria-label') || '')
+        .trim()
+        .slice(0, 120)
+    });
+  });
+
+  // Interações específicas do protótipo Batcaverna, inclusive elementos criados via JS.
+  document.addEventListener('click', (event) => {
+    const hero = event.target.closest('[data-hero]');
+    if (hero) {
+      track('Explorou guia de HQ', {
+        hero: hero.dataset.hero || (hero.innerText || '').trim().slice(0, 60)
+      });
+    }
+
+    const filter = event.target.closest('[data-filter]');
+    if (filter) {
+      track('Filtrou filmes', {
+        filter: filter.dataset.filter || (filter.innerText || '').trim().slice(0, 60)
+      });
+    }
+
+    const review = event.target.closest('.review-link, .modal-action');
+    if (review) {
+      track('Abriu review', {
+        text: (review.innerText || '').trim().slice(0, 100)
+      });
+    }
+  });
+
+})();
+</script>
+
 </body>
 </html>
