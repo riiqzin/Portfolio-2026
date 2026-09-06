@@ -631,7 +631,7 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
       <span class="brand-glyph">Z</span>
       <span class="brand-copy"><strong>ZAC TOP</strong><span>POR BRUNOX</span></span>
     </a>
-    <a class="nav-cta magnetic" href="#metodo">VER O MÉTODO <span>↓</span></a>
+    <a class="nav-cta magnetic" href="#metodo" data-track="Demonstrou interesse no curso">VER O MÉTODO <span>↓</span></a>
   </div>
 </header>
 
@@ -655,8 +655,8 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
           <div class="hero-stat"><b>TOP + MID</b><span>mono Zac</span></div>
         </div>
         <div class="hero-actions">
-          <a class="primary magnetic" href="#metodo">QUERO SUBIR DE ELO COM ZAC <span>↘</span></a>
-          <a class="secondary-link" href="#vod">ver uma prévia do método</a>
+          <a class="primary magnetic" href="#metodo" data-track="Demonstrou interesse no curso">QUERO SUBIR DE ELO COM ZAC <span>↘</span></a>
+          <a class="secondary-link" href="#vod" data-track="Abriu prévia do método">ver uma prévia do método</a>
         </div>
       </div>
 
@@ -690,7 +690,7 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
         </div>
         <div class="concept-actions">
           <span class="desktop-note">Pra ver o conceito do jeito que pensei, recomendo abrir no desktop</span>
-          <a class="portfolio-cta magnetic" href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noreferrer">VER MEU PORTFÓLIO <span>↗</span></a>
+          <a class="portfolio-cta magnetic" href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noreferrer" data-track="portfolio">VER MEU PORTFÓLIO <span>↗</span></a>
         </div>
       </div>
     </div>
@@ -934,7 +934,7 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
     <div class="concept-copy">
       <b>Projeto conceito não oficial.</b> Conteúdo, formato e identidade apresentados são ilustrativos.
     </div>
-    <a class="portfolio magnetic" href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noreferrer">
+    <a class="portfolio magnetic" href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noreferrer" data-track="portfolio">
       RICKY MANGINI · PORTFÓLIO <span>↗</span>
     </a>
   </div>
@@ -1055,5 +1055,127 @@ body.cursor-big .cursor-goo{width:68px;height:68px;background:rgba(var(--lime-rg
   document.querySelectorAll('.marker,.marker-labels button').forEach(x=>x.addEventListener('click',()=>choose(Number(x.dataset.i))));
 })();
 </script>
+
+<script>
+(() => {
+  const SUPABASE_URL = 'https://crjnawbtlwtruwwzbkzk.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_jI_JTaDvip_9t9qCTNqzqQ_eGH03OiR';
+  const DEFAULT_TOKEN = '17d08d2fb586af28';
+
+  const params = new URLSearchParams(window.location.search);
+
+  // Estes dois projetos já foram enviados por e-mail antes do CRM existir.
+  // Por isso o link antigo, sem ?r=, assume automaticamente o token correto.
+  // Para abrir você mesmo sem registrar nada, use ?preview=1.
+  if (params.get('preview') === '1') return;
+
+  const token = params.get('r') || DEFAULT_TOKEN;
+  if (!token) return;
+
+  const makeId = () => {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  };
+
+  const getStoredId = (storage, key) => {
+    let value = storage.getItem(key);
+    if (!value) {
+      value = makeId();
+      storage.setItem(key, value);
+    }
+    return value;
+  };
+
+  const visitorId = getStoredId(localStorage, 'ricky_lead_visitor_id');
+  const sessionId = getStoredId(sessionStorage, `ricky_lead_session_${token}`);
+  const device =
+    window.innerWidth <= 768 ? 'mobile' :
+    window.innerWidth <= 1100 ? 'tablet' : 'desktop';
+
+  async function track(eventName, metadata = {}) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/track_lead_event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY
+        },
+        body: JSON.stringify({
+          p_token: token,
+          p_event: eventName,
+          p_session_id: sessionId,
+          p_visitor_id: visitorId,
+          p_page: window.location.pathname,
+          p_device: device,
+          p_metadata: metadata
+        }),
+        keepalive: true
+      });
+
+      if (!response.ok) console.warn('Tracking indisponível:', response.status);
+    } catch (_) {
+      // O tracking nunca deve interferir no protótipo.
+    }
+  }
+
+  track('opened');
+
+  setTimeout(() => {
+    if (!document.hidden) track('viewed', { seconds: 5 });
+  }, 5000);
+
+  const seenKey = `ricky_lead_seen_${token}`;
+  if (localStorage.getItem(seenKey)) {
+    track('return');
+  } else {
+    localStorage.setItem(seenKey, String(Date.now()));
+  }
+
+  let engaged = false;
+  const checkEngagement = () => {
+    if (engaged) return;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    if (maxScroll <= 0) return;
+
+    if (window.scrollY / maxScroll >= 0.5) {
+      engaged = true;
+      track('engaged', { scroll: 50 });
+      window.removeEventListener('scroll', checkEngagement);
+    }
+  };
+
+  window.addEventListener('scroll', checkEngagement, { passive: true });
+
+  document.addEventListener('click', (event) => {
+    const element = event.target.closest('[data-track]');
+    if (!element) return;
+
+    track(element.dataset.track, {
+      text: (element.innerText || element.getAttribute('aria-label') || '')
+        .trim()
+        .slice(0, 120)
+    });
+  });
+
+  // Interações específicas do protótipo Brunox.
+  document.addEventListener('click', (event) => {
+    const champ = event.target.closest('.champ-btn');
+    if (champ) {
+      track('Explorou matchup', {
+        champion: champ.dataset.champ || (champ.innerText || '').trim().slice(0, 60)
+      });
+    }
+
+    const vod = event.target.closest('.marker, .marker-labels button');
+    if (vod) {
+      track('Interagiu com VOD', {
+        moment: (vod.getAttribute('aria-label') || vod.innerText || '').trim().slice(0, 80)
+      });
+    }
+  });
+
+})();
+</script>
+
 </body>
 </html>
