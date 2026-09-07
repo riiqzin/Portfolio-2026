@@ -10330,6 +10330,183 @@ body.folder-home-enter .script{
   }
 }
 
+
+/* V73 — ponte de trajetória dentro de Sites que criei */
+#works .career-bridge{
+  max-width:1420px;
+  margin:34px auto 0;
+  padding:1px;
+  border-radius:22px;
+  background:linear-gradient(120deg,rgba(255,255,255,.16),rgba(147,213,232,.22),rgba(255,255,255,.08));
+}
+#works .career-bridge-inner{
+  min-height:210px;
+  padding:30px 32px;
+  border-radius:21px;
+  background:
+    radial-gradient(circle at 84% 22%,rgba(147,213,232,.12),transparent 25rem),
+    #09090a;
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(330px,.65fr);
+  gap:34px;
+  align-items:center;
+}
+#works .career-bridge-kicker{
+  display:block;
+  margin-bottom:12px;
+  color:rgba(147,213,232,.82);
+  font-size:9px;
+  line-height:1;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  font-weight:700;
+}
+#works .career-bridge h3{
+  margin:0;
+  max-width:760px;
+  color:#f5f5f3;
+  font-size:clamp(28px,3.2vw,47px);
+  line-height:.98;
+  letter-spacing:-.05em;
+  font-weight:650;
+}
+#works .career-bridge-copy{
+  margin:16px 0 0;
+  max-width:720px;
+  color:rgba(255,255,255,.48);
+  font-size:12px;
+  line-height:1.68;
+}
+#works .career-bridge-side{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:18px;
+}
+#works .career-bridge-names{
+  width:100%;
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+#works .career-bridge-name{
+  padding:7px 10px;
+  border:1px solid rgba(255,255,255,.11);
+  border-radius:999px;
+  background:rgba(255,255,255,.035);
+  color:rgba(255,255,255,.66);
+  font-size:9px;
+  letter-spacing:.035em;
+}
+#works .career-bridge-cta{
+  width:100%;
+  min-height:52px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;
+  background:#f4f2ed;
+  color:#090909;
+  padding:0 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  font-size:11px;
+  font-weight:700;
+  text-align:left;
+  transition:transform .25s cubic-bezier(.16,1,.3,1),background .2s ease;
+}
+#works .career-bridge-cta:hover{
+  transform:translateY(-2px);
+  background:#fff;
+}
+#works .career-bridge-cta span:last-child{
+  font-size:18px;
+  line-height:1;
+  transition:transform .25s cubic-bezier(.16,1,.3,1);
+}
+#works .career-bridge-cta:hover span:last-child{
+  transform:translate(3px,-3px);
+}
+@media(max-width:760px){
+  #works .career-bridge{
+    margin-top:26px;
+  }
+  #works .career-bridge-inner{
+    min-height:0;
+    padding:23px 19px 19px;
+    grid-template-columns:1fr;
+    gap:23px;
+  }
+  #works .career-bridge h3{
+    font-size:30px;
+    line-height:1.02;
+  }
+  #works .career-bridge-copy{
+    font-size:11px;
+    line-height:1.65;
+  }
+  #works .career-bridge-side{
+    gap:16px;
+  }
+  #works .career-bridge-names{
+    gap:6px;
+  }
+  #works .career-bridge-name{
+    font-size:8px;
+    padding:6px 8px;
+  }
+  #works .career-bridge-cta{
+    min-height:54px;
+  }
+}
+
+
+/* V76 — nomes discretos, sem aparência de vitrine */
+#works .career-bridge-history{
+  width:100%;
+  overflow:hidden;
+}
+#works .career-bridge-history-label{
+  display:block;
+  margin-bottom:8px;
+  color:rgba(255,255,255,.28);
+  font-size:7px;
+  line-height:1;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  font-weight:600;
+}
+#works .career-bridge-history-mask{
+  position:relative;
+  width:100%;
+  overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+}
+#works .career-bridge-history-track{
+  width:max-content;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:rgba(255,255,255,.38);
+  font-size:9px;
+  white-space:nowrap;
+  animation:careerBridgeTicker 24s linear infinite;
+}
+#works .career-bridge-history-track i{
+  color:rgba(255,255,255,.15);
+  font-style:normal;
+}
+@keyframes careerBridgeTicker{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+#works .career-bridge-names{display:none!important}
+@media(prefers-reduced-motion:reduce){
+  #works .career-bridge-history-track{animation:none}
+}
+
 </style>
 </head>
 <body>
@@ -10787,6 +10964,64 @@ body.folder-home-enter .script{
 </div>
 
 
+
+<div class="career-bridge">
+  <div class="career-bridge-inner">
+    <div class="career-bridge-main">
+      <span class="career-bridge-kicker dual"
+            data-pt="ANTES DO DESENVOLVIMENTO WEB"
+            data-en="BEFORE WEB DEVELOPMENT">
+        ANTES DO DESENVOLVIMENTO WEB
+      </span>
+
+      <h3 class="dual"
+          data-pt="Minha experiência começou no design."
+          data-en="My experience started in design.">
+        Minha experiência começou no design.
+      </h3>
+
+      <p class="career-bridge-copy dual"
+         data-pt="Antes de focar em desenvolvimento web, passei alguns anos trabalhando com design gráfico. Essa experiência ainda aparece no jeito como penso e construo cada projeto."
+         data-en="Before focusing on web development, I spent a few years working in graphic design. That experience still shows in the way I think about and build each project.">
+        Antes de focar em desenvolvimento web, passei alguns anos trabalhando com design gráfico. Essa experiência ainda aparece no jeito como penso e construo cada projeto.
+      </p>
+    </div>
+
+    <div class="career-bridge-side">
+      <div class="career-bridge-history" aria-label="Algumas experiências anteriores">
+        <span class="career-bridge-history-label dual"
+              data-pt="ALGUMAS EXPERIÊNCIAS ANTERIORES"
+              data-en="SOME PREVIOUS EXPERIENCE">ALGUMAS EXPERIÊNCIAS ANTERIORES</span>
+        <div class="career-bridge-history-mask">
+          <div class="career-bridge-history-track">
+            <span>433</span><i>·</i>
+            <span>Vinícius Jr.</span><i>·</i>
+            <span>Manchester City</span><i>·</i>
+            <span>MLS</span><i>·</i>
+            <span>Fred Caldeira</span><i>·</i>
+            <span aria-hidden="true">433</span><i aria-hidden="true">·</i>
+            <span aria-hidden="true">Vinícius Jr.</span><i aria-hidden="true">·</i>
+            <span aria-hidden="true">Manchester City</span><i aria-hidden="true">·</i>
+            <span aria-hidden="true">MLS</span><i aria-hidden="true">·</i>
+            <span aria-hidden="true">Fred Caldeira</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="career-bridge-cta"
+              type="button"
+              data-target="about"
+              data-about-scene="aboutScene2">
+        <span class="dual"
+              data-pt="Ver minha trajetória completa"
+              data-en="See my full career">
+          Ver minha trajetória completa
+        </span>
+        <span aria-hidden="true">↗</span>
+      </button>
+    </div>
+  </div>
+</div>
 
       </div>
 </section>
@@ -12014,6 +12249,34 @@ document.querySelectorAll('[data-scene-target]').forEach(btn=>{
         root.scrollTo({top:Math.max(0,destination),behavior:'smooth'});
       }
     }
+  });
+});
+
+
+/* V73 — CTA da seção de projetos abre Sobre diretamente em Experiência */
+document.querySelectorAll('[data-about-scene]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const sceneId=btn.dataset.aboutScene;
+    if(!sceneId)return;
+
+    setTimeout(()=>{
+      const root=document.getElementById('aboutScroller');
+      const target=document.getElementById(sceneId);
+      const about=document.getElementById('about');
+
+      if(!root || !target || !about?.classList.contains('open'))return;
+
+      activateAboutScene(target);
+
+      const rootRect=root.getBoundingClientRect();
+      const targetRect=target.getBoundingClientRect();
+      const destination=root.scrollTop+(targetRect.top-rootRect.top);
+
+      root.scrollTo({
+        top:Math.max(0,destination),
+        behavior:'smooth'
+      });
+    },700);
   });
 });
 
