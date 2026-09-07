@@ -656,6 +656,26 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
   .detail-grid,.two{grid-template-columns:1fr}
 }
 
+
+.activity-tools{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.clear-tracking-btn{
+  appearance:none;
+  border:0;
+  background:transparent;
+  padding:3px 0;
+  color:#706d70;
+  font:700 8px/1 'Inter',system-ui,sans-serif;
+  letter-spacing:1.15px;
+  cursor:pointer;
+  transition:color .16s ease,opacity .16s ease;
+}
+.clear-tracking-btn:hover{color:#c77b76}
+.clear-tracking-btn:disabled{opacity:.45;cursor:default}
+
 </style>
 </head>
 <body>
@@ -801,12 +821,33 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     upgrade_started: 'Começou “Melhorar meu PC”',
     pc_scan_started: 'Rodou a análise rápida',
     recommendation_generated: 'Gerou uma configuração',
-    upgrade_recommendation_generated: 'Gerou recomendação de upgrade'
+    upgrade_recommendation_generated: 'Gerou recomendação de upgrade',
+
+    nav_matchups: 'Abriu Matchups',
+    nav_decisions: 'Abriu “O que eu faria?”',
+    nav_items: 'Abriu Itens',
+    nav_patch: 'Abriu Patch',
+    nav_rick: 'Abriu sua apresentação',
+    decisions_cta: 'Foi de Matchups para decisões',
+    portfolio_click: 'Clicou no seu portfólio',
+    riot_patch_notes_click: 'Abriu as notas da Riot',
+    matchup_opened: 'Abriu o exemplo completo de matchup',
+    matchup_preview_opened: 'Abriu a prévia de outro matchup',
+    matchup_search: 'Pesquisou um matchup',
+    matchup_tab: 'Explorou uma parte do matchup',
+    matchup_moment: 'Explorou um momento do matchup',
+    decision_example_opened: 'Abriu o exemplo de decisão',
+    decision_detail: 'Explorou uma decisão',
+    item_opened: 'Abriu um item',
+    item_detail_tab: 'Explorou o detalhe de um item'
   };
 
   const importantEvents = new Set([
     'return','engaged','concept','portfolio','build_started','upgrade_started',
-    'pc_scan_started','recommendation_generated','upgrade_recommendation_generated'
+    'pc_scan_started','recommendation_generated','upgrade_recommendation_generated',
+    'nav_rick','portfolio_click','matchup_opened','matchup_preview_opened',
+    'matchup_search','matchup_tab','matchup_moment','decision_example_opened',
+    'decision_detail','item_opened','item_detail_tab'
   ]);
 
   function apiErrorMessage(data){
@@ -1112,7 +1153,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
         <div class="detail"><small>Última atividade</small><b>${esc(relative(lead.last_activity))}</b></div>
       </div>
 
-      <div class="section-title"><b>ATIVIDADE</b><span>${events.length} eventos</span></div>
+      <div class="section-title">
+        <b>ATIVIDADE</b>
+        <div class="activity-tools">
+          <span>${events.length} eventos</span>
+          ${events.length ? `<button type="button" class="clear-tracking-btn" id="clearTrackingBtn">LIMPAR TESTE</button>` : ''}
+        </div>
+      </div>
       <div class="timeline">
         ${events.length ? events.map(e => `
           <div class="event ${importantEvents.has(e.event_type)?'important':''}">
@@ -1138,6 +1185,34 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
         toast('Não foi possível salvar o e-mail');
       }
     };
+
+    const clearTrackingBtn = $('#clearTrackingBtn');
+    if (clearTrackingBtn){
+      clearTrackingBtn.onclick = async () => {
+        const ok = confirm(
+          `Apagar ${events.length} evento${events.length === 1 ? '' : 's'} de rastreio de ${lead.name}?\n\n` +
+          'Isso limpa apenas os testes/atividades. O lead, o token, o link, o e-mail e os status continuam intactos.'
+        );
+        if (!ok) return;
+
+        clearTrackingBtn.disabled = true;
+        clearTrackingBtn.textContent = 'LIMPANDO...';
+
+        try{
+          const result = await rpc('crm_clear_lead_events',{
+            p_key:state.key,
+            p_lead_id:lead.id
+          });
+          const deleted = Number(result?.deleted ?? events.length);
+          toast(`${deleted} evento${deleted === 1 ? '' : 's'} apagado${deleted === 1 ? '' : 's'}`);
+          await loadDashboard({quiet:true});
+        }catch(err){
+          toast('Não foi possível limpar o rastreio');
+          clearTrackingBtn.disabled = false;
+          clearTrackingBtn.textContent = 'LIMPAR TESTE';
+        }
+      };
+    }
 
     $('#drawerProject').onclick = () => window.open(lead.project_url,'_blank','noopener');
     $('#drawerCopy').onclick = () => copy(trackedUrl(lead));
