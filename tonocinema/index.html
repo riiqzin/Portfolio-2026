@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Tô no Cinema. conceito</title>
 <style>
 :root{--bg:#08090d;--panel:#0d0e14;--line:rgba(255,255,255,.10);--text:#f4f2f7;--muted:#908d9a;--soft:#c8c3cf;--blue:#3638ff;--red:#ff3138;--accent:#7d80ff}
@@ -98,6 +98,132 @@ input[type=range]{appearance:none;width:100%;height:4px;border-radius:99px;backg
 @media(max-width:1050px){.topCreator span{display:none}.topMeta{gap:8px}}
 @media(max-width:850px){.topMeta{display:none}.creatorFooter{align-items:flex-start;flex-direction:column;padding-bottom:52px}.rangeValue{font-size:24px}}
 
+
+
+/* ===== V7. MOBILE FIRST PASS ===== */
+@supports (height:100dvh){.app{min-height:100dvh}.discover{min-height:calc(100dvh - 92px)}}
+@media (hover:none){
+  .option:hover,.voteBtns button:hover,.topCreator:hover b,.topCreator:hover i,.creatorFooter a:hover{transform:none}
+}
+
+@media(max-width:850px){
+  html{scroll-padding-top:72px}
+  body{overscroll-behavior-y:none}
+  body:before{background:radial-gradient(circle at 5% 12%,rgba(44,48,255,.16),transparent 34%),radial-gradient(circle at 96% 18%,rgba(255,45,56,.11),transparent 32%),linear-gradient(180deg,#08090d 0%,#090a0f 55%,#07080b 100%)}
+  body:after{opacity:.13}
+  .app{min-height:100dvh}
+
+  /* Header: one compact bar, all tabs remain reachable */
+  .topbar{
+    height:68px;min-height:68px;padding:0 max(12px,env(safe-area-inset-left)) 0 max(12px,env(safe-area-inset-right));
+    grid-template-columns:auto minmax(0,1fr);gap:12px;background:rgba(8,9,13,.94);backdrop-filter:blur(18px) saturate(125%);
+  }
+  .brand{flex:0 0 auto}.brand img{width:38px;height:38px;border-radius:9px}.brandText,.topMeta,.prototypeTag{display:none!important}
+  .nav{min-width:0;width:100%;gap:15px;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap;touch-action:pan-x}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{flex:0 0 auto;min-height:44px;padding:25px 0 20px;font-size:10.5px;letter-spacing:.05px}
+  .nav button.active:after{height:2px}
+
+  .view{min-height:calc(100dvh - 68px)!important}
+  .discover{min-height:calc(100dvh - 68px);padding:18px 12px calc(30px + env(safe-area-inset-bottom));justify-content:flex-start}
+  .discover:before,.discover:after{width:72vw;top:6%;bottom:12%;opacity:.28;filter:blur(18px)}
+  .discover:before{left:-50vw}.discover:after{right:-50vw}
+
+  .quizShell{width:100%;max-width:640px;margin:0 auto}
+  .quizHeader{margin:2px 2px 10px;font-size:8px;letter-spacing:1.2px}.quizHeader .center{display:none}.quizHeader .right{font-size:8px}
+  .progressRail{height:3px;margin-bottom:11px}
+  .quizBody{display:flex;flex-direction:column;gap:10px}
+  .quizCard{order:1;border-radius:16px;min-height:0;box-shadow:0 24px 70px rgba(0,0,0,.38)}
+  .perfTop,.perfBottom{height:14px}.perfTop i,.perfBottom i{width:12px;height:5px;border-radius:1px}
+  .quizInner{padding:29px 16px 25px;min-height:0;display:block}
+  .stepKicker{justify-content:flex-start;margin:0 0 11px;font-size:8px;letter-spacing:1.45px;gap:8px}
+  .stepKicker span{width:5px;height:5px}
+  .quizInner h1{font-size:clamp(30px,8.9vw,38px);letter-spacing:-1.9px;line-height:1.04;text-align:left;margin:0 0 9px;max-width:none}
+  .quizHelp{text-align:left;min-height:0;margin:0 0 20px;font-size:12px;line-height:1.5;max-width:none;color:#938f9b}
+  .optionGrid{grid-template-columns:1fr!important;gap:8px;max-width:none}
+  .option{min-height:58px;padding:12px 13px;border-radius:11px;gap:10px;touch-action:manipulation}
+  .option:active{transform:scale(.992);border-color:rgba(111,108,255,.65);background:rgba(77,74,190,.16)}
+  .option .num{font-size:15px;min-width:24px}.option .txt b{font-size:13px;line-height:1.25}.option .txt small{font-size:9px;margin-top:3px}.option .tick{width:20px;height:20px;flex:0 0 20px}
+  .multiHint{text-align:left;margin:10px 2px 0;font-size:9px}
+  .rangeBox{margin:24px 0 4px;padding:24px 17px 21px;border-radius:13px;max-width:none}
+  .rangeValue{font-size:23px;line-height:1.15;min-height:29px;justify-content:flex-start;text-align:left;margin-bottom:22px}
+  input[type=range]{height:5px;touch-action:pan-y}
+  input[type=range]::-webkit-slider-thumb{width:29px;height:29px;border-width:6px;box-shadow:0 0 0 6px rgba(94,91,255,.12)}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border:6px solid #5e5bff;border-radius:50%;background:#f4f2f7}
+  .rangeLabels{font-size:9px;margin-top:17px;gap:16px}.rangeLabels span:last-child{text-align:right}
+  .quizActions{margin-top:22px;gap:8px;justify-content:stretch}
+  .quizActions .ghost,.quizActions .primary{min-height:46px;padding:12px 15px;font-size:11px;touch-action:manipulation}
+  .quizActions .primary{flex:1;min-width:0}.quizActions .ghost{flex:0 0 auto}
+
+  /* Keep answer summary on mobile, but compact */
+  .sessionPanel{order:2;display:block!important;min-height:0!important;border-radius:14px;padding:13px 14px 12px;background:rgba(255,255,255,.018)}
+  .sessionPanel>div:first-child h2,.sessionPanel>div:first-child p{display:none}
+  .sessionEyebrow{display:block;font-size:8px;letter-spacing:1.5px;margin-bottom:9px}
+  .sessionPanel .sessionStrip{display:flex;flex-direction:row;flex-wrap:nowrap;gap:6px;margin:0;max-height:none;overflow-x:auto;overflow-y:hidden;padding:0 0 5px;scrollbar-width:none;touch-action:pan-x}
+  .sessionPanel .sessionStrip::-webkit-scrollbar{display:none}
+  .sessionPanel .sessionStrip span{flex:0 0 auto;width:auto;max-width:220px;border-radius:999px;padding:7px 9px;font-size:8.5px;white-space:nowrap}
+  .sessionPanel .sessionStrip .empty{padding:7px 9px}
+  .sessionCounter{border-top:0;padding-top:7px;justify-content:flex-end;gap:5px}.sessionCounter b{font-size:18px;letter-spacing:-1px}.sessionCounter span{font-size:7.5px;letter-spacing:.7px}
+
+  /* Result: mobile layout with poster first and full-width reading area */
+  #resultArea{padding:0 0 calc(18px + env(safe-area-inset-bottom))}
+  .resultWrap{display:flex;flex-direction:column;gap:22px;align-items:stretch;padding:8px 3px 12px;width:100%;max-width:640px}
+  .posterResult{justify-content:center;position:relative;top:auto}
+  .posterResult img{width:min(44vw,176px);max-width:176px;transform:rotate(-2deg);border-radius:6px;box-shadow:0 20px 55px #0009}
+  .posterResult:before{width:72%;height:82%;left:14%;top:9%;filter:blur(52px)}
+  .resultCopy{min-width:0;max-width:none;width:100%}
+  .resultEyebrow{font-size:7.5px;letter-spacing:1.35px;gap:6px}.resultEyebrow:before{width:5px;height:5px}
+  .resultCopy h1{font-size:clamp(31px,9.4vw,46px);letter-spacing:-2.1px;line-height:.98;margin:10px 0 8px;overflow-wrap:anywhere}
+  .meta{font-size:9px;line-height:1.45;letter-spacing:.25px}
+  .why{border-left:0;border-top:1px solid rgba(255,255,255,.10);padding:16px 0 0;margin:19px 0 14px;font-size:13px;line-height:1.62;max-width:none}
+  .synopsisToggle{min-height:42px;font-size:11px;padding:8px 0;text-align:left}
+  .synopsis{font-size:12px;line-height:1.65;margin-top:8px;padding-top:13px}
+  .feedbackBox{margin-top:20px;padding-top:18px;grid-template-columns:1fr auto;gap:12px;align-items:center}
+  .feedbackMain b{font-size:21px;letter-spacing:-.8px;line-height:1.05}.feedbackMain span{font-size:10px;line-height:1.45}.feedbackMain small{font-size:7px;line-height:1.4}
+  .voteBtns{gap:7px}.voteBtns button{width:48px;height:48px;font-size:20px;touch-action:manipulation}
+  .resultBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.resultBtns button{min-height:46px;padding:11px 12px;font-size:10px}
+
+  /* Text-only pages */
+  .textView{max-width:720px;padding:36px 18px calc(72px + env(safe-area-inset-bottom))}
+  .crumb{font-size:8px;letter-spacing:1.5px;margin-bottom:18px}
+  .textView h1{font-size:clamp(34px,10vw,45px);letter-spacing:-2.2px;line-height:1.03;margin-bottom:28px}
+  .textProse{max-width:none}.textProse p{font-size:15px;line-height:1.72;margin-bottom:18px}.textProse h2{font-size:21px;margin:34px 0 10px;letter-spacing:-.4px}
+  .moneyLead{font-size:12px!important;line-height:1.6!important}.plainNote{font-size:10px!important;line-height:1.6!important;margin-top:27px!important}
+
+  .creatorFooter{padding:18px 18px calc(24px + env(safe-area-inset-bottom));gap:7px;font-size:9px;line-height:1.5;align-items:flex-start;flex-direction:column}.creatorFooter span:last-child{white-space:normal;overflow-wrap:anywhere}
+  .mobileNote{display:none!important}
+}
+
+@media(max-width:560px){
+  .nav{gap:12px}.nav button{font-size:10px}.brand img{width:36px;height:36px}
+  .quizInner{padding:26px 14px 23px}.quizInner h1{font-size:clamp(29px,9vw,35px)}
+  .resultWrap{gap:20px}.posterResult img{width:min(45vw,168px)}
+  .resultCopy h1{font-size:clamp(29px,9vw,39px)}
+}
+
+@media(max-width:400px){
+  .topbar{gap:9px;padding-left:10px;padding-right:10px}.nav{gap:10px}.nav button{font-size:9.5px}.brand img{width:34px;height:34px}
+  .discover{padding-left:9px;padding-right:9px}.quizHeader{margin-left:3px;margin-right:3px}
+  .quizInner{padding:24px 12px 22px}.quizInner h1{font-size:29px;letter-spacing:-1.55px}.quizHelp{font-size:11.5px}
+  .option{padding:11px;min-height:56px}.option .txt b{font-size:12.5px}
+  .rangeBox{padding:22px 14px 20px}.rangeValue{font-size:21px}
+  .resultWrap{padding:5px 5px 12px}.posterResult{margin:0 auto}.posterResult img{width:min(46vw,165px)}
+  .resultCopy h1{font-size:39px;letter-spacing:-2.2px}.feedbackBox{grid-template-columns:1fr}.voteBtns{justify-content:flex-start}.resultBtns{grid-template-columns:1fr}
+  .textView{padding-left:16px;padding-right:16px}.textView h1{font-size:34px;letter-spacing:-1.8px}
+}
+
+@media(max-width:340px){
+  .topbar{height:64px;min-height:64px}.view{min-height:calc(100dvh - 64px)!important}.discover{min-height:calc(100dvh - 64px)}
+  .brand img{width:32px;height:32px}.nav{gap:9px}.nav button{font-size:9px}.quizInner h1{font-size:27px}
+}
+
+@media(orientation:landscape) and (max-height:520px) and (max-width:950px){
+  .topbar{position:relative}.discover{padding-top:12px}.quizInner{padding-top:22px;padding-bottom:20px}.sessionPanel{display:none!important}.quizCard{min-height:0}.textView{padding-top:28px}.posterResult{position:relative;top:auto}
+}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}.progressFill,.option,.voteBtns button,.resultWrap{transition:none!important;animation:none!important}.discover:before,.discover:after{display:none}
+}
 </style>
 </head>
 <body>
@@ -184,7 +310,7 @@ input[type=range]{appearance:none;width:100%;height:4px;border-radius:99px;backg
 </main>
 <footer class="creatorFooter"><span>Protótipo conceitual desenvolvido por <b>Ricky Mangini</b></span><span><a href="https://portfolio-ricky-mangini.vercel.app/" target="_blank" rel="noreferrer" data-track="portfolio_footer">portfolio-ricky-mangini.vercel.app ↗</a></span></footer>
 </div>
-<div class="mobileNote">Melhor experiência no desktop</div>
+
 <script>
 const steps=[
   {key:"genre",label:"Gênero",type:"single",title:"Que gênero você quer ver?",help:"Se não tiver preferência, deixa o quiz decidir.",options:[
