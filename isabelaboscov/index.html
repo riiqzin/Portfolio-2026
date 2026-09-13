@@ -761,124 +761,190 @@ document.addEventListener('input',e=>{if(e.target.id==='search'&&$('#results')){
 document.querySelector('.skip').addEventListener('click',e=>{e.preventDefault();main.focus();main.scrollIntoView()});
 
 /* ==========================================================
-   RASTREAMENTO DO PROTÓTIPO
+   RASTREAMENTO DO PROTÓTIPO, CRM DO RICKY
    ==========================================================
-   COMO ATIVAR
-   - Envie o link com ?r=TOKEN, por exemplo: /isabelaboscov/?r=isabela
-   - Sem ?r=... nada é enviado.
-   - ?preview=1 desliga o rastreamento mesmo que exista ?r=...
+   ATIVA SOMENTE COM ?r=TOKEN
+   ?preview=1 DESATIVA O RASTREAMENTO
 
-   O QUE É REGISTRADO
-   - page_view: cada aba/tela aberta
-   - interaction: filmes, busca, filtros, listas, tour, rolagem e tempo na página
-   - outbound_click: cliques para site da Isabela, YouTube, JustWatch, portfólio etc.
-   - heartbeat: mantém a sessão ativa enquanto a pessoa está no protótipo
-   - session_end: duração aproximada da visita
+   Este tracker usa o mesmo RPC de leads já usado nos outros
+   protótipos: track_lead_event.
 
-   IMPORTANTE
-   - O TOKEN de ?r=... vai dentro de metadata.lead_token para identificar o lead.
-   - Nenhuma senha, formulário ou dado sensível é coletado.
-   - Endpoint já configurado para o analytics do portfólio.
+   Eventos principais:
+   opened, return, viewed, page_view, film_open,
+   save, watched, later, filter_use, search_submit,
+   account_tab, navigation_click, outbound_click,
+   scroll_depth, time_on_page, tour_start, tour_step,
+   tour_complete e session_end.
    ========================================================== */
 const TRACKING_CONFIG={
-  endpoint:'/api/track-portfolio',
+  endpoint:'https://crjnawbtlwtruwwzbkzk.supabase.co/rest/v1/rpc/track_lead_event',
+  apiKey:'sb_publishable_jI_JTaDvip_9t9qCTNqzqQ_eGH03OiR',
   enabledParam:'r',
   previewParam:'preview',
-  heartbeatSeconds:30,
   timeMilestones:[10,30,60,120],
   scrollMilestones:[25,50,75,90]
 };
 
-const trackingParams=new URLSearchParams(location.search);
+const trackingParams=new URLSearchParams(window.location.search);
 const trackingLead=(trackingParams.get(TRACKING_CONFIG.enabledParam)||'').trim();
 const trackingPreview=trackingParams.get(TRACKING_CONFIG.previewParam)==='1';
 const trackingEnabled=!!trackingLead&&!trackingPreview;
 const trackingDebug=trackingParams.get('trackdebug')==='1';
 
-function trackingId(storage,key){
-  try{
-    let id=storage.getItem(key);
-    if(!id){id=(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`);storage.setItem(key,id)}
-    return id;
-  }catch{return `${Date.now()}-${Math.random().toString(36).slice(2)}`}
+function trackingUUID(){
+  try{return crypto.randomUUID()}
+  catch(_){return 'id_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,12)}
 }
-const trackingVisitorId=trackingId(localStorage,'boscov-tracking-visitor');
-const trackingSessionId=trackingId(sessionStorage,'boscov-tracking-session');
+function trackingStoredId(storage,key){
+  try{
+    let value=storage.getItem(key);
+    if(!value){value=trackingUUID();storage.setItem(key,value)}
+    return value;
+  }catch(_){return trackingUUID()}
+}
+const trackingVisitorId=trackingStoredId(localStorage,'ricky_lead_visitor_id');
+const trackingSessionId=trackingStoredId(sessionStorage,'ricky_lead_session_id');
 const trackingSessionStarted=Date.now();
-const trackingReferrer=document.referrer||null;
 let trackingRouteStarted=Date.now();
 let trackingScrollSeen=new Set();
 let trackingTimeTimers=[];
 let trackingLastRoute='';
+let trackingReturning=false;
 
-function trackingDevice(){return matchMedia('(max-width: 760px)').matches?'mobile':'desktop'}
+if(trackingEnabled){
+  try{
+    const seenKey='ricky_lead_seen_'+trackingLead;
+    trackingReturning=localStorage.getItem(seenKey)==='1';
+    localStorage.setItem(seenKey,'1');
+  }catch(_){ }
+}
+
+function trackingDevice(){
+  const w=window.innerWidth||screen.width||0;
+  if(w<=767)return'mobile';
+  if(w<=1100)return'tablet';
+  return'desktop';
+}
 function trackingBrowser(){
   const u=navigator.userAgent;
-  if(/Edg\//.test(u))return'Edge';if(/OPR\//.test(u))return'Opera';if(/Chrome\//.test(u))return'Chrome';if(/Safari\//.test(u)&&!/Chrome\//.test(u))return'Safari';if(/Firefox\//.test(u))return'Firefox';return'Outro';
+  if(/Edg\//.test(u))return'Edge';
+  if(/OPR\//.test(u))return'Opera';
+  if(/Chrome\//.test(u))return'Chrome';
+  if(/Safari\//.test(u)&&!/Chrome\//.test(u))return'Safari';
+  if(/Firefox\//.test(u))return'Firefox';
+  return'Outro';
 }
 function trackingOS(){
   const u=navigator.userAgent;
-  if(/Windows/.test(u))return'Windows';if(/Android/.test(u))return'Android';if(/iPhone|iPad|iPod/.test(u))return'iOS';if(/Mac OS/.test(u))return'macOS';if(/Linux/.test(u))return'Linux';return'Outro';
+  if(/Windows/.test(u))return'Windows';
+  if(/Android/.test(u))return'Android';
+  if(/iPhone|iPad|iPod/.test(u))return'iOS';
+  if(/Mac OS/.test(u))return'macOS';
+  if(/Linux/.test(u))return'Linux';
+  return'Outro';
 }
 function trackingRouteInfo(){
   const raw=location.hash.slice(1)||'inicio';
   const clean=raw.split('?')[0];
   const [name,id]=clean.split('/');
   const f=name==='filme'&&id?get(id):null;
-  const labels={inicio:'Início',arquivo:'O arquivo',recomenda:'Escolhe pra mim',clube:'Clube Boscov',minha:'Minha conta',conceito:'Explicação do site',filme:f?`Filme: ${f.title}`:'Filme'};
-  return {route:clean,section:name,film_id:f?.id||null,film_title:f?.title||null,label:labels[name]||clean};
-}
-function trackingPayload(eventName,metadata={}){
-  const utm=trackingParams;
-  let refHost=null;try{refHost=trackingReferrer?new URL(trackingReferrer).hostname:null}catch{}
-  return {
-    event_name:eventName,
-    visitor_id:trackingVisitorId,
-    session_id:trackingSessionId,
-    path:location.pathname+(location.hash||'#inicio'),
-    page_title:document.title,
-    referrer:trackingReferrer,
-    referrer_host:refHost,
-    utm_source:utm.get('utm_source'),
-    utm_medium:utm.get('utm_medium'),
-    utm_campaign:utm.get('utm_campaign'),
-    device_type:trackingDevice(),
-    browser:trackingBrowser(),
-    os:trackingOS(),
-    language:navigator.language||null,
-    metadata:{lead_token:trackingLead,...trackingRouteInfo(),...metadata}
+  const labels={
+    inicio:'Início',
+    arquivo:'O arquivo',
+    recomenda:'Escolhe pra mim',
+    clube:'Clube Boscov',
+    minha:'Minha conta',
+    conceito:'Explicação do site',
+    filme:f?`Filme: ${f.title}`:'Filme'
+  };
+  return{
+    route:clean,
+    section:name,
+    film_id:f?.id||null,
+    film_title:f?.title||null,
+    label:labels[name]||clean
   };
 }
-function track(eventName,metadata={},useBeacon=false){
-  if(!trackingEnabled)return;
+function trackingCleanMeta(meta){
+  if(!meta||typeof meta!=='object')return{};
+  const out={};
+  for(const [key,value] of Object.entries(meta)){
+    if(value===undefined||typeof value==='function')continue;
+    if(typeof value==='string')out[key]=value.slice(0,300);
+    else out[key]=value;
+  }
+  return out;
+}
+function trackingPayload(eventName,metadata={}){
+  return{
+    p_token:trackingLead,
+    p_event:String(eventName||'event').slice(0,80),
+    p_session_id:trackingSessionId,
+    p_visitor_id:trackingVisitorId,
+    p_page:window.location.pathname,
+    p_device:trackingDevice(),
+    p_metadata:trackingCleanMeta({
+      ...trackingRouteInfo(),
+      ...metadata,
+      hash:window.location.hash||'',
+      referrer:document.referrer||null,
+      browser:trackingBrowser(),
+      os:trackingOS(),
+      language:navigator.language||null,
+      utm_source:trackingParams.get('utm_source'),
+      utm_medium:trackingParams.get('utm_medium'),
+      utm_campaign:trackingParams.get('utm_campaign')
+    })
+  };
+}
+async function track(eventName,metadata={},keepalive=true){
+  if(!trackingEnabled||!eventName)return false;
   const payload=trackingPayload(eventName,metadata);
   if(trackingDebug)console.log('[BOSCOV tracking]',payload);
   try{
-    if(useBeacon&&navigator.sendBeacon){
-      navigator.sendBeacon(TRACKING_CONFIG.endpoint,new Blob([JSON.stringify(payload)],{type:'application/json'}));
-      return;
+    const response=await fetch(TRACKING_CONFIG.endpoint,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':TRACKING_CONFIG.apiKey
+      },
+      body:JSON.stringify(payload),
+      keepalive:!!keepalive
+    });
+    if(!response.ok){
+      const detail=await response.text().catch(()=> '');
+      if(trackingDebug)console.error('[BOSCOV tracking ERRO]',response.status,detail);
+      return false;
     }
-    fetch(TRACKING_CONFIG.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});
-  }catch{}
+    if(trackingDebug)console.log('[BOSCOV tracking OK]',eventName);
+    return true;
+  }catch(error){
+    if(trackingDebug)console.error('[BOSCOV tracking FALHOU]',error);
+    return false;
+  }
 }
-function trackInteraction(action,label,extra={}){track('interaction',{action,label,...extra})}
+function trackInteraction(action,label,extra={}){
+  return track(action,{label,...extra});
+}
 
 function resetRouteEngagement(){
   trackingRouteStarted=Date.now();
   trackingScrollSeen=new Set();
-  trackingTimeTimers.forEach(clearTimeout);trackingTimeTimers=[];
+  trackingTimeTimers.forEach(clearTimeout);
+  trackingTimeTimers=[];
   TRACKING_CONFIG.timeMilestones.forEach(seconds=>{
     trackingTimeTimers.push(setTimeout(()=>{
-      if(document.visibilityState==='visible')trackInteraction('time_on_page',`${seconds}s na página`,{seconds});
+      if(document.visibilityState==='visible'){
+        trackInteraction('time_on_page',`${seconds}s na página`,{seconds});
+      }
     },seconds*1000));
   });
 }
 function trackRouteView(){
   if(!trackingEnabled)return;
   const info=trackingRouteInfo();
-  const routeKey=info.route;
-  if(routeKey===trackingLastRoute)return;
-  trackingLastRoute=routeKey;
+  if(info.route===trackingLastRoute)return;
+  trackingLastRoute=info.route;
   resetRouteEngagement();
   track('page_view',{label:info.label});
   if(info.section==='conceito')trackInteraction('explanation_open','Abriu Explicação do site');
@@ -887,17 +953,26 @@ function trackRouteView(){
   if(info.section==='filme')trackInteraction('film_open',`Abriu ${info.film_title}`,{film_id:info.film_id,film_title:info.film_title});
 }
 
-/* Cliques e ações importantes. O listener é separado da lógica do site para não quebrar nada. */
+/* Ações importantes do site */
 document.addEventListener('click',e=>{
   const actionButton=e.target.closest('[data-action]');
   if(actionButton){
     const action=actionButton.dataset.action;
     const id=actionButton.dataset.id||null;
     const film=id?get(id):null;
+
     if(action==='save'||action==='watched'||action==='later'){
       const wasPressed=actionButton.getAttribute('aria-pressed')==='true';
-      const labels={save:wasPressed?'Removeu de Quero assistir':'Adicionou em Quero assistir',watched:wasPressed?'Desmarcou como assistido':'Marcou como assistido',later:wasPressed?'Removeu de Ler depois':'Salvou em Ler depois'};
-      trackInteraction(action,labels[action],{film_id:film?.id||id,film_title:film?.title||null,added:!wasPressed});
+      const labels={
+        save:wasPressed?'Removeu de Quero assistir':'Adicionou em Quero assistir',
+        watched:wasPressed?'Desmarcou como assistido':'Marcou como assistido',
+        later:wasPressed?'Removeu de Ler depois':'Salvou em Ler depois'
+      };
+      trackInteraction(action,labels[action],{
+        film_id:film?.id||id,
+        film_title:film?.title||null,
+        added:!wasPressed
+      });
     }
     if(action==='filter')trackInteraction('filter_use',`Filtro: ${actionButton.dataset.filter}`,{filter:actionButton.dataset.filter});
     if(action==='clear-search')trackInteraction('search_clear','Limpou a busca');
@@ -907,20 +982,28 @@ document.addEventListener('click',e=>{
   const link=e.target.closest('a[href]');
   if(!link)return;
   const href=link.getAttribute('href')||'';
+
   if(href.startsWith('#filme/')){
-    const id=href.split('/')[1],f=get(id);
+    const id=href.split('/')[1];
+    const f=get(id);
     trackInteraction('film_card_click',f?`Clicou em ${f.title}`:'Clicou em filme',{film_id:id,film_title:f?.title||null});
   }else if(href.startsWith('#')){
     trackInteraction('navigation_click',`Navegou para ${href.slice(1)||'inicio'}`,{destination:href});
   }else{
-    let url=null;try{url=new URL(link.href)}catch{}
+    let url=null;
+    try{url=new URL(link.href)}catch(_){ }
     if(url&&url.origin!==location.origin){
       let kind='link_externo';
       if(url.hostname.includes('isabelaboscov.com'))kind='site_isabela';
       else if(url.hostname.includes('youtube.com')||url.hostname.includes('youtu.be'))kind='youtube';
       else if(url.hostname.includes('justwatch.com'))kind='onde_assistir';
       else if(url.hostname.includes('portfolio-ricky-mangini'))kind='portfolio_ricky';
-      track('outbound_click',{action:kind,label:(link.textContent||'Link externo').trim().slice(0,120),destination_host:url.hostname,destination_url:url.href});
+      track('outbound_click',{
+        action:kind,
+        label:(link.textContent||'Link externo').trim().replace(/\s+/g,' ').slice(0,120),
+        destination_host:url.hostname,
+        destination_url:url.href
+      });
     }
   }
 },true);
@@ -932,10 +1015,10 @@ document.addEventListener('submit',e=>{
   }
 },true);
 
-/* Rolagem: registra uma vez 25%, 50%, 75% e 90% em cada tela. */
 window.addEventListener('scroll',()=>{
   if(!trackingEnabled)return;
-  const max=document.documentElement.scrollHeight-innerHeight;if(max<=0)return;
+  const max=document.documentElement.scrollHeight-innerHeight;
+  if(max<=0)return;
   const percent=Math.round((scrollY/max)*100);
   TRACKING_CONFIG.scrollMilestones.forEach(mark=>{
     if(percent>=mark&&!trackingScrollSeen.has(mark)){
@@ -945,22 +1028,24 @@ window.addEventListener('scroll',()=>{
   });
 },{passive:true});
 
-/* Mantém a visita ativa sem registrar quando a aba está escondida. */
-setInterval(()=>{
-  if(trackingEnabled&&document.visibilityState==='visible'){
-    track('heartbeat',{active_seconds:Math.round((Date.now()-trackingSessionStarted)/1000)});
-  }
-},TRACKING_CONFIG.heartbeatSeconds*1000);
-
 window.addEventListener('pagehide',()=>{
-  track('session_end',{session_seconds:Math.round((Date.now()-trackingSessionStarted)/1000),route_seconds:Math.round((Date.now()-trackingRouteStarted)/1000)},true);
+  track('session_end',{
+    session_seconds:Math.round((Date.now()-trackingSessionStarted)/1000),
+    route_seconds:Math.round((Date.now()-trackingRouteStarted)/1000)
+  },true);
 });
 
-/* Pequeno helper para conferir no console, se precisar:
-   BoscovTracking.status()
-   Use ?r=teste&trackdebug=1 para ver os eventos no console. */
 window.BoscovTracking={
-  status:()=>({enabled:trackingEnabled,preview:trackingPreview,lead:trackingLead||null,visitor_id:trackingVisitorId,session_id:trackingSessionId}),
+  status:()=>({
+    enabled:trackingEnabled,
+    preview:trackingPreview,
+    lead:trackingLead||null,
+    returning:trackingReturning,
+    visitor_id:trackingVisitorId,
+    session_id:trackingSessionId,
+    endpoint:TRACKING_CONFIG.endpoint
+  }),
+  test:()=>track('tracking_test',{label:'Teste manual de rastreamento'}),
   event:(action,metadata={})=>trackInteraction(action,action,metadata)
 };
 
@@ -1073,5 +1158,5 @@ function optimizeImages(){
 }
 window.addEventListener('hashchange',()=>{render();trackRouteView();setTimeout(()=>{centerActiveMobileNav();optimizeImages()},40)});
 window.addEventListener('resize',()=>{if(innerWidth<=760)centerActiveMobileNav()},{passive:true});
-count();render(false);track('session_start',{label:'Sessão iniciada'});trackRouteView();optimizeImages();setTimeout(centerActiveMobileNav,40);
+count();render(false);track('opened',{label:'Abriu o protótipo'});if(trackingReturning)track('return',{label:'Voltou ao protótipo'});setTimeout(()=>{if(document.visibilityState==='visible')track('viewed',{seconds:5,label:'Permaneceu pelo menos 5 segundos'})},5000);trackRouteView();optimizeImages();setTimeout(centerActiveMobileNav,40);
 </script></body></html>
