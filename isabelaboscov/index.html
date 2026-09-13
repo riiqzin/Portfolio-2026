@@ -761,28 +761,30 @@ document.addEventListener('input',e=>{if(e.target.id==='search'&&$('#results')){
 document.querySelector('.skip').addEventListener('click',e=>{e.preventDefault();main.focus();main.scrollIntoView()});
 
 /* ==========================================================
-   RASTREAMENTO DO PROTÓTIPO, CRM DO RICKY
+   RASTREAMENTO SIMPLES, CRM DO RICKY
    ==========================================================
    ATIVA SOMENTE COM ?r=TOKEN
    ?preview=1 DESATIVA O RASTREAMENTO
 
-   Este tracker usa o mesmo RPC de leads já usado nos outros
-   protótipos: track_lead_event.
+   O objetivo aqui é simples: registrar apenas ações reais
+   da pessoa no site. Nada de scroll, tempo na página,
+   heartbeat, page_view ou eventos automáticos.
 
-   Eventos principais:
-   opened, return, viewed, page_view, film_open,
-   save, watched, later, filter_use, search_submit,
-   account_tab, navigation_click, outbound_click,
-   scroll_depth, time_on_page, tour_start, tour_step,
-   tour_complete e session_end.
+   Os nomes enviados ao CRM são escritos em português e
+   fáceis de entender, por exemplo:
+   - Abriu Clube Boscov
+   - Abriu Explicação do site
+   - Abriu filme: Arcane
+   - Salvou filme: Arcane
+   - Marcou como assistido: Arcane
+   - Buscou no arquivo: Campion
+   - Começou o tour
    ========================================================== */
 const TRACKING_CONFIG={
   endpoint:'https://crjnawbtlwtruwwzbkzk.supabase.co/rest/v1/rpc/track_lead_event',
   apiKey:'sb_publishable_jI_JTaDvip_9t9qCTNqzqQ_eGH03OiR',
   enabledParam:'r',
-  previewParam:'preview',
-  timeMilestones:[10,30,60,120],
-  scrollMilestones:[25,50,75,90]
+  previewParam:'preview'
 };
 
 const trackingParams=new URLSearchParams(window.location.search);
@@ -804,20 +806,6 @@ function trackingStoredId(storage,key){
 }
 const trackingVisitorId=trackingStoredId(localStorage,'ricky_lead_visitor_id');
 const trackingSessionId=trackingStoredId(sessionStorage,'ricky_lead_session_id');
-const trackingSessionStarted=Date.now();
-let trackingRouteStarted=Date.now();
-let trackingScrollSeen=new Set();
-let trackingTimeTimers=[];
-let trackingLastRoute='';
-let trackingReturning=false;
-
-if(trackingEnabled){
-  try{
-    const seenKey='ricky_lead_seen_'+trackingLead;
-    trackingReturning=localStorage.getItem(seenKey)==='1';
-    localStorage.setItem(seenKey,'1');
-  }catch(_){ }
-}
 
 function trackingDevice(){
   const w=window.innerWidth||screen.width||0;
@@ -825,91 +813,45 @@ function trackingDevice(){
   if(w<=1100)return'tablet';
   return'desktop';
 }
-function trackingBrowser(){
-  const u=navigator.userAgent;
-  if(/Edg\//.test(u))return'Edge';
-  if(/OPR\//.test(u))return'Opera';
-  if(/Chrome\//.test(u))return'Chrome';
-  if(/Safari\//.test(u)&&!/Chrome\//.test(u))return'Safari';
-  if(/Firefox\//.test(u))return'Firefox';
-  return'Outro';
-}
-function trackingOS(){
-  const u=navigator.userAgent;
-  if(/Windows/.test(u))return'Windows';
-  if(/Android/.test(u))return'Android';
-  if(/iPhone|iPad|iPod/.test(u))return'iOS';
-  if(/Mac OS/.test(u))return'macOS';
-  if(/Linux/.test(u))return'Linux';
-  return'Outro';
-}
-function trackingRouteInfo(){
-  const raw=location.hash.slice(1)||'inicio';
-  const clean=raw.split('?')[0];
-  const [name,id]=clean.split('/');
-  const f=name==='filme'&&id?get(id):null;
-  const labels={
-    inicio:'Início',
-    arquivo:'O arquivo',
-    recomenda:'Escolhe pra mim',
-    clube:'Clube Boscov',
-    minha:'Minha conta',
-    conceito:'Explicação do site',
-    filme:f?`Filme: ${f.title}`:'Filme'
-  };
-  return{
-    route:clean,
-    section:name,
-    film_id:f?.id||null,
-    film_title:f?.title||null,
-    label:labels[name]||clean
-  };
-}
 function trackingCleanMeta(meta){
   if(!meta||typeof meta!=='object')return{};
   const out={};
   for(const [key,value] of Object.entries(meta)){
     if(value===undefined||typeof value==='function')continue;
-    if(typeof value==='string')out[key]=value.slice(0,300);
-    else out[key]=value;
+    out[key]=typeof value==='string'?value.slice(0,300):value;
   }
   return out;
+}
+function trackingCurrentFilm(){
+  const raw=(location.hash.slice(1)||'').split('?')[0];
+  const [section,id]=raw.split('/');
+  return section==='filme'&&id?get(id):null;
 }
 function trackingPayload(eventName,metadata={}){
   return{
     p_token:trackingLead,
-    p_event:String(eventName||'event').slice(0,80),
+    p_event:String(eventName||'Ação').slice(0,80),
     p_session_id:trackingSessionId,
     p_visitor_id:trackingVisitorId,
     p_page:window.location.pathname,
     p_device:trackingDevice(),
     p_metadata:trackingCleanMeta({
-      ...trackingRouteInfo(),
       ...metadata,
       hash:window.location.hash||'',
-      referrer:document.referrer||null,
-      browser:trackingBrowser(),
-      os:trackingOS(),
-      language:navigator.language||null,
-      utm_source:trackingParams.get('utm_source'),
-      utm_medium:trackingParams.get('utm_medium'),
-      utm_campaign:trackingParams.get('utm_campaign')
+      referrer:document.referrer||null
     })
   };
 }
-async function track(eventName,metadata={},keepalive=true){
+async function track(eventName,metadata={}){
   if(!trackingEnabled||!eventName)return false;
   const payload=trackingPayload(eventName,metadata);
   if(trackingDebug)console.log('[BOSCOV tracking]',payload);
   try{
     const response=await fetch(TRACKING_CONFIG.endpoint,{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'apikey':TRACKING_CONFIG.apiKey
-      },
+      headers:{'Content-Type':'application/json','apikey':TRACKING_CONFIG.apiKey},
       body:JSON.stringify(payload),
-      keepalive:!!keepalive
+      keepalive:true
     });
     if(!response.ok){
       const detail=await response.text().catch(()=> '');
@@ -923,60 +865,79 @@ async function track(eventName,metadata={},keepalive=true){
     return false;
   }
 }
-function trackInteraction(action,label,extra={}){
-  return track(action,{label,...extra});
-}
 
-function resetRouteEngagement(){
-  trackingRouteStarted=Date.now();
-  trackingScrollSeen=new Set();
-  trackingTimeTimers.forEach(clearTimeout);
-  trackingTimeTimers=[];
-  TRACKING_CONFIG.timeMilestones.forEach(seconds=>{
-    trackingTimeTimers.push(setTimeout(()=>{
-      if(document.visibilityState==='visible'){
-        trackInteraction('time_on_page',`${seconds}s na página`,{seconds});
-      }
-    },seconds*1000));
-  });
-}
-function trackRouteView(){
-  if(!trackingEnabled)return;
-  const info=trackingRouteInfo();
-  if(info.route===trackingLastRoute)return;
-  trackingLastRoute=info.route;
-  resetRouteEngagement();
-  track('page_view',{label:info.label});
-  if(info.section==='conceito')trackInteraction('explanation_open','Abriu Explicação do site');
-  if(info.section==='clube')trackInteraction('club_open','Abriu Clube Boscov');
-  if(info.section==='recomenda')trackInteraction('recommendation_open','Abriu Escolhe pra mim');
-  if(info.section==='filme')trackInteraction('film_open',`Abriu ${info.film_title}`,{film_id:info.film_id,film_title:info.film_title});
-}
+const trackingNavNames={
+  '#inicio':'Abriu Início',
+  '#arquivo':'Abriu O arquivo',
+  '#recomenda':'Abriu Escolhe pra mim',
+  '#clube':'Abriu Clube Boscov',
+  '#minha':'Abriu Minha conta',
+  '#conceito':'Abriu Explicação do site'
+};
+const trackingAccountTabs={
+  saved:'Quero assistir',
+  watched:'Já assisti',
+  later:'Ler depois'
+};
 
-/* Ações importantes do site */
+/* Registra somente cliques e ações feitas pela pessoa. */
 document.addEventListener('click',e=>{
-  const actionButton=e.target.closest('[data-action]');
-  if(actionButton){
-    const action=actionButton.dataset.action;
-    const id=actionButton.dataset.id||null;
-    const film=id?get(id):null;
+  if(!trackingEnabled)return;
 
-    if(action==='save'||action==='watched'||action==='later'){
-      const wasPressed=actionButton.getAttribute('aria-pressed')==='true';
-      const labels={
-        save:wasPressed?'Removeu de Quero assistir':'Adicionou em Quero assistir',
-        watched:wasPressed?'Desmarcou como assistido':'Marcou como assistido',
-        later:wasPressed?'Removeu de Ler depois':'Salvou em Ler depois'
-      };
-      trackInteraction(action,labels[action],{
-        film_id:film?.id||id,
-        film_title:film?.title||null,
-        added:!wasPressed
-      });
+  const tourStart=e.target.closest('[data-tour-start]');
+  if(tourStart){
+    track('Começou o tour');
+    return;
+  }
+  if(e.target.closest('.tour-close')){
+    track('Fechou o tour');
+    return;
+  }
+  if(e.target.closest('.tour-back')){
+    track('Tour: voltou uma etapa');
+    return;
+  }
+  if(e.target.closest('.tour-next')){
+    const finishing=typeof tourIndex==='number'&&typeof TOUR_STEPS!=='undefined'&&tourIndex===TOUR_STEPS.length-1;
+    track(finishing?'Concluiu o tour':'Tour: avançou uma etapa');
+    return;
+  }
+
+  const button=e.target.closest('[data-action]');
+  if(button){
+    const action=button.dataset.action;
+    const id=button.dataset.id||null;
+    const film=id?get(id):null;
+    const title=film?.title||'filme';
+    const pressed=button.getAttribute('aria-pressed')==='true';
+
+    if(action==='save'){
+      track(pressed?`Removeu filme dos salvos: ${title}`:`Salvou filme: ${title}`,{film_id:id,film_title:film?.title||null});
+      return;
     }
-    if(action==='filter')trackInteraction('filter_use',`Filtro: ${actionButton.dataset.filter}`,{filter:actionButton.dataset.filter});
-    if(action==='clear-search')trackInteraction('search_clear','Limpou a busca');
-    if(action==='library')trackInteraction('account_tab',`Minha conta: ${actionButton.dataset.tab}`,{tab:actionButton.dataset.tab});
+    if(action==='watched'){
+      track(pressed?`Desmarcou como assistido: ${title}`:`Marcou como assistido: ${title}`,{film_id:id,film_title:film?.title||null});
+      return;
+    }
+    if(action==='later'){
+      track(pressed?`Removeu crítica de Ler depois: ${title}`:`Salvou crítica para ler depois: ${title}`,{film_id:id,film_title:film?.title||null});
+      return;
+    }
+    if(action==='filter'){
+      const filterName=button.dataset.filter||'filtro';
+      track(`Usou filtro: ${filterName}`,{filter:filterName});
+      return;
+    }
+    if(action==='clear-search'){
+      track('Limpou a busca');
+      return;
+    }
+    if(action==='library'){
+      const tab=button.dataset.tab||'';
+      const tabName=trackingAccountTabs[tab]||tab||'lista';
+      track(`Abriu lista: ${tabName}`,{tab});
+      return;
+    }
   }
 
   const link=e.target.closest('a[href]');
@@ -985,68 +946,55 @@ document.addEventListener('click',e=>{
 
   if(href.startsWith('#filme/')){
     const id=href.split('/')[1];
-    const f=get(id);
-    trackInteraction('film_card_click',f?`Clicou em ${f.title}`:'Clicou em filme',{film_id:id,film_title:f?.title||null});
-  }else if(href.startsWith('#')){
-    trackInteraction('navigation_click',`Navegou para ${href.slice(1)||'inicio'}`,{destination:href});
+    const film=get(id);
+    track(`Abriu filme: ${film?.title||id}`,{film_id:id,film_title:film?.title||null});
+    return;
+  }
+
+  if(trackingNavNames[href]){
+    track(trackingNavNames[href],{destination:href});
+    return;
+  }
+
+  if(href.startsWith('#'))return;
+
+  let url=null;
+  try{url=new URL(link.href)}catch(_){return}
+  if(url.origin===location.origin)return;
+
+  const currentFilm=trackingCurrentFilm();
+  const label=(link.textContent||link.getAttribute('aria-label')||'').trim().replace(/\s+/g,' ').slice(0,120);
+
+  if(url.hostname.includes('isabelaboscov.com')){
+    track(currentFilm?`Abriu crítica original: ${currentFilm.title}`:'Abriu site original da Isabela',{label,url:url.href});
+  }else if(url.hostname.includes('youtube.com')||url.hostname.includes('youtu.be')){
+    track(currentFilm?`Abriu vídeo: ${currentFilm.title}`:'Abriu vídeo no YouTube',{label,url:url.href});
+  }else if(url.hostname.includes('justwatch.com')){
+    track(currentFilm?`Abriu onde assistir: ${currentFilm.title}`:'Abriu onde assistir',{label,url:url.href});
+  }else if(url.hostname.includes('portfolio-ricky-mangini')){
+    track('Abriu portfólio do Ricky',{label,url:url.href});
   }else{
-    let url=null;
-    try{url=new URL(link.href)}catch(_){ }
-    if(url&&url.origin!==location.origin){
-      let kind='link_externo';
-      if(url.hostname.includes('isabelaboscov.com'))kind='site_isabela';
-      else if(url.hostname.includes('youtube.com')||url.hostname.includes('youtu.be'))kind='youtube';
-      else if(url.hostname.includes('justwatch.com'))kind='onde_assistir';
-      else if(url.hostname.includes('portfolio-ricky-mangini'))kind='portfolio_ricky';
-      track('outbound_click',{
-        action:kind,
-        label:(link.textContent||'Link externo').trim().replace(/\s+/g,' ').slice(0,120),
-        destination_host:url.hostname,
-        destination_url:url.href
-      });
-    }
+    track(`Abriu link externo: ${label||url.hostname}`,{label,url:url.href});
   }
 },true);
 
 document.addEventListener('submit',e=>{
-  if(e.target.id==='search-form'){
-    const q=$('#search')?.value.trim()||'';
-    trackInteraction('search_submit',q?`Buscou: ${q}`:'Busca vazia',{query:q});
-  }
+  if(!trackingEnabled||e.target.id!=='search-form')return;
+  const q=$('#search')?.value.trim()||'';
+  track(q?`Buscou no arquivo: ${q}`:'Usou a busca do arquivo',{query:q});
 },true);
-
-window.addEventListener('scroll',()=>{
-  if(!trackingEnabled)return;
-  const max=document.documentElement.scrollHeight-innerHeight;
-  if(max<=0)return;
-  const percent=Math.round((scrollY/max)*100);
-  TRACKING_CONFIG.scrollMilestones.forEach(mark=>{
-    if(percent>=mark&&!trackingScrollSeen.has(mark)){
-      trackingScrollSeen.add(mark);
-      trackInteraction('scroll_depth',`Rolou ${mark}% da página`,{percent:mark});
-    }
-  });
-},{passive:true});
-
-window.addEventListener('pagehide',()=>{
-  track('session_end',{
-    session_seconds:Math.round((Date.now()-trackingSessionStarted)/1000),
-    route_seconds:Math.round((Date.now()-trackingRouteStarted)/1000)
-  },true);
-});
 
 window.BoscovTracking={
   status:()=>({
     enabled:trackingEnabled,
     preview:trackingPreview,
     lead:trackingLead||null,
-    returning:trackingReturning,
     visitor_id:trackingVisitorId,
     session_id:trackingSessionId,
     endpoint:TRACKING_CONFIG.endpoint
   }),
-  test:()=>track('tracking_test',{label:'Teste manual de rastreamento'}),
-  event:(action,metadata={})=>trackInteraction(action,action,metadata)
+  test:()=>track('Teste de rastreamento'),
+  event:(name,metadata={})=>track(name,metadata)
 };
 
 /* --- tour guiado --- */
@@ -1083,13 +1031,11 @@ function ensureTourUI(){
   return root;
 }
 function startTour(){
-  trackInteraction('tour_start','Começou o tour guiado');
   ensureTourUI().classList.add('is-open');
   ensureTourUI().setAttribute('aria-hidden','false');
   goTour(0);
 }
 function closeTour(){
-  if(tourIndex>=0)trackInteraction(tourIndex===TOUR_STEPS.length-1?'tour_complete':'tour_close',tourIndex===TOUR_STEPS.length-1?'Concluiu o tour':'Fechou o tour',{step:tourIndex+1,total_steps:TOUR_STEPS.length});
   const root=document.getElementById('boscov-tour');
   if(root){root.classList.remove('is-open');root.setAttribute('aria-hidden','true')}
   tourIndex=-1;
@@ -1122,7 +1068,6 @@ function goTour(next){
   root.querySelector('.tour-route').textContent=step.route;
   root.querySelector('h3').textContent=step.title;
   root.querySelector('.tour-panel>p').textContent=step.text;
-  trackInteraction('tour_step',`Tour: ${step.route}`,{step:tourIndex+1,total_steps:TOUR_STEPS.length,route:step.route});
   root.querySelector('.tour-progress').innerHTML=TOUR_STEPS.map((_,i)=>`<span class="${i<=tourIndex?'on':''}"></span>`).join('');
   root.querySelector('.tour-back').style.visibility=tourIndex===0?'hidden':'visible';
   root.querySelector('.tour-next').textContent=tourIndex===TOUR_STEPS.length-1?'Encerrar ✓':'Próximo →';
@@ -1156,7 +1101,7 @@ function optimizeImages(){
     if(i>1&&!img.closest('.cover-still'))img.loading='lazy';
   });
 }
-window.addEventListener('hashchange',()=>{render();trackRouteView();setTimeout(()=>{centerActiveMobileNav();optimizeImages()},40)});
+window.addEventListener('hashchange',()=>{render();setTimeout(()=>{centerActiveMobileNav();optimizeImages()},40)});
 window.addEventListener('resize',()=>{if(innerWidth<=760)centerActiveMobileNav()},{passive:true});
-count();render(false);track('opened',{label:'Abriu o protótipo'});if(trackingReturning)track('return',{label:'Voltou ao protótipo'});setTimeout(()=>{if(document.visibilityState==='visible')track('viewed',{seconds:5,label:'Permaneceu pelo menos 5 segundos'})},5000);trackRouteView();optimizeImages();setTimeout(centerActiveMobileNav,40);
+count();render(false);optimizeImages();setTimeout(centerActiveMobileNav,40);
 </script></body></html>
