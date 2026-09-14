@@ -732,6 +732,33 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
 .activity.is-new b{color:#b9e7f1}
 .activity.is-new span{color:#779ca7}
 
+
+/* SELF ACCESS / NETWORK IDENTITY */
+.self-access-card{
+  margin:4px 0 1px;padding:12px 12px 11px;border-radius:12px;
+  border:1px solid #26323b;background:linear-gradient(145deg,#10171c,#0c1115);
+}
+.self-access-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.self-access-head span{color:#64727c;font:800 8px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;text-transform:uppercase}
+.self-net-state{display:inline-flex;align-items:center;gap:5px;color:#6f7c85!important;font-size:7px!important;letter-spacing:.05em!important}
+.self-net-state:before{content:"";width:5px;height:5px;border-radius:50%;background:#59656e}
+.self-net-state.ready{color:#92cfb0!important}.self-net-state.ready:before{background:var(--green);box-shadow:0 0 10px rgba(109,210,163,.35)}
+.self-net-state.waiting{color:#aa8b60!important}.self-net-state.waiting:before{background:var(--amber)}
+.self-ip-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.self-ip-value{min-width:0;flex:1;color:#d9e2e7;font:760 12px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.self-ip-btn{flex:0 0 auto;border:1px solid rgba(98,203,232,.2);border-radius:8px;background:rgba(98,203,232,.055);color:#9bdff0;padding:6px 7px;font-size:7px;font-weight:830;letter-spacing:.04em;transition:.16s}
+.self-ip-btn:hover{background:rgba(98,203,232,.11);border-color:rgba(98,203,232,.36)}
+.self-ip-btn.mine{color:#a6d8be;border-color:rgba(109,210,163,.22);background:rgba(109,210,163,.055)}
+.self-ip-btn:disabled{opacity:.45;cursor:default}
+.self-ip-hint{display:block;margin-top:7px;color:#56636c;font-size:8px;line-height:1.45}
+.self-ip-hint strong{color:#83919a;font-weight:720}
+
+.event.own-event{opacity:.62;background:linear-gradient(90deg,rgba(167,140,242,.045),transparent);}
+.event.own-event .event-dot{background:var(--violet);box-shadow:0 0 10px rgba(167,140,242,.28)}
+.event-origin{display:inline-flex!important;align-items:center;gap:5px!important;margin-top:4px!important;font:760 7px ui-monospace,SFMono-Regular,Menlo,monospace!important;letter-spacing:.045em!important;text-transform:uppercase}
+.event-origin.own{color:#aa98de!important}.event-origin.external{color:#80bf9f!important}.event-origin.unknown{color:#68747d!important}
+.event-device{display:block!important;margin-top:3px!important;color:#59666f!important;font-size:8px!important}
+
 @media(max-width:860px){
   .news-alert-list{grid-template-columns:1fr}
 }
@@ -779,7 +806,17 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
   </section>
       <div class="overview-meta">
         <div class="meta-row"><span>Atualização</span><b>automática / 30s</b></div>
-        <div class="meta-row"><span>Tracking</span><b>sem IP / sem localização</b></div>
+        <div class="self-access-card">
+          <div class="self-access-head">
+            <span>SEU ACESSO ATUAL</span>
+            <span class="self-net-state" id="trackingNetState">verificando tracking</span>
+          </div>
+          <div class="self-ip-row">
+            <b class="self-ip-value" id="currentIpText">detectando IP...</b>
+            <button class="self-ip-btn mine" id="selfIpBtn" type="button" disabled>AUTOMÁTICO</button>
+          </div>
+          <small class="self-ip-hint" id="selfIpHint">A rede usada para abrir o CRM é reconhecida automaticamente como sua.</small>
+        </div>
       </div>
     </aside>
 
@@ -812,7 +849,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
 
   <div class="footer-note">
     <span>ATUALIZA AUTOMATICAMENTE A CADA 30S</span>
-    <span>SEM IP, SEM LOCALIZAÇÃO, APENAS EVENTOS DO LINK</span>
+    <span>IDENTIDADE DE REDE POR HASH · SEUS ACESSOS PODEM SER IGNORADOS</span>
   </div>
 </div>
 
@@ -886,7 +923,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     selectedId: null,
     lastSeen: localStorage.getItem(LAST_SEEN_STORAGE) || null,
     newestEventAt: null,
-    firstLoadDone: false
+    firstLoadDone: false,
+    currentIp: null,
+    currentNetworkId: null,
+    ownNetworksCount: 0,
+    networkTrackingActive: false
   };
 
   const eventLabels = {
@@ -999,6 +1040,70 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     return formatDate(value);
   }
 
+
+  function isOwnEvent(event){
+    return event?.is_self === true || event?.is_self === 'true';
+  }
+
+  function cleanDeviceText(event){
+    return String(event?.device || event?.device_type || 'dispositivo não informado').trim()
+      || 'dispositivo não informado';
+  }
+
+  function eventOrigin(event){
+    if (isOwnEvent(event)) return {key:'own', label:'SEU ACESSO'};
+    const id = String(event?.network_id || '').trim();
+    if (id) return {key:'external', label:`VISITANTE EXTERNO · REDE #${id}`};
+    return {key:'unknown', label:'ORIGEM NÃO IDENTIFICADA'};
+  }
+
+  function eventsForLead(lead, {includeOwn=true}={}){
+    return state.events.filter(e => e.lead_id === lead.id && (includeOwn || !isOwnEvent(e)));
+  }
+
+  // Na V2 estes números já chegam do banco com os seus acessos excluídos.
+  function externalOpenCount(lead){
+    return +lead.opened_count || 0;
+  }
+
+  function externalInteractionCount(lead){
+    return +lead.interaction_count || 0;
+  }
+
+  function firstExternalOpenAt(lead){
+    return lead.first_opened_at || null;
+  }
+
+  function renderSelfIdentity(){
+    const ipText = $('#currentIpText');
+    const btn = $('#selfIpBtn');
+    const hint = $('#selfIpHint');
+    const net = $('#trackingNetState');
+    if (!ipText || !btn || !hint || !net) return;
+
+    const ready = !!state.networkTrackingActive;
+    net.classList.toggle('ready', ready);
+    net.classList.toggle('waiting', !ready);
+    net.textContent = ready ? 'reconhecimento automático ativo' : 'aguardando SQL de rede';
+
+    btn.disabled = true;
+    btn.classList.toggle('mine', ready);
+    btn.textContent = ready ? 'AUTOMÁTICO' : 'INATIVO';
+
+    if (!ready){
+      ipText.textContent = 'configure o Supabase';
+      hint.textContent = 'Rode o SQL de identificação automática uma vez. Nenhum protótipo precisa ser alterado.';
+      return;
+    }
+
+    ipText.textContent = state.currentIp || 'IP não informado pelo gateway';
+    const count = Number(state.ownNetworksCount || 0);
+    const netId = state.currentNetworkId ? ` · rede #${state.currentNetworkId}` : '';
+    hint.innerHTML = state.currentIp
+      ? `Esta rede foi reconhecida como sua automaticamente${netId}. <strong>Seus acessos não contam como novidade nem abertura externa.</strong> ${count} ${count === 1 ? 'rede sua está' : 'redes suas estão'} reconhecida${count === 1 ? '' : 's'}.`
+      : 'O sistema está ativo, mas o gateway não informou o IP desta requisição.';
+  }
+
   function isNewEvent(event){
     if (!state.lastSeen) return false;
     return new Date(event.created_at) > new Date(state.lastSeen);
@@ -1006,13 +1111,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
 
   function newEventsForLead(lead){
     return state.events
-      .filter(e => e.lead_id === lead.id && isNewEvent(e))
+      .filter(e => e.lead_id === lead.id && isNewEvent(e) && !isOwnEvent(e))
       .sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   }
 
   function allNewEvents(){
     return state.events
-      .filter(isNewEvent)
+      .filter(e => isNewEvent(e) && !isOwnEvent(e))
       .sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
   }
 
@@ -1027,8 +1132,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
   function getStatus(lead){
     if (!lead.active) return {key:'archived',label:'Arquivado',cls:'s-archived'};
     if (lead.responded_at) return {key:'replied',label:'Respondeu',cls:'s-replied'};
-    if (+lead.interaction_count > 0) return {key:'interacted',label:'Interagiu',cls:'s-interacted'};
-    if (+lead.opened_count > 0) return {key:'opened',label:'Abriu',cls:'s-opened'};
+    if (externalInteractionCount(lead) > 0) return {key:'interacted',label:'Interagiu',cls:'s-interacted'};
+    if (externalOpenCount(lead) > 0) return {key:'opened',label:'Abriu',cls:'s-opened'};
 
     const scheduled = dt(lead.email_scheduled_at);
     const sent = dt(lead.email_sent_at);
@@ -1040,7 +1145,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
   }
 
   function latestMeaningfulEvent(lead){
-    const events = state.events.filter(e => e.lead_id === lead.id);
+    const events = eventsForLead(lead,{includeOwn:false});
     return events.find(e => importantEvents.has(e.event_type)) || events[0] || null;
   }
 
@@ -1061,7 +1166,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     const active = state.leads.filter(l => l.active);
     const newsLeads = active.filter(leadHasNews);
     const unreadEvents = allNewEvents().filter(e => leadById(e.lead_id)?.active !== false);
-    const opened = active.filter(l => +l.opened_count > 0).length;
+    const opened = active.filter(l => externalOpenCount(l) > 0).length;
     const waiting = active.filter(l => getStatus(l).key === 'waiting').length;
     const replied = active.filter(l => !!l.responded_at).length;
 
@@ -1140,12 +1245,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
             ${lead.notes ? `<div class="lead-note" title="${esc(lead.notes)}">⚠ ${esc(lead.notes)}</div>` : ''}
           </div>
           <span class="status ${status.cls}">${esc(status.label)}</span>
-          <div class="first-open ${lead.first_opened_at ? '' : 'empty-first'}">
-            <small>1ª abertura</small>
-            <b>${lead.first_opened_at ? esc(formatDate(lead.first_opened_at)) : 'Ainda não'}</b>
+          <div class="first-open ${firstExternalOpenAt(lead) ? '' : 'empty-first'}">
+            <small>1ª abertura externa</small>
+            <b>${firstExternalOpenAt(lead) ? esc(formatDate(firstExternalOpenAt(lead))) : 'Ainda não'}</b>
           </div>
           <div class="activity ${news?'is-new':''}"><b>${esc(actionText)}</b><span>${esc(actionTime)}</span></div>
-          <div class="open-count"><b>${lead.opened_count || 0}x</b><span>ABERTURAS</span></div>
+          <div class="open-count"><b>${externalOpenCount(lead)}x</b><span>EXTERNAS</span></div>
           <div class="chev">›</div>
         </article>`;
     }).join('');
@@ -1156,6 +1261,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
   function render(){
     renderMetrics();
     renderLeads();
+    renderSelfIdentity();
     $('#updatedText').textContent = `ATUALIZADO ${new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(new Date())}`;
   }
 
@@ -1166,17 +1272,23 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     }
     if (!quiet) $('#syncText').textContent = 'atualizando';
     try{
-      const data = await rpc('crm_get_dashboard',{p_key:state.key});
+      const data = await rpc('crm_get_dashboard_v2',{p_key:state.key});
       const oldNewest = state.newestEventAt;
       state.leads = Array.isArray(data.leads) ? data.leads : [];
       state.events = Array.isArray(data.events) ? data.events : [];
+      state.currentIp = data.current_ip || null;
+      state.currentNetworkId = data.current_network_id || null;
+      state.ownNetworksCount = Number(data.own_networks_count || 0);
+      state.networkTrackingActive = data.network_tracking_active === true;
       state.newestEventAt = state.events[0]?.created_at || null;
 
       if (state.firstLoadDone && oldNewest && state.newestEventAt && new Date(state.newestEventAt) > new Date(oldNewest)){
-        const newest = state.events[0];
-        const lead = newest ? leadById(newest.lead_id) : null;
-        const label = newest ? (eventLabels[newest.event_type] || newest.event_type) : 'Nova atividade';
-        toast(lead ? `${lead.name}: ${label}` : 'Nova atividade chegou');
+        const newest = state.events.find(e => !isOwnEvent(e) && new Date(e.created_at) > new Date(oldNewest));
+        if (newest){
+          const lead = leadById(newest.lead_id);
+          const label = eventLabels[newest.event_type] || newest.event_type;
+          toast(lead ? `${lead.name}: ${label}` : 'Nova atividade chegou');
+        }
       }
 
       state.firstLoadDone = true;
@@ -1188,6 +1300,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
       if (state.selectedId) renderDrawer();
     }catch(err){
       $('#syncText').textContent = 'offline';
+      const msg = String(err?.message || '');
+      const setupMissing = /crm_get_dashboard_v2|PGRST202|function/i.test(msg);
+      if (setupMissing){
+        state.networkTrackingActive = false;
+        renderSelfIdentity();
+        toast('Rode o SQL de identificação no Supabase');
+      }
       if (!quiet){
         $('#loginOverlay').classList.remove('hidden');
         $('#loginError').classList.remove('hidden');
@@ -1248,6 +1367,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     if (!lead) return;
     const status = getStatus(lead);
     const events = state.events.filter(e => e.lead_id === lead.id);
+    const ownEvents = events.filter(isOwnEvent);
     const schedule = lead.email_scheduled_at ? formatDate(lead.email_scheduled_at) : '—';
     const sent = lead.email_sent_at
       ? formatDate(lead.email_sent_at)
@@ -1285,9 +1405,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
       </div>
 
       <div class="detail-grid">
-        <div class="detail"><small>Primeira abertura</small><b>${lead.first_opened_at ? esc(formatDate(lead.first_opened_at)) : '—'}</b></div>
-        <div class="detail"><small>Aberturas</small><b>${lead.opened_count || 0}x</b></div>
-        <div class="detail"><small>Sessões</small><b>${lead.sessions_count || 0}</b></div>
+        <div class="detail"><small>Primeira abertura externa</small><b>${firstExternalOpenAt(lead) ? esc(formatDate(firstExternalOpenAt(lead))) : '—'}</b></div>
+        <div class="detail"><small>Aberturas externas</small><b>${externalOpenCount(lead)}x</b></div>
+        <div class="detail"><small>Seus eventos</small><b>${Number(lead.self_events_count || ownEvents.length || 0)}</b></div>
         <div class="detail"><small>Agendado</small><b>${esc(schedule)}</b></div>
         <div class="detail"><small>Enviado</small><b>${esc(sent)}</b></div>
         <div class="detail"><small>Resposta</small><b>${esc(response)}</b></div>
@@ -1303,12 +1423,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
         </div>
       </div>
       <div class="timeline">
-        ${events.length ? events.map(e => `
-          <div class="event ${importantEvents.has(e.event_type)?'important':''}">
+        ${events.length ? events.map(e => {
+          const origin = eventOrigin(e);
+          return `
+          <div class="event ${importantEvents.has(e.event_type)?'important':''} ${origin.key==='own'?'own-event':''}">
             <span class="event-dot"></span>
-            <div><b>${esc(eventLabels[e.event_type] || e.event_type)}</b><span>${esc(e.device || 'dispositivo não informado')}</span></div>
+            <div>
+              <b>${esc(eventLabels[e.event_type] || e.event_type)}</b>
+              <span class="event-origin ${origin.key}">${esc(origin.label)}</span>
+              <span class="event-device">${esc(cleanDeviceText(e))}</span>
+            </div>
             <time>${esc(formatDate(e.created_at))}</time>
-          </div>`).join('') : `<div class="empty"><b>Nenhuma atividade ainda.</b><span>Quando o link for aberto, vai aparecer aqui.</span></div>`}
+          </div>`;
+        }).join('') : `<div class="empty"><b>Nenhuma atividade ainda.</b><span>Quando o link for aberto, vai aparecer aqui.</span></div>`}
       </div>`;
 
     $$('[data-action]').forEach(btn => btn.addEventListener('click', () => updateLead(btn.dataset.action, lead)));
@@ -1479,6 +1606,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
 
   document.addEventListener('visibilitychange',()=>{if(document.hidden)markSessionSeen()});
   addEventListener('beforeunload',markSessionSeen);
+
+  // A identidade de rede vem do próprio Supabase.
+  renderSelfIdentity();
 
   // Primeira entrada.
   if (!state.key) $('#loginOverlay').classList.remove('hidden');
