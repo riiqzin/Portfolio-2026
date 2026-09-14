@@ -137,55 +137,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
   align-items:start;
 }
 
-/* NEW ACTIVITY BANNER */
-#newsBanner{
-  position:fixed;
-  top:16px;
-  left:50%;
-  z-index:500;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  max-width:min(92vw,430px);
-  padding:12px 12px 12px 14px;
-  border-radius:14px;
-  background:linear-gradient(135deg,#17232b,#111820);
-  border:1px solid rgba(98,203,232,.35);
-  box-shadow:0 20px 60px rgba(0,0,0,.45),0 0 0 1px rgba(98,203,232,.08);
-  opacity:0;
-  pointer-events:none;
-  transform:translate(-50%,-140%);
-  transition:transform .4s cubic-bezier(.19,1,.22,1),opacity .3s ease;
-}
-#newsBanner.hidden{display:none}
-#newsBanner.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
-#newsBanner.pulse-once{animation:bannerPunch .5s cubic-bezier(.34,1.56,.64,1)}
-@keyframes bannerPunch{0%{transform:translate(-50%,0) scale(1)}32%{transform:translate(-50%,0) scale(1.045)}100%{transform:translate(-50%,0) scale(1)}}
-.news-banner-icon{
-  width:34px;height:34px;border-radius:10px;flex:0 0 auto;
-  background:rgba(98,203,232,.14);
-  display:grid;place-items:center;
-  font-size:16px;
-  animation:bellShake 2s ease-in-out infinite;
-}
-@keyframes bellShake{0%,78%,100%{transform:rotate(0)}81%{transform:rotate(-15deg)}84%{transform:rotate(12deg)}87%{transform:rotate(-9deg)}90%{transform:rotate(6deg)}93%{transform:rotate(0)}}
-.news-banner-copy{min-width:0}
-.news-banner-copy b{display:block;font-size:12.5px;color:var(--text);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.news-banner-copy span{display:block;margin-top:2px;font-size:10px;color:#7c8790}
-.news-banner-close{
-  margin-left:2px;width:24px;height:24px;border-radius:8px;border:0;flex:0 0 auto;
-  background:transparent;color:#6d7882;display:grid;place-items:center;font-size:13px;
-}
-.news-banner-close:hover{background:#1a2027;color:#c3cad0}
-
-#flashOverlay{
-  position:fixed;inset:0;z-index:450;pointer-events:none;
-  background:radial-gradient(circle at 50% 0%,rgba(98,203,232,.16),transparent 62%);
-  opacity:0;
-}
-body.flash-news #flashOverlay{animation:flashPulse 1s ease-out}
-@keyframes flashPulse{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
-
 /* LEFT SUMMARY */
 .overview-panel{
   position:sticky;
@@ -195,18 +146,7 @@ body.flash-news #flashOverlay{animation:flashPulse 1s ease-out}
   background:linear-gradient(180deg,#101419,#0d1115);
   overflow:hidden;
   box-shadow:0 18px 55px rgba(0,0,0,.17);
-  transition:box-shadow .3s ease,border-color .3s ease;
 }
-body.has-news .overview-panel{
-  border-color:rgba(98,203,232,.4);
-  animation:panelGlow 2.6s ease-in-out infinite;
-}
-@keyframes panelGlow{
-  0%,100%{box-shadow:0 18px 55px rgba(0,0,0,.17),0 0 0 1px rgba(98,203,232,.1),0 0 28px rgba(98,203,232,.06)}
-  50%{box-shadow:0 18px 55px rgba(0,0,0,.17),0 0 0 1px rgba(98,203,232,.22),0 0 46px rgba(98,203,232,.15)}
-}
-body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
-@keyframes metricGlow{0%,100%{background:transparent}50%{background:rgba(98,203,232,.07)}}
 .hero{
   margin:0;
   min-height:0;
@@ -736,18 +676,74 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
 .clear-tracking-btn:hover{color:#c77b76}
 .clear-tracking-btn:disabled{opacity:.45;cursor:default}
 
+/* NEW ACTIVITY / UNREAD STATE */
+.news-chip{
+  display:inline-flex;align-items:center;gap:7px;
+  min-height:34px;padding:0 10px;border-radius:10px;
+  border:1px solid rgba(98,203,232,.24);
+  background:rgba(98,203,232,.07);color:#aee9f7;
+  font-size:9px;font-weight:820;letter-spacing:.04em;
+  transition:.18s ease;
+}
+.news-chip:hover{background:rgba(98,203,232,.12);border-color:rgba(98,203,232,.42);transform:translateY(-1px)}
+.news-chip-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px rgba(98,203,232,.65);animation:newsDotPulse 1.5s ease-in-out infinite}
+.news-chip-count{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--accent);color:#071014;display:grid;place-items:center;font:850 8px ui-monospace,SFMono-Regular,Menlo,monospace}
+@keyframes newsDotPulse{50%{transform:scale(.72);opacity:.55}}
+
+.overview-panel.has-news{border-color:rgba(98,203,232,.34);animation:panelNewsIn .8s ease both}
+@keyframes panelNewsIn{0%{box-shadow:0 0 0 0 rgba(98,203,232,.25),0 18px 55px rgba(0,0,0,.17)}55%{box-shadow:0 0 0 8px rgba(98,203,232,0),0 18px 55px rgba(0,0,0,.17)}100%{box-shadow:0 18px 55px rgba(0,0,0,.17)}}
+.metric.news.has-news{background:linear-gradient(145deg,rgba(98,203,232,.11),rgba(98,203,232,.025))}
+.metric.news.has-news:before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent);box-shadow:0 0 16px rgba(98,203,232,.55)}
+
+.news-alert{
+  position:relative;overflow:hidden;
+  margin:0;border-bottom:1px solid rgba(98,203,232,.18);
+  background:linear-gradient(110deg,rgba(98,203,232,.11),rgba(14,18,22,.98) 58%);
+  padding:15px 18px 14px;
+  animation:newsAlertIn .58s cubic-bezier(.2,.8,.2,1) both;
+}
+.news-alert:before{content:"";position:absolute;left:-80px;top:-120px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(98,203,232,.13),transparent 68%);pointer-events:none}
+@keyframes newsAlertIn{from{opacity:0;transform:translateY(-9px)}to{opacity:1;transform:none}}
+.news-alert-top{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.news-alert-kicker{display:flex;align-items:center;gap:8px;color:#8adcf0;font:800 8px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase}
+.news-alert-kicker:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(98,203,232,.34);animation:newPulse 1.7s ease-out infinite}
+.news-alert h3{margin:7px 0 0;font-size:17px;line-height:1.2;letter-spacing:-.025em}
+.news-alert h3 em{font-style:normal;color:var(--accent)}
+.news-alert-actions{display:flex;gap:7px;flex:0 0 auto}
+.news-alert-btn{border:1px solid rgba(98,203,232,.24);border-radius:9px;background:rgba(98,203,232,.07);color:#b8eaf5;padding:8px 10px;font-size:8px;font-weight:800;letter-spacing:.04em;transition:.16s}
+.news-alert-btn:hover{background:rgba(98,203,232,.13);border-color:rgba(98,203,232,.4)}
+.news-alert-btn.subtle{background:transparent;color:#71808a;border-color:#27343d}
+.news-alert-btn.subtle:hover{color:#aab7bf;background:#131a20}
+.news-alert-list{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}
+.news-alert-item{min-width:0;padding:9px 10px;border:1px solid rgba(98,203,232,.10);border-radius:10px;background:rgba(8,13,16,.34)}
+.news-alert-item b{display:block;color:#d8e1e6;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.news-alert-item span{display:block;margin-top:4px;color:#7f929c;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.lead-row.has-news{
+  position:relative;
+  background:linear-gradient(90deg,rgba(98,203,232,.085),#10161b 23%,#0e1216 76%);
+  border-color:rgba(98,203,232,.16);
+  animation:rowNewsIn .48s cubic-bezier(.2,.8,.2,1) both;
+}
+.lead-row.has-news:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:2px;border-radius:0 2px 2px 0;background:var(--accent);box-shadow:0 0 12px rgba(98,203,232,.5)}
+.lead-row.has-news:hover{background:linear-gradient(90deg,rgba(98,203,232,.12),#141b21 26%,#13181e 80%)}
+@keyframes rowNewsIn{from{opacity:0;transform:translateX(9px)}to{opacity:1;transform:none}}
+.new-badge{display:inline-flex;align-items:center;gap:5px;margin-left:2px;padding:3px 6px;border-radius:999px;background:rgba(98,203,232,.11);border:1px solid rgba(98,203,232,.18);color:#8ddcf0;font:800 7px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.05em;white-space:nowrap}
+.activity.is-new b{color:#b9e7f1}
+.activity.is-new span{color:#779ca7}
+
+@media(max-width:860px){
+  .news-alert-list{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .news-chip{padding:0 8px}.news-chip-label{display:none}
+  .news-alert-top{display:block}.news-alert-actions{margin-top:11px}
+  .news-alert-list{margin-top:10px}
+}
+
 </style>
 </head>
 <body>
-<div id="flashOverlay"></div>
-<div id="newsBanner" class="hidden">
-  <div class="news-banner-icon">🔔</div>
-  <div class="news-banner-copy">
-    <b id="newsBannerText">Nova atividade</b>
-    <span>Toque para ver quem foi</span>
-  </div>
-  <button class="news-banner-close" id="newsBannerClose" type="button" aria-label="Fechar">✕</button>
-</div>
 
 <div class="app" id="app">
   <header class="topbar">
@@ -757,6 +753,7 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
     </div>
     <div class="top-actions">
       <div class="sync"><span class="sync-dot"></span><span id="syncText">atualizando</span></div>
+      <button class="news-chip hidden" id="newsChip" type="button"><span class="news-chip-dot"></span><span class="news-chip-label">NOVIDADES</span><span class="news-chip-count" id="newsChipCount">0</span></button>
       <button class="ghost" id="refreshBtn">ATUALIZAR</button>
       <button class="primary" id="newLeadBtn">+ NOVO LEAD</button>
     </div>
@@ -775,7 +772,7 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
     </div>
   </section>
   <section class="metrics">
-    <article class="metric news"><small>Novidades</small><b id="mNews">0</b><span>desde sua última visita</span></article>
+    <article class="metric news" id="newsMetric"><small>Novidades</small><b id="mNews">0</b><span>desde sua última visita</span></article>
     <article class="metric opened"><small>Já abriram</small><b id="mOpened">0</b><span>leads ativos</span></article>
     <article class="metric waiting"><small>Aguardando</small><b id="mWaiting">0</b><span>sem abertura ainda</span></article>
     <article class="metric replied"><small>Responderam</small><b id="mReplied">0</b><span>marcados no painel</span></article>
@@ -786,7 +783,20 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
       </div>
     </aside>
 
-  <section class="workspace">
+  <section class="workspace" id="workspace">
+    <div class="news-alert hidden" id="newsAlert" aria-live="polite">
+      <div class="news-alert-top">
+        <div>
+          <div class="news-alert-kicker" id="newsAlertKicker">ATIVIDADE NOVA</div>
+          <h3 id="newsAlertTitle">Tem coisa nova desde sua última visita.</h3>
+        </div>
+        <div class="news-alert-actions">
+          <button class="news-alert-btn" id="viewNewsBtn" type="button">VER NOVIDADES</button>
+          <button class="news-alert-btn subtle" id="markSeenBtn" type="button">MARCAR COMO VISTO</button>
+        </div>
+      </div>
+      <div class="news-alert-list" id="newsAlertList"></div>
+    </div>
     <div class="workspace-head">
       <div class="workspace-title"><b>Leads</b><span class="count-pill" id="leadCount">0</span></div>
       <div class="filters" id="filters">
@@ -876,10 +886,7 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
     selectedId: null,
     lastSeen: localStorage.getItem(LAST_SEEN_STORAGE) || null,
     newestEventAt: null,
-    firstLoadDone: false,
-    bannerBatch: null,
-    bannerDismissedFor: null,
-    faviconHasNews: null
+    firstLoadDone: false
   };
 
   const eventLabels = {
@@ -997,8 +1004,24 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
     return new Date(event.created_at) > new Date(state.lastSeen);
   }
 
+  function newEventsForLead(lead){
+    return state.events
+      .filter(e => e.lead_id === lead.id && isNewEvent(e))
+      .sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  function allNewEvents(){
+    return state.events
+      .filter(isNewEvent)
+      .sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
   function leadHasNews(lead){
-    return state.events.some(e => e.lead_id === lead.id && isNewEvent(e));
+    return newEventsForLead(lead).length > 0;
+  }
+
+  function leadById(id){
+    return state.leads.find(l => l.id === id) || null;
   }
 
   function getStatus(lead){
@@ -1021,6 +1044,11 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
     return events.find(e => importantEvents.has(e.event_type)) || events[0] || null;
   }
 
+  function latestDisplayEvent(lead){
+    const unread = newEventsForLead(lead);
+    return unread[0] || latestMeaningfulEvent(lead);
+  }
+
   function leadSort(a,b){
     const an = leadHasNews(a), bn = leadHasNews(b);
     if (an !== bn) return an ? -1 : 1;
@@ -1029,65 +1057,10 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
     return bd - ad;
   }
 
-  function setFavicon(hasNews){
-    if (state.faviconHasNews === hasNews) return;
-    state.faviconHasNews = hasNews;
-    const canvas = document.createElement('canvas');
-    canvas.width = 64; canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    ctx.beginPath(); ctx.arc(32,32,28,0,Math.PI*2);
-    ctx.fillStyle = '#11151a'; ctx.fill();
-    ctx.lineWidth = 4; ctx.strokeStyle = hasNews ? '#62cbe8' : '#313a45';
-    ctx.stroke();
-    if (hasNews){
-      ctx.beginPath(); ctx.arc(48,16,13,0,Math.PI*2);
-      ctx.fillStyle = '#e97c79'; ctx.fill();
-      ctx.lineWidth = 3; ctx.strokeStyle = '#0a0c0f'; ctx.stroke();
-    }
-    let link = document.querySelector("link[rel='icon']");
-    if (!link){ link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
-    link.href = canvas.toDataURL('image/png');
-  }
-
-  function flashScreen(){
-    document.body.classList.remove('flash-news');
-    void document.body.offsetWidth;
-    document.body.classList.add('flash-news');
-    setTimeout(() => document.body.classList.remove('flash-news'), 1000);
-  }
-
-  function renderNewsBanner(newsLeads){
-    const banner = $('#newsBanner');
-    if (!newsLeads.length){
-      banner.classList.remove('show');
-      return;
-    }
-    const isNewBatch = state.newestEventAt !== state.bannerBatch;
-    state.bannerBatch = state.newestEventAt;
-
-    $('#newsBannerText').textContent = newsLeads.length === 1
-      ? `${newsLeads[0].name} teve atividade nova`
-      : `${newsLeads.length} leads tiveram atividade nova`;
-
-    banner.classList.remove('hidden');
-
-    if (isNewBatch){
-      state.bannerDismissedFor = null;
-      flashScreen();
-      requestAnimationFrame(() => {
-        banner.classList.add('show');
-        banner.classList.remove('pulse-once');
-        void banner.offsetWidth;
-        banner.classList.add('pulse-once');
-      });
-    } else if (state.bannerDismissedFor !== state.bannerBatch){
-      banner.classList.add('show');
-    }
-  }
-
   function renderMetrics(){
     const active = state.leads.filter(l => l.active);
     const newsLeads = active.filter(leadHasNews);
+    const unreadEvents = allNewEvents().filter(e => leadById(e.lead_id)?.active !== false);
     const opened = active.filter(l => +l.opened_count > 0).length;
     const waiting = active.filter(l => getStatus(l).key === 'waiting').length;
     const replied = active.filter(l => !!l.responded_at).length;
@@ -1097,19 +1070,37 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
     $('#mWaiting').textContent = waiting;
     $('#mReplied').textContent = replied;
 
-    document.body.classList.toggle('has-news', newsLeads.length > 0);
-    setFavicon(newsLeads.length > 0);
-    renderNewsBanner(newsLeads);
+    const hasNews = newsLeads.length > 0;
+    $('.overview-panel')?.classList.toggle('has-news',hasNews);
+    $('#newsMetric')?.classList.toggle('has-news',hasNews);
+    $('#workspace')?.classList.toggle('has-news',hasNews);
+    $('#newsChip')?.classList.toggle('hidden',!hasNews);
+    $('#newsAlert')?.classList.toggle('hidden',!hasNews);
 
-    if (newsLeads.length){
-      $('#heroTitle').innerHTML = `${newsLeads.length === 1 ? 'Tem' : 'Tem'} <em>${newsLeads.length} ${newsLeads.length === 1 ? 'novidade' : 'novidades'}.</em>`;
+    if (hasNews){
+      $('#newsChipCount').textContent = unreadEvents.length || newsLeads.length;
+      $('#heroTitle').innerHTML = `Tem <em>${newsLeads.length} ${newsLeads.length === 1 ? 'novidade' : 'novidades'}.</em>`;
       $('#heroText').textContent = newsLeads.length === 1
         ? `${newsLeads[0].name} teve atividade nova desde a sua última visita.`
         : `${newsLeads.map(l=>l.name).slice(0,3).join(', ')}${newsLeads.length>3?' e outros':''} tiveram atividade nova.`;
-      document.title = `(${newsLeads.length}) Ricky CRM`;
+
+      const eventCount = unreadEvents.length;
+      $('#newsAlertKicker').textContent = `${eventCount} ${eventCount === 1 ? 'EVENTO NOVO' : 'EVENTOS NOVOS'} · ${newsLeads.length} ${newsLeads.length === 1 ? 'LEAD' : 'LEADS'}`;
+      $('#newsAlertTitle').innerHTML = eventCount === 1
+        ? `Aconteceu <em>uma coisa nova</em> desde que você saiu.`
+        : `Aconteceram <em>${eventCount} coisas novas</em> desde que você saiu.`;
+
+      const preview = unreadEvents.slice(0,3).map(event => {
+        const lead = leadById(event.lead_id);
+        const label = eventLabels[event.event_type] || event.event_type;
+        return `<div class="news-alert-item"><b>${esc(lead?.name || 'Lead')}</b><span>${esc(label)} · ${esc(relative(event.created_at))}</span></div>`;
+      }).join('');
+      $('#newsAlertList').innerHTML = preview || `<div class="news-alert-item"><b>${esc(newsLeads[0]?.name || 'Lead')}</b><span>Atividade nova detectada.</span></div>`;
+      document.title = `(${eventCount || newsLeads.length}) Ricky CRM`;
     } else {
       $('#heroTitle').innerHTML = `Nada novo <em>por enquanto.</em>`;
       $('#heroText').textContent = 'Você já está em dia. Pode fechar o painel e voltar depois.';
+      $('#newsAlertList').innerHTML = '';
       document.title = 'Ricky CRM';
     }
   }
@@ -1135,15 +1126,16 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
 
     list.innerHTML = leads.map(lead => {
       const status = getStatus(lead);
-      const recent = latestMeaningfulEvent(lead);
-      const news = leadHasNews(lead);
+      const recent = latestDisplayEvent(lead);
+      const unread = newEventsForLead(lead);
+      const news = unread.length > 0;
       const actionText = recent ? (eventLabels[recent.event_type] || recent.event_type) : status.label;
       const actionTime = recent ? relative(recent.created_at) :
         lead.email_scheduled_at ? `envio ${formatDate(lead.email_scheduled_at)}` : 'sem atividade';
       return `
-        <article class="lead-row" data-id="${esc(lead.id)}">
+        <article class="lead-row ${news?'has-news':''}" data-id="${esc(lead.id)}">
           <div class="lead-main">
-            <div class="lead-name">${news?'<span class="new-dot"></span>':''}<b>${esc(lead.name)}</b></div>
+            <div class="lead-name">${news?'<span class="new-dot"></span>':''}<b>${esc(lead.name)}</b>${news?`<span class="new-badge">NOVO · ${unread.length}</span>`:''}</div>
             <div class="lead-url">${esc(lead.project_url)}</div>
             ${lead.notes ? `<div class="lead-note" title="${esc(lead.notes)}">⚠ ${esc(lead.notes)}</div>` : ''}
           </div>
@@ -1152,7 +1144,7 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
             <small>1ª abertura</small>
             <b>${lead.first_opened_at ? esc(formatDate(lead.first_opened_at)) : 'Ainda não'}</b>
           </div>
-          <div class="activity"><b>${esc(actionText)}</b><span>${esc(actionTime)}</span></div>
+          <div class="activity ${news?'is-new':''}"><b>${esc(actionText)}</b><span>${esc(actionTime)}</span></div>
           <div class="open-count"><b>${lead.opened_count || 0}x</b><span>ABERTURAS</span></div>
           <div class="chev">›</div>
         </article>`;
@@ -1181,7 +1173,10 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
       state.newestEventAt = state.events[0]?.created_at || null;
 
       if (state.firstLoadDone && oldNewest && state.newestEventAt && new Date(state.newestEventAt) > new Date(oldNewest)){
-        toast('Nova atividade chegou');
+        const newest = state.events[0];
+        const lead = newest ? leadById(newest.lead_id) : null;
+        const label = newest ? (eventLabels[newest.event_type] || newest.event_type) : 'Nova atividade';
+        toast(lead ? `${lead.name}: ${label}` : 'Nova atividade chegou');
       }
 
       state.firstLoadDone = true;
@@ -1217,7 +1212,22 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
   }
 
   function markSessionSeen(){
-    if (state.newestEventAt) localStorage.setItem(LAST_SEEN_STORAGE,state.newestEventAt);
+    if (!state.newestEventAt) return;
+    state.lastSeen = state.newestEventAt;
+    localStorage.setItem(LAST_SEEN_STORAGE,state.newestEventAt);
+  }
+
+  function markNewsSeen(){
+    markSessionSeen();
+    render();
+    toast('Novidades marcadas como vistas');
+  }
+
+  function showNewsOnly(){
+    state.filter = 'news';
+    $$('.filter').forEach(x=>x.classList.toggle('active',x.dataset.filter === 'news'));
+    renderLeads();
+    $('#leadList')?.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
   function openDrawer(id){
@@ -1440,6 +1450,9 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
 
   // UI
   $('#refreshBtn').addEventListener('click',()=>loadDashboard());
+  $('#newsChip').addEventListener('click',showNewsOnly);
+  $('#viewNewsBtn').addEventListener('click',showNewsOnly);
+  $('#markSeenBtn').addEventListener('click',markNewsSeen);
   $('#newLeadBtn').addEventListener('click',openLeadModal);
   $('#modalClose').addEventListener('click',closeLeadModal);
   $('#cancelLead').addEventListener('click',closeLeadModal);
@@ -1462,19 +1475,6 @@ body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
 
   addEventListener('keydown',e=>{
     if(e.key==='Escape'){closeDrawer();closeLeadModal()}
-  });
-
-  $('#newsBannerClose').addEventListener('click',()=>{
-    state.bannerDismissedFor = state.bannerBatch;
-    $('#newsBanner').classList.remove('show');
-  });
-  $('#newsBanner').addEventListener('click',e=>{
-    if (e.target.closest('#newsBannerClose')) return;
-    state.filter = 'news';
-    $$('.filter').forEach(x=>x.classList.toggle('active',x.dataset.filter==='news'));
-    renderLeads();
-    $('#newsBannerClose').click();
-    window.scrollTo({top:0,behavior:'smooth'});
   });
 
   document.addEventListener('visibilitychange',()=>{if(document.hidden)markSessionSeen()});
