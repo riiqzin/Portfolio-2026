@@ -137,6 +137,55 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
   align-items:start;
 }
 
+/* NEW ACTIVITY BANNER */
+#newsBanner{
+  position:fixed;
+  top:16px;
+  left:50%;
+  z-index:500;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  max-width:min(92vw,430px);
+  padding:12px 12px 12px 14px;
+  border-radius:14px;
+  background:linear-gradient(135deg,#17232b,#111820);
+  border:1px solid rgba(98,203,232,.35);
+  box-shadow:0 20px 60px rgba(0,0,0,.45),0 0 0 1px rgba(98,203,232,.08);
+  opacity:0;
+  pointer-events:none;
+  transform:translate(-50%,-140%);
+  transition:transform .4s cubic-bezier(.19,1,.22,1),opacity .3s ease;
+}
+#newsBanner.hidden{display:none}
+#newsBanner.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+#newsBanner.pulse-once{animation:bannerPunch .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bannerPunch{0%{transform:translate(-50%,0) scale(1)}32%{transform:translate(-50%,0) scale(1.045)}100%{transform:translate(-50%,0) scale(1)}}
+.news-banner-icon{
+  width:34px;height:34px;border-radius:10px;flex:0 0 auto;
+  background:rgba(98,203,232,.14);
+  display:grid;place-items:center;
+  font-size:16px;
+  animation:bellShake 2s ease-in-out infinite;
+}
+@keyframes bellShake{0%,78%,100%{transform:rotate(0)}81%{transform:rotate(-15deg)}84%{transform:rotate(12deg)}87%{transform:rotate(-9deg)}90%{transform:rotate(6deg)}93%{transform:rotate(0)}}
+.news-banner-copy{min-width:0}
+.news-banner-copy b{display:block;font-size:12.5px;color:var(--text);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.news-banner-copy span{display:block;margin-top:2px;font-size:10px;color:#7c8790}
+.news-banner-close{
+  margin-left:2px;width:24px;height:24px;border-radius:8px;border:0;flex:0 0 auto;
+  background:transparent;color:#6d7882;display:grid;place-items:center;font-size:13px;
+}
+.news-banner-close:hover{background:#1a2027;color:#c3cad0}
+
+#flashOverlay{
+  position:fixed;inset:0;z-index:450;pointer-events:none;
+  background:radial-gradient(circle at 50% 0%,rgba(98,203,232,.16),transparent 62%);
+  opacity:0;
+}
+body.flash-news #flashOverlay{animation:flashPulse 1s ease-out}
+@keyframes flashPulse{0%{opacity:0}18%{opacity:1}100%{opacity:0}}
+
 /* LEFT SUMMARY */
 .overview-panel{
   position:sticky;
@@ -146,7 +195,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
   background:linear-gradient(180deg,#101419,#0d1115);
   overflow:hidden;
   box-shadow:0 18px 55px rgba(0,0,0,.17);
+  transition:box-shadow .3s ease,border-color .3s ease;
 }
+body.has-news .overview-panel{
+  border-color:rgba(98,203,232,.4);
+  animation:panelGlow 2.6s ease-in-out infinite;
+}
+@keyframes panelGlow{
+  0%,100%{box-shadow:0 18px 55px rgba(0,0,0,.17),0 0 0 1px rgba(98,203,232,.1),0 0 28px rgba(98,203,232,.06)}
+  50%{box-shadow:0 18px 55px rgba(0,0,0,.17),0 0 0 1px rgba(98,203,232,.22),0 0 46px rgba(98,203,232,.15)}
+}
+body.has-news .metric.news{animation:metricGlow 2.2s ease-in-out infinite}
+@keyframes metricGlow{0%,100%{background:transparent}50%{background:rgba(98,203,232,.07)}}
 .hero{
   margin:0;
   min-height:0;
@@ -679,6 +739,15 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
 </style>
 </head>
 <body>
+<div id="flashOverlay"></div>
+<div id="newsBanner" class="hidden">
+  <div class="news-banner-icon">🔔</div>
+  <div class="news-banner-copy">
+    <b id="newsBannerText">Nova atividade</b>
+    <span>Toque para ver quem foi</span>
+  </div>
+  <button class="news-banner-close" id="newsBannerClose" type="button" aria-label="Fechar">✕</button>
+</div>
 
 <div class="app" id="app">
   <header class="topbar">
@@ -807,7 +876,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     selectedId: null,
     lastSeen: localStorage.getItem(LAST_SEEN_STORAGE) || null,
     newestEventAt: null,
-    firstLoadDone: false
+    firstLoadDone: false,
+    bannerBatch: null,
+    bannerDismissedFor: null,
+    faviconHasNews: null
   };
 
   const eventLabels = {
@@ -957,6 +1029,62 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     return bd - ad;
   }
 
+  function setFavicon(hasNews){
+    if (state.faviconHasNews === hasNews) return;
+    state.faviconHasNews = hasNews;
+    const canvas = document.createElement('canvas');
+    canvas.width = 64; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.beginPath(); ctx.arc(32,32,28,0,Math.PI*2);
+    ctx.fillStyle = '#11151a'; ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = hasNews ? '#62cbe8' : '#313a45';
+    ctx.stroke();
+    if (hasNews){
+      ctx.beginPath(); ctx.arc(48,16,13,0,Math.PI*2);
+      ctx.fillStyle = '#e97c79'; ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#0a0c0f'; ctx.stroke();
+    }
+    let link = document.querySelector("link[rel='icon']");
+    if (!link){ link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = canvas.toDataURL('image/png');
+  }
+
+  function flashScreen(){
+    document.body.classList.remove('flash-news');
+    void document.body.offsetWidth;
+    document.body.classList.add('flash-news');
+    setTimeout(() => document.body.classList.remove('flash-news'), 1000);
+  }
+
+  function renderNewsBanner(newsLeads){
+    const banner = $('#newsBanner');
+    if (!newsLeads.length){
+      banner.classList.remove('show');
+      return;
+    }
+    const isNewBatch = state.newestEventAt !== state.bannerBatch;
+    state.bannerBatch = state.newestEventAt;
+
+    $('#newsBannerText').textContent = newsLeads.length === 1
+      ? `${newsLeads[0].name} teve atividade nova`
+      : `${newsLeads.length} leads tiveram atividade nova`;
+
+    banner.classList.remove('hidden');
+
+    if (isNewBatch){
+      state.bannerDismissedFor = null;
+      flashScreen();
+      requestAnimationFrame(() => {
+        banner.classList.add('show');
+        banner.classList.remove('pulse-once');
+        void banner.offsetWidth;
+        banner.classList.add('pulse-once');
+      });
+    } else if (state.bannerDismissedFor !== state.bannerBatch){
+      banner.classList.add('show');
+    }
+  }
+
   function renderMetrics(){
     const active = state.leads.filter(l => l.active);
     const newsLeads = active.filter(leadHasNews);
@@ -968,6 +1096,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
     $('#mOpened').textContent = opened;
     $('#mWaiting').textContent = waiting;
     $('#mReplied').textContent = replied;
+
+    document.body.classList.toggle('has-news', newsLeads.length > 0);
+    setFavicon(newsLeads.length > 0);
+    renderNewsBanner(newsLeads);
 
     if (newsLeads.length){
       $('#heroTitle').innerHTML = `${newsLeads.length === 1 ? 'Tem' : 'Tem'} <em>${newsLeads.length} ${newsLeads.length === 1 ? 'novidade' : 'novidades'}.</em>`;
@@ -1330,6 +1462,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
 
   addEventListener('keydown',e=>{
     if(e.key==='Escape'){closeDrawer();closeLeadModal()}
+  });
+
+  $('#newsBannerClose').addEventListener('click',()=>{
+    state.bannerDismissedFor = state.bannerBatch;
+    $('#newsBanner').classList.remove('show');
+  });
+  $('#newsBanner').addEventListener('click',e=>{
+    if (e.target.closest('#newsBannerClose')) return;
+    state.filter = 'news';
+    $$('.filter').forEach(x=>x.classList.toggle('active',x.dataset.filter==='news'));
+    renderLeads();
+    $('#newsBannerClose').click();
+    window.scrollTo({top:0,behavior:'smooth'});
   });
 
   document.addEventListener('visibilitychange',()=>{if(document.hidden)markSessionSeen()});
