@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "test": "node crm.cjs"
+    "test": "node crm.cjs",
+    "test:api": "node --test radar-api.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0"

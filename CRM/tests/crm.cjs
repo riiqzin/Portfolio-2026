@@ -20,6 +20,22 @@ const base = (id, name, extra = {}) => ({
   ...extra,
 });
 (async () => {
+  const { createHandler } = await import('../../api/radar.js');
+  let radarMode = 'ready';
+  const radarEnv = { RADAR_DASHBOARD_KEY: 'test-key', BRAVE_SEARCH_API_KEY: 'fixture-key', UPSTASH_REDIS_REST_URL: 'https://fixture.upstash.io', UPSTASH_REDIS_REST_TOKEN: 'fixture-token', RADAR_DAILY_LIMIT: '10', RADAR_MONTHLY_LIMIT: '30' };
+  const radarCalls = [];
+  const radar = createHandler({ env: radarEnv, fetcher: async (url, options) => {
+    radarCalls.push(String(url));
+    if (String(url).includes('upstash')) return Response.json({ result: radarMode === 'quota' ? [0, 10, 10] : [1, 1, 1] });
+    if (radarMode === 'error') return Response.json({}, { status: 429 });
+    return Response.json({ web: { results: radarMode === 'empty' ? [] : [
+      { title: 'Batcaverna', url: 'https://batcaverna.example.com', description: 'Fixture: existing CRM lead' },
+      { title: 'Clínica Horizonte — fixture', url: 'https://horizonte.example.com', description: 'Fixture: atendimento odontológico em Campinas.' },
+      { title: 'Outra página', url: 'https://www.horizonte.example.com/contato' },
+      { title: 'Loja excluída', url: 'https://loja.example.com', description: 'Nuvemshop' },
+      { title: '<img src=x onerror=alert(1)>Consultório — fixture', url: 'https://consultorio.example.com', description: 'Fixture: descrição pública sem contatos.' }
+    ] } });
+  } });
   const server = http
     .createServer((req, res) => {
       const f = path.join(
@@ -33,7 +49,7 @@ const base = (id, name, extra = {}) => ({
       try {
         res.setHeader(
           "Content-Type",
-          f.endsWith(".css") ? "text/css" : "text/html",
+          f.endsWith(".css") ? "text/css" : f.endsWith('.js') ? 'text/javascript' : "text/html",
         );
         res.end(fs.readFileSync(f));
       } catch {
@@ -101,6 +117,11 @@ const base = (id, name, extra = {}) => ({
       errors = [];
     await context.route("**/*", async (r) => {
       let u = new URL(r.request().url());
+      if (u.hostname === '127.0.0.1' && u.pathname === '/api/radar') {
+        const req = r.request();
+        const response = await radar(new Request(req.url(), { method: req.method(), headers: req.headers(), ...(req.method() === 'POST' ? { body: req.postData() } : {}) }));
+        return r.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
+      }
       if (u.hostname === "127.0.0.1") return r.continue();
       if (!u.hostname.endsWith(".supabase.co")) return r.abort();
       const name = u.pathname.split("/").pop(),
@@ -224,6 +245,49 @@ const base = (id, name, extra = {}) => ({
     await page.locator("#clearTrackingBtn").click();
     await expect(page.locator(".event")).toHaveCount(0);
     await page.keyboard.press("Escape");
+    await page.locator('.sidebar nav a[href="#radar"]').click();
+    await expect(page.locator('#radarPanel')).toBeVisible();
+    await expect(page.locator('.dashboard-layout')).toBeHidden();
+    await expect(page.locator('#radarStatus')).toContainText('Pronto para buscar');
+    expect(radarCalls).toHaveLength(0);
+    await page.locator('#radarNiche').fill('Dentistas');
+    await page.locator('#radarRegion').fill('Campinas, SP');
+    await page.locator('#radarSearch').click();
+    await expect(page.locator('.prospect-card')).toHaveCount(2);
+    await expect(page.locator('#radarSummary')).toContainText('2 duplicados');
+    await expect(page.locator('#radarSummary')).toContainText('1 com indícios');
+    await expect(page.locator('#radarSource')).toContainText('Brave Search');
+    expect(radarCalls).toHaveLength(2);
+    expect(await page.locator('.prospect-card img').count()).toBe(0);
+    const writesBefore = calls.filter(c => c.name === 'crm_create_lead').length;
+    await page.locator('.prospect-card button').first().click();
+    await expect(page.locator('#leadName')).toHaveValue('Clínica Horizonte — fixture');
+    await expect(page.locator('#leadUrl')).toHaveValue('');
+    await expect(page.locator('#leadEmail')).toHaveValue('');
+    expect(calls.filter(c => c.name === 'crm_create_lead').length).toBe(writesBefore);
+    await page.locator('#modalClose').click();
+    await page.locator('#toast').evaluate(e => e.classList.remove('show'));
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      if ([390, 1440].includes(width)) await page.screenshot({ path: path.resolve(artifacts, `radar-${width}.png`), fullPage: true });
+    }
+    radarMode = 'empty';
+    await page.locator('#radarSearch').click();
+    await expect(page.locator('#radarResults')).toContainText('Nenhum candidato novo');
+    radarMode = 'quota';
+    await page.locator('#radarSearch').click();
+    await expect(page.locator('#radarStatus')).toContainText('Limite diário ou mensal atingido');
+    radarMode = 'error';
+    await page.locator('#radarSearch').click();
+    await expect(page.locator('#radarStatus')).toContainText('O provedor atingiu seu limite');
+    radarEnv.BRAVE_SEARCH_API_KEY = '';
+    await page.locator('#radarCheck').click();
+    await expect(page.locator('#radarStatus')).toContainText('Configure Brave Search');
+    await expect(page.locator('#radarSearch')).toBeEnabled();
+    await page.locator('.sidebar nav a[href="#app"]').click();
+    await expect(page.locator('.dashboard-layout')).toBeVisible();
+    await expect(page.locator('#radarPanel')).toBeHidden();
     await page.locator("#newLeadBtn").click();
     await page.locator("#leadName").fill("Conexão Nova");
     await expect(page.locator("#leadSlug")).toHaveValue("conexao-nova");
@@ -290,6 +354,8 @@ const base = (id, name, extra = {}) => ({
             "5 responsive widths no overflow",
             "reduced motion",
             "no JavaScript errors",
+            "Radar real handler with mocked provider: setup, auth, search, dedup, platform filtering, quota, provider error, empty state",
+            "Radar safe rendering, manual lead preparation without write, navigation and 5 responsive widths",
           ],
           rpcCalls: calls.length,
         },

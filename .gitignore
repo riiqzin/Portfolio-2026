@@ -1,0 +1,5 @@
+CRM/tests/node_modules/
+CRM/tests/artifacts/
+.env
+.env.*
+!.env.example
