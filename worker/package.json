@@ -1,0 +1,7 @@
+{
+  "name": "ricky-radar-worker",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node --env-file=.env run.mjs", "test": "node --test test/*.test.mjs" },
+  "dependencies": { "playwright": "1.65.0", "ipaddr.js": "2.2.0", "robots-parser": "3.0.1" }
+}

@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { boundedText, redisClient, reserveSpend, spendingConfigured, ticket } from '../lib/radar-control.mjs';
 
 const PLATFORMS = /\b(nuvemshop|lojavirtualnuvem|tiendanube|shopify|myshopify|wixsite|wix|lojaintegrada|loja integrada|tray commerce|vtex|woocommerce|squarespace|bigcommerce)\b/i;
 const DIRECTORIES = ['instagram.com', 'facebook.com', 'linkedin.com', 'youtube.com', 'google.com', 'google.com.br', 'mercadolivre.com.br', 'shopee.com.br', 'yelp.com', 'tripadvisor.com.br', 'econodata.com.br', 'solutudo.com.br'];
@@ -54,13 +55,13 @@ export function createHandler({ env = process.env, fetcher = fetch, now = () => 
     const key = request.headers.get('authorization')?.replace(/^Bearer /, '') || '';
     if (!key || key.length > 1024 || !timingSafeEqual(digest(key), digest(env.RADAR_DASHBOARD_KEY))) return fail('unauthorized', 'A chave do Radar precisa corresponder à chave do painel. Entre novamente ou revise a configuração no servidor.', 401);
     const ready = env.BRAVE_SEARCH_API_KEY && /^https:\/\/[\w-]+\.upstash\.io\/?$/.test(env.UPSTASH_REDIS_REST_URL || '') && env.UPSTASH_REDIS_REST_TOKEN && positive(env.RADAR_DAILY_LIMIT) && positive(env.RADAR_MONTHLY_LIMIT);
-    if (!ready) return fail('setup_required', 'Configure Brave Search, o controle de uso e os limites diário e mensal no servidor. Nenhuma busca foi cobrada.', 503);
+    if (!ready || !spendingConfigured(env)) return fail('setup_required', 'Configure Brave Search, Redis, limites e reservas de custo no servidor. Nenhuma busca foi cobrada.', 503);
     const limits = { daily: Number(env.RADAR_DAILY_LIMIT), monthly: Number(env.RADAR_MONTHLY_LIMIT) };
-    if (request.method === 'GET') return json({ ready: true, provider: 'Brave Search', limits });
+    if (request.method === 'GET') return json({ ready: true, provider: 'Brave Search', limits, budgetCents: Number(env.RADAR_BUDGET_CENTS), searchReserveCents: Number(env.RADAR_SEARCH_RESERVE_CENTS), auditEnabled: env.RADAR_AUDIT_ENABLED === 'true' });
     if (!request.headers.get('content-type')?.startsWith('application/json')) return fail('invalid_request', 'Envie uma busca válida.', 400);
     let body;
     try {
-      const raw = await request.text();
+      const raw = await boundedText(request, 2048);
       if (raw.length > 2048) return fail('invalid_request', 'Busca muito longa.', 400);
       body = JSON.parse(raw);
     } catch { return fail('invalid_request', 'Busca inválida.', 400); }
@@ -78,6 +79,8 @@ export function createHandler({ env = process.env, fetcher = fetch, now = () => 
       if (allowed === -1) return fail('rate_limited', 'Aguarde 5 segundos entre buscas.', 429);
       if (allowed !== 1) throw new Error('budget');
       usage = { daily, monthly, limits };
+      usage.spending = await reserveSpend(env, redisClient(env, fetcher), 'search');
+      if (!usage.spending.allowed) return fail('budget_exhausted', 'Orçamento total reservado. Busca bloqueada; revise o consumo antes de liberar novo orçamento.', 429);
     } catch { return fail('budget_unavailable', 'Não foi possível verificar o limite de uso. A busca foi bloqueada para proteger o orçamento.', 503); }
     try {
       const url = new URL('https://api.search.brave.com/res/v1/web/search');
@@ -86,7 +89,9 @@ export function createHandler({ env = process.env, fetcher = fetch, now = () => 
       if (!response.ok) return fail(response.status === 429 ? 'provider_limit' : 'provider_error', response.status === 429 ? 'O provedor atingiu seu limite. Tente mais tarde; não há repetição automática.' : 'O provedor recusou a busca. Verifique a chave e o plano do Brave Search no servidor.', 502);
       const data = await response.json();
       if (data.web?.results !== undefined && !Array.isArray(data.web.results)) throw new Error('invalid_response');
-      return json({ ...normalizeResults(data.web?.results || []), query, searchedAt: now().toISOString(), usage });
+      const normalized = normalizeResults(data.web?.results || []);
+      normalized.results = normalized.results.map(row => ({ ...row, ticket: ticket(row.url, env, now().getTime()) }));
+      return json({ ...normalized, query, searchedAt: now().toISOString(), usage });
     } catch { return fail('provider_unavailable', 'A busca não foi concluída. Verifique a conexão e tente novamente. Esta tentativa pode ter consumido uma consulta.', 502); }
   };
 }

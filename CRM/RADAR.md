@@ -1,54 +1,99 @@
-# Radar de Clientes — primeira versão
+# Radar de Clientes — descoberta e auditoria
 
-O Radar abre em `/CRM/#radar`, preserva o painel existente e consulta a API oficial do Brave Search pelo endpoint server-side `/api/radar`. Cada clique faz no máximo **uma consulta**, com até 20 resultados. Não há paginação automática, repetição em falhas, scraping de sites, IA, envio de mensagens ou gravação automática de leads.
+## O que está implementado
 
-## Ativação em Preview antes de produção
+`/CRM/#radar` pesquisa até 20 resultados no Brave, filtra plataformas/diretórios e duplicados, e mantém a preparação manual do lead. O checkbox de auditoria automática envia no máximo três candidatos novos para uma fila privada. Também é possível auditar cada cartão individualmente.
 
-No projeto Vercel, configure estas variáveis **somente no servidor**, inicialmente no ambiente Preview da branch `feat/radar-clientes-v1`. Não cole chaves em HTML, JavaScript público, Git, logs, issues ou no PR.
+A Vercel hospeda as APIs e o CRM. O executor em `worker/` roda no Windows com Playwright/Edge e consulta a fila no Redis. Não exige servidor de navegador pago. Captura desktop (1365×900) e celular (390×844), registra verificações técnicas e, se explicitamente habilitada, chama uma API de IA com as duas imagens. O CRM mostra estado, evidências, incerteza e prioridade provisória. Não há envio comercial, coleta automática de contatos, alteração de Supabase ou migração de tabelas.
 
-| Variável | Valor |
+**Limites reais desta versão:** a captura é estática, sem JavaScript e sem recursos de terceiros; lojas dependentes de scripts/CDNs podem ficar incompletas. Redirecionamentos, HTTP e destinos privados são bloqueados. Não há PageSpeed nesta versão; seu estado é explicitamente “não consultado”. Não foram validadas empresas reais nem qualidade de diagnósticos com chamadas pagas. O sistema não comprova país, nicho, faturamento ou intenção de comprar redesign: são candidatos para revisão.
+
+## Ativar primeiro em Preview
+
+1. Use a branch `codex/radar-visual-audit` e uma base Redis dedicada ao Preview. Não reutilize contadores de produção.
+2. Configure as variáveis abaixo no painel seguro da Vercel, no ambiente Preview. Nunca coloque segredos em HTML, Git, PR, screenshots ou chat.
+3. Reimplante o Preview. Configure e inicie o executor Windows com a mesma base Redis.
+4. Entre com a chave do CRM e use **Diagnosticar conexão**. Esse botão não chama Brave nem IA. Ele consulta o estado privado do executor e das reservas no Redis; presença de configuração não comprova validade das chaves dos provedores.
+5. Somente após conferir preços/limites dos seus planos, faça uma busca e uma auditoria controlada. Confira contadores, imagens e erros antes de habilitar o lote de três. Não há aprovação automática para merge em produção.
+
+### Vercel — variáveis privadas
+
+| Variável | Configuração |
 | --- | --- |
-| `RADAR_DASHBOARD_KEY` | A mesma chave privada já usada para entrar no CRM. Configure pelo painel seguro da Vercel. |
-| `BRAVE_SEARCH_API_KEY` | Chave de um plano com acesso a Web Search. |
-| `UPSTASH_REDIS_REST_URL` | URL HTTPS da base Upstash Redis (`https://…upstash.io`). |
-| `UPSTASH_REDIS_REST_TOKEN` | Token privado com permissão para executar EVAL e os comandos do contador. |
-| `RADAR_DAILY_LIMIT` | Máximo de consultas por dia UTC; inteiro positivo escolhido conforme o orçamento. |
-| `RADAR_MONTHLY_LIMIT` | Máximo de consultas por mês UTC; inteiro positivo escolhido conforme o orçamento. |
+| `RADAR_DASHBOARD_KEY` | Mesma chave privada usada para entrar no CRM. |
+| `BRAVE_SEARCH_API_KEY` | Sua chave Web Search. |
+| `UPSTASH_REDIS_REST_URL` | `https://…upstash.io`. |
+| `UPSTASH_REDIS_REST_TOKEN` | Token Redis com EVAL/GET/SET/MGET/ZADD/ZRANGE/ZREM/INCR/INCRBY/EXPIRE/EXISTS. |
+| `RADAR_DAILY_LIMIT`, `RADAR_MONTHLY_LIMIT` | Limites positivos de consultas Brave por período UTC; exemplo conservador: 5 e 30. |
+| `RADAR_BUDGET_CENTS` | Até `8000` (R$80) de **reservas cumulativas**, sem renovação automática. |
+| `RADAR_SEARCH_RESERVE_CENTS` | Reserva conservadora por busca; obrigatório, sem valor presumido. |
+| `RADAR_AUDIT_RESERVE_CENTS` | Reserva conservadora máxima por auditoria; obrigatório, sem valor presumido. |
+| `RADAR_AUDIT_DAILY_LIMIT` | 1 a 30 auditorias/dia UTC; sugestão inicial 10. |
+| `RADAR_AUDIT_ENABLED` | `true` somente quando estiver pronto para executar. |
 
-Use uma base Redis separada para Preview, para não consumir os contadores de produção. Defina os limites a partir do preço atual contratado no Brave e inclua custos de Redis e Vercel no orçamento. **Nenhuma cobrança ou limite monetário foi presumido**: sem os dois limites explicitamente configurados, a busca fica bloqueada. Configure também os tetos de gasto nos provedores; os contadores da aplicação limitam consultas de busca, não as demais despesas da infraestrutura nem uso da chave fora deste endpoint. Não habilite upgrades automáticos de plano sem revisar o orçamento.
+Sem reservas e orçamento configurados, buscas e auditorias ficam bloqueadas. A chave do painel continua no Authorization; a autenticação Supabase e os RPCs existentes não mudaram. Não é necessária service-role key. Ao trocar a chave do CRM, atualize a Vercel: isso também invalida tickets antigos.
 
-A configuração replica a chave existente exclusivamente para autorizar o novo endpoint. Não altera a autenticação Supabase. Ao trocar/revogar a chave do painel, atualize também `RADAR_DASHBOARD_KEY` e reimplante. Não utilizamos `crm_get_dashboard_v2` no servidor para autenticar, evitando que o IP do servidor interfira na identificação de rede do CRM. Não há necessidade de service-role key ou migração de banco.
+### Windows — executor
 
-Depois de salvar variáveis, gere uma nova implantação **Preview**. Entre no CRM, abra Radar e use “Verificar conexão”: essa operação não chama Brave nem Redis e apenas verifica a presença/formato da configuração. Faça uma busca controlada para validar as credenciais reais e o contador; falhas no provedor podem consumir uma consulta e são contabilizadas conservadoramente. Não há reembolso automático de reservas. Aguarde cinco segundos entre buscas.
+Instale Node.js 22+ e Edge. No PowerShell, dentro da pasta `worker`:
 
-## O que os resultados significam
+```powershell
+npm ci
+Copy-Item .env.example .env
+notepad .env
+npm start
+```
 
-- O nome é o título indexado, não uma razão social verificada. A descrição é um trecho público do provedor; cada cartão oferece sua URL de origem e a consulta/data ficam visíveis.
-- A região é um termo de busca, não geolocalização confirmada. Não inventamos endereços, telefones, e-mails, notas de qualidade ou análises.
-- Removemos repetição de domínio normalizado (incluindo `www`, caminhos e parâmetros de campanha). No navegador, também removemos correspondências exatas de nome normalizado ou domínio de projeto com os leads carregados no CRM, inclusive arquivados. Variações de nome, diferentes domínios e títulos com sufixos podem escapar: revise antes de criar um lead.
-- Excluímos indícios de Nuvemshop/Tiendanube, Shopify, Wix, Loja Integrada, Tray Commerce, VTEX, WooCommerce, Squarespace e BigCommerce no domínio/título/trechos. Também descartamos alguns diretórios, marketplaces e redes sociais. Uma referência a uma plataforma pode causar falso positivo, e um domínio próprio pode ocultar sua tecnologia. Por isso todos os restantes dizem **Plataforma não verificada**. Não prometemos detecção completa.
-- “Preparar lead” preenche apenas nome e slug no formulário existente. O usuário precisa revisar e informar a URL **do projeto que vai apresentar**, não a URL da empresa encontrada. E-mail permanece vazio. Criar o lead continua usando o contrato `crm_create_lead`; nenhuma mensagem é enviada.
-- Resultados ficam em memória durante a sessão da página, sem retenção em Redis. Redis armazena somente contadores e cooldown. Revisite os termos do plano antes de adicionar armazenamento persistente de dados de busca.
+Preencha `.env` privadamente. O arquivo é ignorado pelo Git. Use as mesmas variáveis Redis, orçamento, reservas e limite diário do Preview. Configure `RADAR_BROWSER_CHANNEL=msedge` e `RADAR_AUDIT_ENABLED=true`. Após revisar os termos dos sites/fontes e permitir sua consulta automatizada, configure `RADAR_CRAWL_TERMS_ACCEPTED=true`. Robots.txt é respeitado, mas não substitui permissão nem termos de uso. Não contorne bloqueios, login, CAPTCHA ou conteúdo restrito.
 
-## Segurança e limites
+A IA é opcional. Para ativar, configure **somente no executor** `OPENAI_API_KEY`, `RADAR_AI_MODEL` (modelo de sua conta compatível com imagens e Structured Outputs na Responses API) e `RADAR_AI_ENABLED=true`. Confira previamente o preço desse modelo e o limite do projeto no provedor. Nenhum modelo, preço ou acesso é presumido; a integração usa endpoint fixo, duas imagens e no máximo 2.000 tokens de saída. Nenhuma chave de IA passa pelo navegador ou pela Vercel.
 
-A chave do painel é enviada em Authorization, nunca na URL. Comparação no servidor usa hashes de tamanho fixo e comparação constante. Requisições com Origin diferente são recusadas e respostas não são cacheadas. Os destinos de rede são fixos: Brave e a URL Redis configurada pelo administrador. URLs dos candidatos nunca são acessadas pelo servidor. Cartões usam textContent e somente links HTTP(S). Não registramos corpos de resposta dos provedores ou segredos em logs.
+O executor encerra após 30 minutos ou Ctrl+C após concluir o trabalho atual. Não se instala como serviço nem inicia com o Windows. Quando fecha, o indicador de conexão expira em até 45 segundos. Reinicie com `npm start` para outra sessão. O executor não expõe porta local.
 
-Uma reserva Redis Lua atômica limita todas as instâncias simultâneas por dia/mês UTC e impõe cinco segundos entre buscas. Falha no Redis bloqueia a busca. Falhas e timeouts de Brave mantêm a reserva, pois a consulta pode ter sido cobrada. Não apague a base ou os contadores durante um período ativo: isso reinicia o orçamento. Compartilhe a mesma base entre instâncias de uma implantação. Configure proteção de implantação/firewall na Vercel contra abuso de requisições, pois o contador protege chamadas autorizadas ao Brave, não todo o tráfego de infraestrutura.
+## Custos: o que o teto significa
 
-## Verificação
+O Redis reserva centavos em `radar:v2:reserved-cents`, compartilhado entre buscas e auditorias. Esse contador **não expira**. Busca: reserva antes de Brave; auditoria: reserva, cota diária, deduplicação e criação da fila na mesma transação Lua. Falha/timeout não devolve reserva, porque o provedor pode ter cobrado. Não há repetição automática de chamadas pagas. Resultados do mesmo domínio reutilizam a auditoria por 24 horas, sem nova reserva.
 
-Em `CRM/tests`, execute `npm ci`, `npm run test:api` e `npm test`. Instale Chromium com Playwright ou selecione Edge usando `CRM_BROWSER_CHANNEL=msedge`.
+As reservas são um limite operacional calculado a partir de valores configurados por você, **não uma leitura da fatura nem garantia cambial**. Defina valores que cubram o pior caso do seu modelo, tamanho de imagens, tokens, impostos e câmbio. O código limita 2 imagens JPEG de até 250 KB, 2.000 tokens de saída, uma chamada de IA por trabalho e uma chamada Brave por busca. Custos fixos de hospedagem/Redis, tráfego, uso externo das chaves e alterações de preço não entram no contador. Configure também limites nos provedores e evite upgrades automáticos.
 
-Os testes da API cobrem autorização, origem, validação, configuração incompleta, orçamento/cooldown, erros/timeouts, limites de resultados, URLs e filtros. Os testes de navegador exercitam o handler real com Brave/Redis simulados, verificam resultados, preparação manual, estados de erro e layout em 320/390/768/1024/1440 px. Também repetem os fluxos de login, leads, rastreamento, edição e agendamento do CRM com Supabase simulado. As fixtures são identificadas como fixtures e nunca são usadas pela aplicação.
+Exemplo apenas aritmético, não cotação: reservar R$0,10 por busca e R$1 por auditoria permite 30 buscas + 77 auditorias dentro de R$80. Se seu custo máximo contratado for maior, aumente a reserva e reduza volume. Não foi feito gasto pago durante os testes.
 
-Antes de merge/publicação, ainda é necessário validar uma busca real com credenciais de Preview, verificar a reserva atômica no Redis real e executar um smoke test autenticado de CRM/Supabase em ambiente seguro. Não houve alteração de schema nem escrita de teste em produção.
+Não apague/reduza contadores nem troque de base para contornar o teto. Redis deve manter dados sem eviction e com persistência; perda do contador perde o histórico de reservas. Atingir R$80 exige revisar o gasto real e tomar uma decisão consciente de novo orçamento fora desta versão. O servidor rejeita configuração acima de 8000 centavos.
 
-## Próximas etapas (não implementadas)
+O polling de cada cartão dura no máximo 18 ciclos de 10 segundos, apenas com o Radar visível; depois use “Atualizar auditoria”. O executor verifica fila a cada 10 segundos, com heartbeat a cada 15, durante no máximo 30 minutos por sessão. Essas operações usam a cota Redis, não chamadas Brave/IA.
 
-1. Validar precisão de resultados e plataformas com uma pequena amostra real; melhorar nomes/domínios e medir falsos positivos sem aumentar consultas automaticamente.
-2. Adicionar auditoria técnica **sob demanda**, com timeout, limite de tamanho, proteção SSRF/DNS/redirect, respeito aos termos dos sites e evidências explícitas por achado. Nenhuma auditoria roda nesta versão.
-3. Avaliar análise visual/IA somente após definir provedor, consentimento para envio de conteúdo, teto de gasto e critérios de qualidade. Mostrar evidências e incerteza, nunca pontuação inventada.
-4. Se necessário, adicionar prospects persistentes em tabela separada com autorização e migração revisadas, sem alterar leads existentes. Rascunhos personalizados dependerão de revisão humana; envio em massa permanece fora do escopo.
+## Evidências, prioridade e CRM
 
-Referências: [Brave Web Search](https://api-dashboard.search.brave.com/app/documentation/web-search/get-started), [Upstash REST API](https://upstash.com/docs/redis/features/restapi), [Vercel Functions](https://vercel.com/docs/functions).
+- Resultados da busca são trechos indexados, não auditorias. Domínio, nome e snippets podem gerar falsos positivos/negativos nos filtros. A região é um termo de busca, não localização confirmada.
+- Cada candidato recebe um ticket assinado, válido por uma hora. A API de auditoria não aceita URLs arbitrárias sem um ticket da busca autenticada.
+- O executor procura indícios de plataformas também no HTML. Plataforma excluída ou ausência de indício de loja evita a chamada de IA.
+- Cada achado visual precisa indicar captura, região, observação, sugestão e confiança. A resposta é validada; recusa, truncamento ou saída inválida aparecem como falha, preservando as evidências técnicas.
+- Prioridade provisória 0–15 = soma de severidade 1/2/3 dos até cinco achados visuais de alta confiança. Não é taxa de conversão, nota estética ou probabilidade de venda. Recursos bloqueados, imagens/estilos indisponíveis, pouco texto, IA incompleta ou loja não confirmada resultam em **sem nota**. Mesmo alta confiança do modelo exige revisão humana.
+- Checks técnicos: título, viewport, overflow horizontal, imagens sem atributo alt e disponibilidade de recursos. Não são uma auditoria WCAG completa nem medição de desempenho. Imagens decorativas com alt vazio não são classificadas como ausência do atributo.
+- “Preparar lead” continua preenchendo nome e slug no formulário existente. A URL do projeto apresentado e contatos continuam manuais. Nenhum RPC de criação é chamado antes de salvar o formulário. “Copiar relatório” permite levar evidências à revisão/proposta; o relatório não é salvo automaticamente no Supabase.
+- Cartões e IDs ficam na memória da página. Recarregar perde a lista; uma nova busca e “Auditar” no mesmo domínio recupera o trabalho retido sem nova reserva. Resultados/capturas expiram 24 horas após a última gravação do estado. Copie o relatório se precisar retê-lo; revisão humana continua necessária.
+
+## Proteções e operação
+
+O navegador usa contexto efêmero sem cookies, permissões, downloads, scripts, service workers, formulários ou frames. Cada recurso permitido é obtido pelo Node via HTTPS, com certificado verificado e DNS fixado ao IP público validado no socket; respostas DNS mistas privadas/públicas são recusadas. IPv6 e endereços literais são recusados nesta primeira versão. O browser recebe a resposta pela interceptação e nunca recebe autorização para acessar diretamente os destinos. Recursos de terceiros e qualquer redirecionamento são bloqueados, incluindo redirects de robots.txt. Toda consulta de robots falha fechada, exceto ausência explícita 404/410. Respeita regras e intervalo de crawl; intervalo acima de 5 segundos bloqueia a auditoria nesta versão.
+
+Limites por auditoria: até 40 recursos, 2 MB por recurso, 12 MB de corpos acumulados, 8 segundos por socket e 75 segundos por contexto. Capturas limitadas à primeira tela. HTML remoto não é inserido no CRM; textos/modelo são renderizados com textContent e imagens aceitam somente JPEG base64 limitado. Chaves não entram em logs ou URLs. Jobs e capturas ficam no Redis privado e são acessíveis apenas com a chave do painel. Imagens são enviadas à OpenAI apenas com IA habilitada; `store:false` desativa armazenamento de resposta, mas não altera por si só as políticas de retenção do provedor.
+
+Consumo da fila é atômico e sem reexecução: se o executor morrer após pegar um trabalho, ele não será repetido. Após cinco minutos, trabalhos sem conclusão aparecem como interrompidos. Reservas permanecem. Trabalhos com mais de cinco minutos na fila não são processados. Falha de persistência encerra o executor, evitando continuar chamadas sem controle. Use apenas uma base dedicada e mantenha o token privado.
+
+## Testes e validação
+
+```powershell
+cd CRM/tests
+npm ci
+npm run test:api
+$env:CRM_BROWSER_CHANNEL='msedge'
+npm test
+cd ../../worker
+npm ci
+npm test
+```
+
+Os testes usam provedores e rede simulados. Cobrem API de busca/fila, autenticação, origem, tickets expirados, configuração, orçamento, erros, deduplicação, DNS privado/misto, IP fixado, redirects, robots, schema/recusa de IA, ranking sem evidências, capturas reais em Edge com conteúdo fixture e regressão do CRM em 320/390/768/1024/1440 px. Nenhum teste exige chaves pagas. Antes de produção, ainda valide transações Lua em Redis real, uma busca real e uma auditoria autorizada com configuração de Preview. Faça revisão manual de uma amostra antes de confiar na classificação. Não foram alterados os RPCs de autenticação, tracking ou leads.
+
+Referências de implementação: [Playwright network](https://playwright.dev/docs/network), [OpenAI imagens](https://developers.openai.com/api/docs/guides/images-vision), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [Upstash REST](https://upstash.com/docs/redis/features/restapi), [Brave Web Search](https://api-dashboard.search.brave.com/app/documentation/web-search/get-started).

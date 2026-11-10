@@ -5,6 +5,7 @@ window.RickyRadar = {
     const normalize = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const domain = s => { try { return new URL(s).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
     let results = [], searchMeta = null, busy = false;
+    const audits = window.RadarAudit.mount({ getKey, render });
     const message = value => { $('#radarStatus').textContent = value; };
     const node = (tag, value, className) => { const el = document.createElement(tag); el.textContent = value; if (className) el.className = className; return el; };
     async function api(method, body) {
@@ -21,7 +22,7 @@ window.RickyRadar = {
     function render() {
       const list = $('#radarResults'); list.replaceChildren();
       let duplicates = 0;
-      results.forEach(row => {
+      [...results].sort((a, b) => (b.audit?.priority?.score ?? -1) - (a.audit?.priority?.score ?? -1)).forEach(row => {
         if (existing(row)) { duplicates++; return; }
         const card = node('article', '', 'prospect-card');
         card.append(node('span', 'REVISÃO MANUAL', 'prospect-label'), node('h3', row.name), node('p', row.description || 'Sem descrição pública retornada pelo provedor.'));
@@ -47,7 +48,7 @@ window.RickyRadar = {
             setTimeout(() => { if (draft.isConnected) draft.textContent = previous; }, 1800);
           } catch { window.prompt('Copie sua mensagem:', message); }
         });
-        actions.append(link, add, draft); card.append(actions); list.append(card);
+        actions.append(link, add, draft); audits.append(row, card, actions); card.append(actions); list.append(card);
       });
       if (searchMeta) {
         const removed = searchMeta.removed;
@@ -58,12 +59,10 @@ window.RickyRadar = {
     }
     async function status() {
       if (!getKey()) { message('Entre no CRM para usar o Radar.'); return; }
+      audits.status();
       message('Consultando o servidor. Nenhuma busca será cobrada nesta verificação…');
       try { const data = await api('GET'); message(`Pronto para buscar · até ${data.limits.daily} consultas/dia e ${data.limits.monthly}/mês (UTC). Cada busca usa uma consulta.`); }
-      catch (error) { 
-        const missing = /configura|ativação|chave|servidor/i.test(error.message);
-        message(missing ? 'Busca ainda não ativada: faltam chaves e limites de uso no servidor. Abra “Configuração e funcionalidades futuras” para ver o passo a passo. Nenhuma busca foi realizada.' : error.message);
-      }
+      catch (error) { message(error.message); }
     }
     function navigate() {
       const active = location.hash === '#radar';
@@ -97,6 +96,9 @@ window.RickyRadar = {
         const data = await api('POST', { niche: $('#radarNiche').value.trim(), region: $('#radarRegion').value.trim() });
         results = data.results; searchMeta = data; render();
         message(`Busca concluída. Uso: ${data.usage.daily}/${data.usage.limits.daily} no dia e ${data.usage.monthly}/${data.usage.limits.monthly} no mês (UTC).`);
+        if ($('#radarAutoAudit').checked) {
+          for (const row of results.filter(row => !existing(row)).slice(0, 3)) await audits.start(row);
+        }
       } catch (error) { message(error.message); }
       finally { busy = false; $('#radarSearch').disabled = false; $('#radarCheck').disabled = false; $('#radarPanel').removeAttribute('aria-busy'); }
     });
