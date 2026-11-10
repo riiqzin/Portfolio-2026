@@ -6,6 +6,12 @@ window.RickyRadar = {
     const domain = s => { try { return new URL(s).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
     let results = [], searchMeta = null, busy = false;
     const message = value => { $('#radarStatus').textContent = value; };
+    function machine(state, title) {
+      const panel = $('#radarPanel');
+      if (panel) panel.dataset.engine = state;
+      const label = $('#machineState');
+      if (label) label.textContent = title;
+    }
     const node = (tag, value, className) => { const el = document.createElement(tag); el.textContent = value; if (className) el.className = className; return el; };
     async function api(method, body) {
       let response;
@@ -43,12 +49,12 @@ window.RickyRadar = {
       }
     }
     async function status() {
-      if (!getKey()) { message('Entre no CRM para usar o Radar.'); return; }
-      message('Consultando o servidor. Nenhuma busca será cobrada nesta verificação…');
-      try { const data = await api('GET'); message(`Pronto para buscar · até ${data.limits.daily} consultas/dia e ${data.limits.monthly}/mês (UTC). Cada busca usa uma consulta.`); }
+      if (!getKey()) { message('Entre no CRM para usar o Radar.'); machine('unavailable','ACESSO NECESSÁRIO'); return; }
+      message('Consultando o servidor. Nenhuma busca será cobrada nesta verificação…'); machine('checking','VERIFICANDO SISTEMA');
+      try { const data = await api('GET'); message(`Pronto para buscar · até ${data.limits.daily} consultas/dia e ${data.limits.monthly}/mês (UTC). Cada busca usa uma consulta.`); machine('ready','PRONTO PARA VARREDURA'); }
       catch (error) { 
         const missing = /configura|ativação|chave|servidor/i.test(error.message);
-        message(missing ? 'Busca ainda não ativada: faltam chaves e limites de uso no servidor. Abra “Configuração e funcionalidades futuras” para ver o passo a passo. Nenhuma busca foi realizada.' : error.message);
+        message(missing ? 'Busca ainda não ativada: configure as credenciais e limites do servidor no guia abaixo. Nenhuma consulta foi cobrada.' : error.message); machine('unavailable',missing ? 'AGUARDANDO ATIVAÇÃO' : 'CONEXÃO INDISPONÍVEL');
       }
     }
     function navigate() {
@@ -60,7 +66,8 @@ window.RickyRadar = {
         a.classList.toggle('selected', selected);
         if (selected) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
       });
-      $('.brand-copy b').textContent = active ? 'Radar de Clientes' : 'Visão geral';
+      $('.brand-copy b').textContent = active ? 'Motor de descoberta' : (location.hash === '#workspace' ? 'Acompanhamento' : 'Visão geral');
+      const bread = $('#commandBreadcrumb'); if (bread) bread.textContent = active ? 'MÓDULO 01 / RADAR' : (location.hash === '#workspace' ? 'MÓDULO 02 / LEADS' : 'CENTRAL / WORKSPACE');
       if (active && !busy && !searchMeta) status();
       if (active && searchMeta) render();
     }
@@ -77,15 +84,16 @@ window.RickyRadar = {
       busy = true; $('#radarSearch').disabled = true; $('#radarCheck').disabled = true;
       $('#radarPanel').setAttribute('aria-busy', 'true');
       results = []; searchMeta = null; $('#radarResults').replaceChildren(); $('#radarSummary').textContent = ''; $('#radarSource').textContent = '';
-      message('Buscando fontes públicas e filtrando resultados…');
+      message('Varredura iniciada: pesquisando lojas e filtrando domínios…'); machine('searching','VARREDURA EM CURSO');
       try {
         const data = await api('POST', { niche: $('#radarNiche').value.trim(), region: $('#radarRegion').value.trim() });
         results = data.results; searchMeta = data; render();
-        message(`Busca concluída. Uso: ${data.usage.daily}/${data.usage.limits.daily} no dia e ${data.usage.monthly}/${data.usage.limits.monthly} no mês (UTC).`);
-      } catch (error) { message(error.message); }
+        message(`Varredura concluída. Uso: ${data.usage.daily}/${data.usage.limits.daily} no dia e ${data.usage.monthly}/${data.usage.limits.monthly} no mês (UTC).`); machine('ready','VARREDURA CONCLUÍDA');
+      } catch (error) { message(error.message); machine('unavailable','VARREDURA INTERROMPIDA'); }
       finally { busy = false; $('#radarSearch').disabled = false; $('#radarCheck').disabled = false; $('#radarPanel').removeAttribute('aria-busy'); }
     });
     window.addEventListener('hashchange', navigate);
+    machine('idle','AGUARDANDO COMANDO');
     navigate();
   }
 };
