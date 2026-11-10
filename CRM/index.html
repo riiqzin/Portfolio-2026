@@ -8,23 +8,26 @@
 <link rel="stylesheet" href="/CRM/crm.css">
 <link rel="stylesheet" href="/CRM/radar.css">
 <link rel="stylesheet" href="/CRM/refresh.css">
+<link rel="stylesheet" href="/CRM/command.css">
 </head>
 <body>
 
 <a class="skip-link" href="#workspace">Ir para leads</a>
-<aside class="sidebar" aria-label="Navegação principal">
-  <a class="product" href="#app"><span class="product-mark">r<span>.</span></span><span>ricky<span class="product-sub">RELACIONAMENTOS</span></span></a>
-  <div class="nav-label">WORKSPACE</div>
-  <nav><a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">▦</span> Visão geral</a><a class="nav-item" href="#workspace"><span aria-hidden="true">◉</span> Leads</a><a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar de Clientes <small>BETA</small></a></nav>
-  <section class="radar-card"><div class="radar-orbit" aria-hidden="true"><i></i></div><small>DESCUBRA OPORTUNIDADES</small><h2>Novas conexões.<br>Mais possibilidades.</h2><p>Encontre possíveis clientes por nicho e região, com fontes públicas para revisar.</p><a class="roadmap-label" href="#radar">Abrir Radar de Clientes ↗</a></section>
-  <a class="portfolio-link" href="../" target="_blank" rel="noopener">Abrir portfólio <span aria-hidden="true">↗</span></a>
-  <div class="sidebar-foot"><span class="profile-dot">R</span><span>Ricky CRM<small>Seu espaço de negócios</small></span></div>
-</aside>
+<header class="sidebar" aria-label="Barra principal do Ricky Studio">
+  <a class="product" href="#app" aria-label="Ricky Studio, central de operações"><span class="product-mark">r<span>.</span></span><span>ricky<small class="product-sub">/ STUDIO</small></span></a>
+  <div class="nav-label">OPERATIONS</div>
+  <nav aria-label="Etapas da prospecção">
+    <a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">⌘</span> Central</a>
+    <a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Máquina de oportunidades</a>
+    <a class="nav-item" href="#workspace"><span aria-hidden="true">▦</span> Pipeline de leads</a>
+  </nav>
+  <div class="header-links"><span class="private-label"><i></i> AMBIENTE PRIVADO</span><a class="portfolio-link" href="../" target="_blank" rel="noopener">Meu portfólio <span aria-hidden="true">↗</span></a></div>
+</header>
 <main class="app" id="app">
   <header class="topbar">
     <div class="brand">
       <div class="brand-avatar" aria-hidden="true">R</div>
-      <div class="brand-copy"><span>Workspace / CRM</span><b>Visão geral</b></div>
+      <div class="brand-copy"><span>RICKY / OPERAÇÕES</span><b>Visão geral</b></div>
     </div>
     <div class="top-actions">
       <div class="sync"><span class="sync-dot"></span><span id="syncText">atualizando</span></div>
@@ -35,37 +38,51 @@
   </header>
 
   <section class="radar-panel" id="radarPanel" aria-labelledby="radarTitle" hidden>
-    <div class="radar-topline"><span class="radar-pill"><span class="radar-live-dot"></span> PROSPECÇÃO INTELIGENTE</span><span class="radar-version">RADAR / 01</span></div>
-    <div class="radar-heading">
-      <div><div class="eyebrow">ENCONTRE OPORTUNIDADES, NÃO APENAS EMPRESAS</div><h1 id="radarTitle">Seu próximo cliente<br><em>pode estar aqui.</em></h1><p>Descubra negócios digitais que podem se beneficiar de um site melhor. Encontre, avalie, aborde — tudo dentro do seu CRM.</p></div>
-      <div class="radar-top-art" aria-hidden="true"><span class="radar-cross radar-cross-a">+</span><span class="radar-cross radar-cross-b">+</span><div class="radar-scan-ring"></div><div class="radar-scan-core">R</div></div>
-    </div>
-    <div class="radar-path">
-      <div><span class="path-number">01</span><strong>Descoberta</strong><small>Encontre empresas e lojas</small></div>
-      <div><span class="path-number">02</span><strong>Diagnóstico</strong><small>Auditoria visual + técnica <b>EM BREVE</b></small></div>
-      <div><span class="path-number">03</span><strong>Abordagem</strong><small>Contatos e mensagens <b>EM BREVE</b></small></div>
-    </div>
-    <div class="radar-workbench">
-      <div class="radar-workbench-head"><div><div class="eyebrow">EXPLORADOR DE OPORTUNIDADES</div><h2>O que vamos procurar?</h2><p>Priorize lojas online e negócios com presença digital. A busca ainda não avalia o design dos sites.</p></div><span class="radar-feature-tag">DESCOBERTA · BETA</span></div>
-      <div class="radar-segments" aria-label="Tipo de oportunidade">
-        <button type="button" class="radar-segment is-active" data-radar-niche="Lojas geek e colecionáveis">✦ Geek & colecionáveis</button>
-        <button type="button" class="radar-segment" data-radar-niche="Lojas de camisetas e produtos de futebol">⚽ Futebol</button>
-        <button type="button" class="radar-segment" data-radar-niche="E-commerce independente">◈ E-commerce</button>
-        <button type="button" class="radar-segment" data-radar-niche="">+ Personalizado</button>
+    <div class="ops-eyebrow"><span class="ops-light"></span> SISTEMA DE DESCOBERTA <span class="ops-separator">/</span> MÓDULO 01</div>
+    <div class="radar-intro"><div><h1 id="radarTitle">Ative a máquina.<br><em>Encontre o próximo projeto.</em></h1><p>Uma estação de prospecção para descobrir lojas digitais, qualificar oportunidades e enviá-las ao seu pipeline. Nada de listas genéricas de estabelecimentos.</p></div><a href="#workspace" class="ops-quiet-link">IR PARA MEUS LEADS <span aria-hidden="true">↗</span></a></div>
+    <div class="engine-shell">
+      <div class="engine-strip"><span><i class="engine-led"></i> RICKY / DISCOVERY ENGINE</span><span>WEB SEARCH <b>01</b></span><span>AMBIENTE CONTROLADO</span></div>
+      <div class="engine-grid">
+        <div class="engine-chamber" aria-hidden="true">
+          <div class="engine-scope"><span class="scope-grid"></span><span class="scope-ray"></span><span class="scope-ring ring-one"></span><span class="scope-ring ring-two"></span><span class="scope-ring ring-three"></span><span class="scope-center">R<span>SCAN</span></span><span class="scope-ping ping-one"></span><span class="scope-ping ping-two"></span></div>
+          <div class="engine-chamber-label"><span>SECTOR 001 / BR</span><span>SISTEMA EM ESPERA</span></div>
+        </div>
+        <div class="engine-controls">
+          <div class="engine-kicker">CONFIGURAR MISSÃO <span>01 — 03</span></div>
+          <h2>Qual oportunidade<br>vamos rastrear?</h2>
+          <p>Defina o universo de empresas. Você receberá fontes públicas para revisar. A auditoria visual será uma etapa separada.</p>
+          <div class="radar-segments" aria-label="Escolher segmento">
+            <button type="button" class="radar-segment is-active" data-radar-niche="Lojas geek e colecionáveis">✦ Geek</button>
+            <button type="button" class="radar-segment" data-radar-niche="Lojas de camisetas e produtos de futebol">⚽ Futebol</button>
+            <button type="button" class="radar-segment" data-radar-niche="E-commerce independente">◈ E-commerce</button>
+            <button type="button" class="radar-segment" data-radar-niche="">+ Outro nicho</button>
+          </div>
+          <form class="radar-form" id="radarForm">
+            <div class="field"><label for="radarNiche">01 / SEGMENTO</label><input id="radarNiche" required minlength="2" maxlength="80" value="Lojas geek e colecionáveis" placeholder="Ex.: quadrinhos e action figures"></div>
+            <div class="field"><label for="radarRegion">02 / ALCANCE GEOGRÁFICO</label><input id="radarRegion" required minlength="2" maxlength="80" value="Brasil" placeholder="Brasil ou cidade específica"><small class="radar-field-note">Recomendado: Brasil inteiro para e-commerces.</small></div>
+            <button class="primary radar-main-action" id="radarSearch" type="submit"><span class="action-icon">◎</span> INICIAR VARREDURA <span aria-hidden="true">↗</span></button>
+          </form>
+        </div>
       </div>
-      <form class="radar-form" id="radarForm">
-        <div class="field"><label for="radarNiche">Segmento / tipo de negócio</label><input id="radarNiche" required minlength="2" maxlength="80" value="Lojas geek e colecionáveis" placeholder="Ex.: lojas de action figures e quadrinhos" autocomplete="off"></div>
-        <div class="field"><label for="radarRegion">Onde procurar</label><input id="radarRegion" required minlength="2" maxlength="80" value="Brasil" placeholder="Brasil ou cidade específica" autocomplete="off"><small class="radar-field-note">Para lojas online, recomendamos Brasil inteiro.</small></div>
-        <button class="primary radar-main-action" id="radarSearch" type="submit">ENCONTRAR LOJAS <span aria-hidden="true">↗</span></button>
-      </form>
-      <div class="radar-preferences"><span>FILTROS APLICADOS</span><span class="radar-filterchip">✓ Domínios repetidos</span><span class="radar-filterchip">✓ Nuvemshop e plataformas restritivas*</span><span class="radar-filterchip">✓ Diretórios e marketplaces</span></div>
-      <p class="radar-caveat">* Filtro por indícios textuais — tecnologias em domínio próprio podem passar. Resultados são candidatos encontrados na web, não auditorias nem contatos verificados.</p>
+      <div class="engine-footer"><span>FILTROS <b>Duplicados · Marketplaces · Plataformas restritivas*</b></span><span>ATÉ 20 FONTES / BUSCA</span><span>ENVIO COMERCIAL <b>MANUAL</b></span></div>
     </div>
-    <div class="radar-status" role="group" aria-label="Estado da integração"><div class="radar-status-icon">◎</div><div class="radar-status-copy"><strong>Conexão com o mecanismo de busca</strong><p id="radarStatus" role="status" aria-live="polite">Verificando configuração do servidor…</p></div><button class="ghost" id="radarCheck" type="button">TESTAR CONEXÃO ↻</button></div>
-    <div class="radar-results-heading"><div><div class="eyebrow">SUA LISTA DE CANDIDATOS</div><h2>Oportunidades encontradas</h2></div><span class="radar-feature-tag">REVISÃO MANUAL</span></div>
+    <div class="radar-status" role="group" aria-label="Estado do sistema"><span class="radar-status-icon">◈</span><div class="radar-status-copy"><strong>STATUS DO MOTOR</strong><p id="radarStatus" role="status" aria-live="polite">Verificando configuração…</p></div><button class="ghost" id="radarCheck" type="button">DIAGNOSTICAR CONEXÃO ↻</button></div>
+    <div class="output-header"><div><div class="ops-eyebrow">OUTPUT / DESCOBERTA</div><h2>Candidatos capturados.</h2><p>Da busca para a análise. Da análise para o CRM.</p></div><a href="#workspace" class="ops-quiet-link">ABRIR PIPELINE ↗</a></div>
     <div class="radar-summary" id="radarSummary"></div><div class="radar-source" id="radarSource"></div>
-    <div class="radar-results" id="radarResults"><div class="radar-welcome"><span class="radar-welcome-icon">⌕</span><h3>Um bom projeto começa com o cliente certo.</h3><p>Escolha um segmento e inicie uma busca. Quando as APIs estiverem configuradas, os resultados reais aparecerão aqui — sem empresas inventadas.</p></div></div>
-    <details class="radar-guide"><summary>Configuração e funcionalidades futuras <span aria-hidden="true">↗</span></summary><p>Para ativar a busca real, configure no servidor a chave do Brave, acesso do painel, Redis e limites de consultas. <a href="https://github.com/riiqzin/Portfolio-2026/blob/main/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">Abrir guia de configuração</a>.</p><p>A análise de aparência, velocidade, contatos comerciais e mensagens de abordagem virá nas próximas etapas. Não exibimos notas falsas de qualidade ou listas fictícias como se fossem resultados reais.</p></details>
+    <div class="radar-results" id="radarResults"><div class="radar-welcome"><span class="radar-welcome-icon">◎</span><h3>Nenhuma varredura iniciada.</h3><p>Escolha um segmento e ative o motor. Os candidatos aparecerão aqui após configurarmos as APIs de busca, sem dados fictícios.</p></div></div>
+    <div class="next-modules"><div><span>02</span><strong>Auditoria visual</strong><small>Capturas e diagnóstico com IA — futura integração</small></div><div><span>03</span><strong>Contato inteligente</strong><small>Contatos públicos e mensagens — futura integração</small></div></div>
+    <details class="radar-guide"><summary>Configuração do motor e limites atuais ↗</summary><p>A descoberta precisa das variáveis privadas do Brave Search, Redis e limites de uso. <a href="https://github.com/riiqzin/Portfolio-2026/blob/main/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">Ver instruções de ativação</a>.</p><p>Não há auditoria de design, contatos ou IA configurados nesta versão. Os resultados retornados são apenas sugestões de sites para conferir e não têm nota de conversão verificada. * A identificação de plataformas depende de indícios indexados.</p></details>
+  </section>
+
+  <section class="mission-home" aria-label="Central de operações">
+    <div class="mission-stamp"><span class="ops-light"></span> CENTRO DE COMANDO <span class="ops-separator">/</span> SEU ESPAÇO DE TRABALHO</div>
+    <div class="mission-intro"><div><h1>Encontre.<br>Crie.<br><em>Conquiste.</em></h1><p>Seu processo comercial, do primeiro sinal até a proposta. Uma operação conectada para você passar menos tempo procurando e mais tempo criando.</p><div class="mission-actions"><a href="#radar" class="mission-start"><span>◎</span> INICIAR PROSPECÇÃO <span aria-hidden="true">↗</span></a><a href="#workspace" class="mission-secondary">REVISAR MEUS LEADS ↗</a></div></div><div class="mission-art" aria-hidden="true"><div class="mission-orbit o-one"></div><div class="mission-orbit o-two"></div><div class="mission-center">R<span>OPERATIONS</span></div><div class="mission-star star-one">✦</div><div class="mission-star star-two">✦</div></div></div>
+    <div class="workflow-rail" aria-label="Etapas do trabalho">
+      <a href="#radar" class="workflow-step"><span class="flow-n">01</span><strong>Descobrir</strong><small>Buscar oportunidades</small><span class="flow-arrow">↗</span></a>
+      <a href="#workspace" class="workflow-step"><span class="flow-n">02</span><strong>Organizar</strong><small>Qualificar contatos</small><span class="flow-arrow">↗</span></a>
+      <a href="#workspace" class="workflow-step"><span class="flow-n">03</span><strong>Apresentar</strong><small>Protótipo e proposta</small><span class="flow-arrow">↗</span></a>
+      <a href="#workspace" class="workflow-step"><span class="flow-n">04</span><strong>Acompanhar</strong><small>Visitas e respostas</small><span class="flow-arrow">↗</span></a>
+    </div>
   </section>
 
   <div class="dashboard-layout">
@@ -117,7 +134,7 @@
       <div class="news-alert-list" id="newsAlertList"></div>
     </div>
     <div class="workspace-head">
-      <div class="workspace-title"><b>Leads</b><span class="count-pill" id="leadCount">0</span></div>
+      <div class="workspace-title"><b>Pipeline de relacionamentos</b><span class="count-pill" id="leadCount">0</span></div>
       <div class="filters" id="filters">
         <button class="filter active" data-filter="active">ATIVOS</button>
         <button class="filter" data-filter="news">COM NOVIDADE</button>
