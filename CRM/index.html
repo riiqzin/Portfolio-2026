@@ -6,6 +6,7 @@
 <title>Ricky CRM</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
 <link rel="stylesheet" href="/CRM/crm.css">
+<link rel="stylesheet" href="/CRM/radar.css">
 </head>
 <body>
 
@@ -13,8 +14,8 @@
 <aside class="sidebar" aria-label="Navegação principal">
   <a class="product" href="#app"><span class="product-mark">r<span>.</span></span><span>ricky<span class="product-sub">RELACIONAMENTOS</span></span></a>
   <div class="nav-label">WORKSPACE</div>
-  <nav><a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">▦</span> Visão geral</a><a class="nav-item" href="#workspace"><span aria-hidden="true">◉</span> Leads</a><a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar de Clientes <small>EM BREVE</small></a></nav>
-  <section class="radar-card" id="radar"><div class="radar-orbit" aria-hidden="true"><i></i></div><small>O PRÓXIMO PASSO</small><h2>Novas conexões.<br>Mais possibilidades.</h2><p>Seu futuro espaço para descobrir empresas e organizar oportunidades.</p><span class="roadmap-label">Radar de Clientes · Em breve</span></section>
+  <nav><a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">▦</span> Visão geral</a><a class="nav-item" href="#workspace"><span aria-hidden="true">◉</span> Leads</a><a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar de Clientes <small>BETA</small></a></nav>
+  <section class="radar-card"><div class="radar-orbit" aria-hidden="true"><i></i></div><small>DESCUBRA OPORTUNIDADES</small><h2>Novas conexões.<br>Mais possibilidades.</h2><p>Encontre possíveis clientes por nicho e região, com fontes públicas para revisar.</p><a class="roadmap-label" href="#radar">Abrir Radar de Clientes ↗</a></section>
   <a class="portfolio-link" href="../" target="_blank" rel="noopener">Abrir portfólio <span aria-hidden="true">↗</span></a>
   <div class="sidebar-foot"><span class="profile-dot">R</span><span>Ricky CRM<small>Seu espaço de negócios</small></span></div>
 </aside>
@@ -31,6 +32,20 @@
       <button class="primary" id="newLeadBtn">+ NOVO LEAD</button>
     </div>
   </header>
+
+  <section class="radar-panel" id="radarPanel" aria-labelledby="radarTitle" hidden>
+    <div class="radar-heading"><div><div class="eyebrow">NOVAS CONEXÕES COMEÇAM AQUI</div><h1 id="radarTitle">Radar de Clientes</h1><p>Descubra possíveis clientes por nicho e região. Revise as fontes e escolha quem faz sentido para o seu negócio.</p></div><span class="radar-version">VERSÃO 01</span></div>
+    <form class="radar-form" id="radarForm">
+      <div class="field"><label for="radarNiche">Nicho</label><input id="radarNiche" required minlength="2" maxlength="80" placeholder="Ex.: clínicas odontológicas" list="radarNiches"><datalist id="radarNiches"><option value="Clínicas odontológicas"><option value="Restaurantes"><option value="Escritórios de arquitetura"><option value="Academias"><option value="Lojas de móveis"></datalist></div>
+      <div class="field"><label for="radarRegion">Cidade / região no Brasil</label><input id="radarRegion" required minlength="2" maxlength="80" placeholder="Ex.: Campinas, SP"></div>
+      <button class="primary" id="radarSearch" type="submit">BUSCAR EMPRESAS ↗</button>
+    </form>
+    <div class="radar-notice">Até 20 resultados por consulta. Filtramos domínios repetidos, nomes já presentes no CRM e indícios de Nuvemshop, Shopify e similares. Domínios próprios podem ocultar a plataforma: confirme na fonte. A região orienta a busca, mas não comprova o endereço.</div>
+    <div class="radar-status"><p id="radarStatus" role="status" aria-live="polite">Abra o Radar para verificar a disponibilidade.</p><button class="ghost" id="radarCheck" type="button">VERIFICAR CONEXÃO</button></div>
+    <div class="radar-summary" id="radarSummary"></div><div class="radar-source" id="radarSource"></div>
+    <div class="radar-results" id="radarResults"></div>
+    <details class="radar-guide"><summary>Como funciona e como ativar</summary><p>A busca usa Brave Search no servidor, com limite diário e mensal compartilhado. Se faltar configuração, nenhuma consulta é feita. Consulte o <a href="https://github.com/riiqzin/Portfolio-2026/blob/feat/radar-clientes-v1/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">guia de ativação</a>.</p><p>Os cartões mostram títulos e descrições indexados, sem nota de qualidade, análise de IA ou contatos inventados. Prepare um lead somente após conferir a empresa. O cadastro exige a URL do seu projeto e não envia mensagens. Os resultados ficam apenas nesta sessão da página.</p></details>
+  </section>
 
   <div class="dashboard-layout">
     <aside class="overview-panel">
@@ -151,6 +166,7 @@
 
 <div class="toast" id="toast" role="status"></div>
 
+<script src="/CRM/radar.js"></script>
 <script>
 (() => {
   const SUPABASE_URL = 'https://crjnawbtlwtruwwzbkzk.supabase.co';
@@ -893,6 +909,17 @@
   renderSelfIdentity();
 
   // Primeira entrada.
+  window.RickyRadar.mount({
+    getKey: () => state.key,
+    getLeads: () => state.leads,
+    createLead: prospect => {
+      openLeadModal();
+      $('#leadName').value = prospect.name;
+      $('#leadSlug').value = slugify(prospect.name);
+      toast('Confira o nome e informe a URL do seu projeto. Nenhuma mensagem será enviada.');
+    }
+  });
+
   if (!state.key) $('#loginOverlay').classList.remove('hidden');
   else loadDashboard();
 

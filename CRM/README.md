@@ -1,6 +1,6 @@
 # CRM visual redesign
 
-The CRM remains a static HTML page. `crm.css` contains the responsive design tokens, navigation, cards, lead list, dialogs and reduced-motion rules. The Radar entry is explicitly a future module, not an implemented discovery service.
+The CRM remains a static HTML page. `crm.css` contains the responsive design tokens, navigation, cards, lead list, dialogs and reduced-motion rules. Radar now has an isolated UI (`radar.js`/`radar.css`) and server-side discovery endpoint (`api/radar.js`). See [Radar setup, limitations and staged roadmap](RADAR.md). Search stays disabled until server credentials and explicit usage limits are configured.
 
 ## Preserved contracts
 
