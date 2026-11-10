@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/CRM/radar.css">
 <link rel="stylesheet" href="/CRM/refresh.css">
 <link rel="stylesheet" href="/CRM/command.css">
+<link rel="stylesheet" href="/CRM/pipeline-v4.css">
 </head>
 <body>
 
@@ -86,64 +87,57 @@
   </section>
 
   <div class="dashboard-layout">
-    <aside class="overview-panel">
-  <section class="hero">
-    <div>
-      <div class="eyebrow">SEU NEGÓCIO, EM MOVIMENTO</div>
-      <h1 id="heroTitle">Cada conexão<br><em>conta.</em></h1>
+    <div class="operations-intro">
+      <div class="operations-identity"><span class="ops-eyebrow"><span class="ops-light"></span> RICKY STUDIO / CENTRAL DE RELACIONAMENTOS</span>
+        <h1 id="heroTitle">Seu trabalho.<br><em>Em movimento.</em></h1>
+        <p id="heroText">Acompanhe cada contato, descubra sinais de interesse e avance para a próxima conversa.</p>
+        <div class="updated" id="updatedText">CARREGANDO...</div>
+      </div>
+      <div class="operations-control">
+        <span class="control-label">SUA PRÓXIMA AÇÃO</span>
+        <h2>Transforme oportunidades<br>em projetos reais.</h2>
+        <p>Encontre um negócio no Radar, prepare uma prévia e acompanhe o interesse aqui.</p>
+        <div class="control-links"><a href="#radar">◎ ABRIR RADAR <span>↗</span></a><button type="button" id="pipelineNewLead" class="control-secondary">+ ADICIONAR CONTATO</button></div>
+      </div>
     </div>
-    <div class="hero-side">
-      <p id="heroText">Acompanhe seus projetos, identifique interesse e encontre o momento de conversar.</p>
-      <div class="updated" id="updatedText">CARREGANDO...</div>
-    </div>
-  </section>
-  <section class="metrics">
-    <article class="metric news" id="newsMetric"><small>Novidades</small><b id="mNews">0</b><span>desde sua última visita</span></article>
-    <article class="metric opened"><small>Já abriram</small><b id="mOpened">0</b><span>leads ativos</span></article>
-    <article class="metric waiting"><small>Aguardando</small><b id="mWaiting">0</b><span>sem abertura ainda</span></article>
-    <article class="metric replied"><small>Responderam</small><b id="mReplied">0</b><span>marcados no painel</span></article>
-  </section>
+    <section class="pipeline-pulse" aria-label="Resumo de atividades">
+      <div class="pulse-top"><span class="ops-eyebrow">SINAIS / ATIVIDADE EM TEMPO REAL</span><span>ATUALIZAÇÃO A CADA 30 SEGUNDOS</span></div>
+      <div class="metrics">
+        <article class="metric news" id="newsMetric"><small>01 / Novidades</small><b id="mNews">0</b><span>desde sua última visita</span></article>
+        <article class="metric opened"><small>02 / Visualizaram</small><b id="mOpened">0</b><span>leads ativos</span></article>
+        <article class="metric waiting"><small>03 / Aguardando</small><b id="mWaiting">0</b><span>primeira abertura</span></article>
+        <article class="metric replied"><small>04 / Responderam</small><b id="mReplied">0</b><span>marcados no CRM</span></article>
+      </div>
+    </section>
+    <section class="workspace" id="workspace">
+      <div class="pipeline-header">
+        <div class="pipeline-title"><span class="ops-eyebrow">02 / GERENCIAMENTO DE RELACIONAMENTOS</span><h2>Seus contatos.<br><em>Sua próxima oportunidade.</em></h2><p>Selecione uma empresa para ver a linha do tempo, abrir a demonstração ou acompanhar a resposta.</p></div>
+        <div class="pipeline-header-action"><span class="pipeline-total"><b id="leadCount">0</b><small>NA LISTA</small></span><button id="pipelineAddBtn" type="button" class="primary">+ NOVO LEAD</button></div>
+      </div>
+      <div class="news-alert hidden" id="newsAlert" aria-live="polite">
+        <div class="news-alert-top"><div><div class="news-alert-kicker" id="newsAlertKicker">ATIVIDADE NOVA</div><h3 id="newsAlertTitle">Tem coisa nova desde sua última visita.</h3></div><div class="news-alert-actions"><button class="news-alert-btn" id="viewNewsBtn" type="button">VER NOVIDADES</button><button class="news-alert-btn subtle" id="markSeenBtn" type="button">MARCAR COMO VISTO</button></div></div>
+        <div class="news-alert-list" id="newsAlertList"></div>
+      </div>
+      <div class="pipeline-toolbar">
+        <div class="filters" id="filters" aria-label="Filtrar leads">
+          <button class="filter active" data-filter="active">ATIVOS</button>
+          <button class="filter" data-filter="news">COM NOVIDADE</button>
+          <button class="filter" data-filter="waiting">AGUARDANDO</button>
+          <button class="filter" data-filter="all">TODOS</button>
+        </div>
+        <label class="search-box"><span aria-hidden="true">⌕</span><input id="leadSearch" type="search" placeholder="Encontrar empresa, e-mail ou projeto" aria-label="Buscar leads"></label>
+      </div>
+      <div class="pipeline-list-intro"><span>EMPRESAS EM ACOMPANHAMENTO</span><span>SELECIONE UM CARD PARA EXPLORAR ↗</span></div>
+      <div class="leads" id="leadList" aria-live="polite"><div class="empty"><b>Seu próximo projeto começa aqui.</b><span>Adicione um contato ou abra o Radar para descobrir empresas.</span></div></div>
+      <div class="pipeline-bottom"><div><span>PRÓXIMA ETAPA</span><strong>Novos contatos podem começar no Radar.</strong></div><a href="#radar">DESCOBRIR EMPRESAS ↗</a></div>
+    </section>
+    <details class="identity-details">
+      <summary><span>◎</span> Diagnóstico de identificação de acessos <span class="identity-arrow">⌄</span></summary>
       <div class="overview-meta">
         <div class="meta-row"><span>Atualização</span><b>automática / 30s</b></div>
-        <div class="self-access-card">
-          <div class="self-access-head">
-            <span>SEU ACESSO ATUAL</span>
-            <span class="self-net-state" id="trackingNetState">verificando tracking</span>
-          </div>
-          <div class="self-ip-row">
-            <b class="self-ip-value" id="currentIpText">detectando IP...</b>
-            <button class="self-ip-btn mine" id="selfIpBtn" type="button" disabled>AUTOMÁTICO</button>
-          </div>
-          <small class="self-ip-hint" id="selfIpHint">A rede usada para abrir o CRM é reconhecida automaticamente como sua.</small>
-        </div>
+        <div class="self-access-card"><div class="self-access-head"><span>SEU ACESSO ATUAL</span><span class="self-net-state" id="trackingNetState">verificando tracking</span></div><div class="self-ip-row"><b class="self-ip-value" id="currentIpText">detectando IP...</b><button class="self-ip-btn mine" id="selfIpBtn" type="button" disabled>AUTOMÁTICO</button></div><small class="self-ip-hint" id="selfIpHint">A rede usada para abrir o CRM é reconhecida automaticamente como sua.</small></div>
       </div>
-    </aside>
-
-  <section class="workspace" id="workspace">
-    <div class="news-alert hidden" id="newsAlert" aria-live="polite">
-      <div class="news-alert-top">
-        <div>
-          <div class="news-alert-kicker" id="newsAlertKicker">ATIVIDADE NOVA</div>
-          <h3 id="newsAlertTitle">Tem coisa nova desde sua última visita.</h3>
-        </div>
-        <div class="news-alert-actions">
-          <button class="news-alert-btn" id="viewNewsBtn" type="button">VER NOVIDADES</button>
-          <button class="news-alert-btn subtle" id="markSeenBtn" type="button">MARCAR COMO VISTO</button>
-        </div>
-      </div>
-      <div class="news-alert-list" id="newsAlertList"></div>
-    </div>
-    <div class="workspace-head">
-      <div class="workspace-title"><b>Pipeline de relacionamentos</b><span class="count-pill" id="leadCount">0</span></div>
-      <div class="filters" id="filters">
-        <button class="filter active" data-filter="active">ATIVOS</button>
-        <button class="filter" data-filter="news">COM NOVIDADE</button>
-        <button class="filter" data-filter="waiting">AGUARDANDO</button>
-        <button class="filter" data-filter="all">TODOS</button>
-      </div>
-    </div>
-    <div class="list-tools"><label class="search-box"><span aria-hidden="true">⌕</span><input id="leadSearch" type="search" placeholder="Buscar nome, e-mail ou projeto" aria-label="Buscar leads"></label><span class="list-hint">Selecione um lead para ver a atividade <span aria-hidden="true">↗</span></span></div><div class="list-columns" aria-hidden="true"><span>LEAD / PROJETO</span><span>STATUS</span><span>PRIMEIRA ABERTURA</span><span>ÚLTIMA ATIVIDADE</span><span>ABERTURAS</span><span></span></div><div class="leads" id="leadList" aria-live="polite"><div class="empty"><b>Seus leads, em um só lugar.</b><span>Entre para acompanhar suas conexões.</span></div></div>
-  </section>
+    </details>
   </div>
 
   <div class="footer-note">
@@ -526,38 +520,43 @@
     const list = $('#leadList');
     const leads = visibleLeads();
     $('#leadCount').textContent = leads.length;
-
     if (!leads.length){
-      list.innerHTML = `<div class="empty"><b>Nenhum lead encontrado.</b><span>Tente outra busca ou filtro. Para começar uma conexão, use “Novo lead”.</span></div>`;
+      list.innerHTML = '<div class="empty"><span class="empty-icon">◎</span><b>Nenhum contato neste filtro.</b><span>Experimente outro filtro ou volte ao Radar para descobrir novas oportunidades.</span><a class="empty-cta" href="#radar">IR PARA O RADAR ↗</a></div>';
       return;
     }
-
-    list.innerHTML = leads.map(lead => {
+    list.innerHTML = leads.map((lead,index) => {
       const status = getStatus(lead);
       const recent = latestDisplayEvent(lead);
       const unread = newEventsForLead(lead);
       const news = unread.length > 0;
       const actionText = recent ? (eventLabels[recent.event_type] || recent.event_type) : status.label;
       const actionTime = recent ? relative(recent.created_at) :
-        lead.email_scheduled_at ? `envio ${formatDate(lead.email_scheduled_at)}` : 'sem atividade';
+        lead.email_scheduled_at ? 'envio ' + formatDate(lead.email_scheduled_at) : 'sem atividade recente';
+      const first = firstExternalOpenAt(lead);
+      const opens = externalOpenCount(lead);
       return `
-        <article tabindex="0" role="button" aria-label="Ver detalhes de ${esc(lead.name)}" class="lead-row ${news?'has-news':''}" data-id="${esc(lead.id)}">
+        <article tabindex="0" role="button" aria-label="Abrir detalhes de ${esc(lead.name)}" class="lead-row ${news?'has-news':''}" data-id="${esc(lead.id)}">
+          <div class="lead-card-head">
+            <span class="lead-index">${String(index+1).padStart(2,'0')} / CONTATO</span>
+            <span class="status ${status.cls}">${esc(status.label)}</span>
+          </div>
           <div class="lead-main">
-            <div class="lead-name">${news?'<span class="new-dot"></span>':''}<b>${esc(lead.name)}</b>${news?`<span class="new-badge">NOVO · ${unread.length}</span>`:''}</div>
+            <div class="lead-name">${news?'<span class="new-dot"></span>':''}<b>${esc(lead.name)}</b>${news?`<span class="new-badge">${unread.length} NOVA(S)</span>`:''}</div>
             <div class="lead-url">${esc(lead.project_url)}</div>
-            ${lead.notes ? `<div class="lead-note" title="${esc(lead.notes)}">⚠ ${esc(lead.notes)}</div>` : ''}
+            ${lead.notes ? `<div class="lead-note" title="${esc(lead.notes)}">✳ ${esc(lead.notes)}</div>` : ''}
           </div>
-          <span class="status ${status.cls}">${esc(status.label)}</span>
-          <div class="first-open ${firstExternalOpenAt(lead) ? '' : 'empty-first'}">
-            <small>1ª abertura externa</small>
-            <b>${firstExternalOpenAt(lead) ? esc(formatDate(firstExternalOpenAt(lead))) : 'Ainda não'}</b>
+          <div class="lead-signal">
+            <span class="signal-kicker">ÚLTIMO SINAL</span>
+            <b>${esc(actionText)}</b>
+            <small>${esc(actionTime)}</small>
           </div>
-          <div class="activity ${news?'is-new':''}"><b>${esc(actionText)}</b><span>${esc(actionTime)}</span></div>
-          <div class="open-count"><b>${externalOpenCount(lead)}x</b><span>EXTERNAS</span></div>
-          <div class="chev">›</div>
+          <div class="lead-card-footer">
+            <div class="lead-card-stat"><small>1ª VISITA EXTERNA</small><strong>${first ? esc(formatDate(first)) : 'Ainda não'}</strong></div>
+            <div class="lead-card-stat"><small>ABERTURAS</small><strong>${opens}x</strong></div>
+            <span class="lead-card-arrow" aria-hidden="true">↗</span>
+          </div>
         </article>`;
     }).join('');
-
     $$('.lead-row').forEach(row => {
       row.addEventListener('click', () => openDrawer(row.dataset.id));
       row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrawer(row.dataset.id); } });
@@ -945,6 +944,9 @@
 
   // A identidade de rede vem do próprio Supabase.
   renderSelfIdentity();
+
+  // O painel novo reutiliza o mesmo fluxo existente de criação de leads.
+  ['pipelineNewLead','pipelineAddBtn'].forEach(id => document.getElementById(id)?.addEventListener('click', () => $('#newLeadBtn').click()));
 
   // Primeira entrada.
   window.RickyRadar.mount({
