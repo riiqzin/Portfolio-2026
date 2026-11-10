@@ -44,9 +44,12 @@ window.RickyRadar = {
     }
     async function status() {
       if (!getKey()) { message('Entre no CRM para usar o Radar.'); return; }
-      message('Verificando disponibilidade…');
+      message('Consultando o servidor. Nenhuma busca será cobrada nesta verificação…');
       try { const data = await api('GET'); message(`Pronto para buscar · até ${data.limits.daily} consultas/dia e ${data.limits.monthly}/mês (UTC). Cada busca usa uma consulta.`); }
-      catch (error) { message(error.message); }
+      catch (error) { 
+        const missing = /configura|ativação|chave|servidor/i.test(error.message);
+        message(missing ? 'Busca ainda não ativada: faltam chaves e limites de uso no servidor. Abra “Configuração e funcionalidades futuras” para ver o passo a passo. Nenhuma busca foi realizada.' : error.message);
+      }
     }
     function navigate() {
       const active = location.hash === '#radar';
@@ -61,6 +64,12 @@ window.RickyRadar = {
       if (active && !busy && !searchMeta) status();
       if (active && searchMeta) render();
     }
+    // Quick niche chips update the actual search field; "Personalizado" makes it editable.
+    document.querySelectorAll('[data-radar-niche]').forEach(button => button.addEventListener('click', () => {
+      document.querySelectorAll('[data-radar-niche]').forEach(el => el.classList.toggle('is-active', el === button));
+      $('#radarNiche').value = button.dataset.radarNiche;
+      if (!button.dataset.radarNiche) $('#radarNiche').focus();
+    }));
     $('#radarCheck').addEventListener('click', () => { if (!busy) status(); });
     $('#radarForm').addEventListener('submit', async event => {
       event.preventDefault(); if (busy) return;
