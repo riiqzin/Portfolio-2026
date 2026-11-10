@@ -33,7 +33,21 @@ window.RickyRadar = {
         link.target = '_blank'; link.rel = 'noopener noreferrer';
         const add = node('button', 'Preparar lead', 'primary'); add.type = 'button';
         add.addEventListener('click', () => createLead(row));
-        actions.append(link, add); card.append(actions); list.append(card);
+        // Draft only: never claim an audit was performed or that a problem was verified.
+        const draft = node('button', 'Copiar abordagem', 'ghost');
+        draft.type = 'button';
+        draft.title = 'Modelo inicial sem diagnósticos inventados';
+        draft.addEventListener('click', async () => {
+          const businessName = row.name.replace(/\s+[|–—-]\s+.*$/, '').trim();
+          const message = 'Oi! Tudo bem? Encontrei a ' + businessName + ' pesquisando lojas online do segmento. Trabalho com criação e modernização de sites e tenho algumas ideias de como poderia apresentar melhor os produtos e a identidade da marca. Se fizer sentido para vocês, posso preparar uma prévia visual gratuita de uma possível reformulação, sem compromisso. Teriam interesse?';
+          try {
+            await navigator.clipboard.writeText(message);
+            const previous = draft.textContent;
+            draft.textContent = '✓ Copiado';
+            setTimeout(() => { if (draft.isConnected) draft.textContent = previous; }, 1800);
+          } catch { window.prompt('Copie sua mensagem:', message); }
+        });
+        actions.append(link, add, draft); card.append(actions); list.append(card);
       });
       if (searchMeta) {
         const removed = searchMeta.removed;
@@ -54,6 +68,7 @@ window.RickyRadar = {
     function navigate() {
       const active = location.hash === '#radar';
       document.body.classList.toggle('radar-active', active);
+      document.body.classList.toggle('leads-focused', location.hash === '#workspace');
       $('#radarPanel').hidden = !active;
       document.querySelectorAll('.sidebar nav .nav-item').forEach(a => {
         const selected = active ? a.hash === '#radar' : a.hash === (location.hash === '#workspace' ? '#workspace' : '#app');
