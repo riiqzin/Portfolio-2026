@@ -7,6 +7,7 @@
 <meta name="robots" content="noindex,nofollow,noarchive">
 <link rel="stylesheet" href="/CRM/crm.css">
 <link rel="stylesheet" href="/CRM/radar.css">
+<link rel="stylesheet" href="/CRM/refresh.css">
 </head>
 <body>
 
@@ -34,17 +35,37 @@
   </header>
 
   <section class="radar-panel" id="radarPanel" aria-labelledby="radarTitle" hidden>
-    <div class="radar-heading"><div><div class="eyebrow">NOVAS CONEXÕES COMEÇAM AQUI</div><h1 id="radarTitle">Radar de Clientes</h1><p>Descubra possíveis clientes por nicho e região. Revise as fontes e escolha quem faz sentido para o seu negócio.</p></div><span class="radar-version">VERSÃO 01</span></div>
-    <form class="radar-form" id="radarForm">
-      <div class="field"><label for="radarNiche">Nicho</label><input id="radarNiche" required minlength="2" maxlength="80" placeholder="Ex.: clínicas odontológicas" list="radarNiches"><datalist id="radarNiches"><option value="Clínicas odontológicas"><option value="Restaurantes"><option value="Escritórios de arquitetura"><option value="Academias"><option value="Lojas de móveis"></datalist></div>
-      <div class="field"><label for="radarRegion">Cidade / região no Brasil</label><input id="radarRegion" required minlength="2" maxlength="80" placeholder="Ex.: Campinas, SP"></div>
-      <button class="primary" id="radarSearch" type="submit">BUSCAR EMPRESAS ↗</button>
-    </form>
-    <div class="radar-notice">Até 20 resultados por consulta. Filtramos domínios repetidos, nomes já presentes no CRM e indícios de Nuvemshop, Shopify e similares. Domínios próprios podem ocultar a plataforma: confirme na fonte. A região orienta a busca, mas não comprova o endereço.</div>
-    <div class="radar-status"><p id="radarStatus" role="status" aria-live="polite">Abra o Radar para verificar a disponibilidade.</p><button class="ghost" id="radarCheck" type="button">VERIFICAR CONEXÃO</button></div>
+    <div class="radar-topline"><span class="radar-pill"><span class="radar-live-dot"></span> PROSPECÇÃO INTELIGENTE</span><span class="radar-version">RADAR / 01</span></div>
+    <div class="radar-heading">
+      <div><div class="eyebrow">ENCONTRE OPORTUNIDADES, NÃO APENAS EMPRESAS</div><h1 id="radarTitle">Seu próximo cliente<br><em>pode estar aqui.</em></h1><p>Descubra negócios digitais que podem se beneficiar de um site melhor. Encontre, avalie, aborde — tudo dentro do seu CRM.</p></div>
+      <div class="radar-top-art" aria-hidden="true"><span class="radar-cross radar-cross-a">+</span><span class="radar-cross radar-cross-b">+</span><div class="radar-scan-ring"></div><div class="radar-scan-core">R</div></div>
+    </div>
+    <div class="radar-path">
+      <div><span class="path-number">01</span><strong>Descoberta</strong><small>Encontre empresas e lojas</small></div>
+      <div><span class="path-number">02</span><strong>Diagnóstico</strong><small>Auditoria visual + técnica <b>EM BREVE</b></small></div>
+      <div><span class="path-number">03</span><strong>Abordagem</strong><small>Contatos e mensagens <b>EM BREVE</b></small></div>
+    </div>
+    <div class="radar-workbench">
+      <div class="radar-workbench-head"><div><div class="eyebrow">EXPLORADOR DE OPORTUNIDADES</div><h2>O que vamos procurar?</h2><p>Priorize lojas online e negócios com presença digital. A busca ainda não avalia o design dos sites.</p></div><span class="radar-feature-tag">DESCOBERTA · BETA</span></div>
+      <div class="radar-segments" aria-label="Tipo de oportunidade">
+        <button type="button" class="radar-segment is-active" data-radar-niche="Lojas geek e colecionáveis">✦ Geek & colecionáveis</button>
+        <button type="button" class="radar-segment" data-radar-niche="Lojas de camisetas e produtos de futebol">⚽ Futebol</button>
+        <button type="button" class="radar-segment" data-radar-niche="E-commerce independente">◈ E-commerce</button>
+        <button type="button" class="radar-segment" data-radar-niche="">+ Personalizado</button>
+      </div>
+      <form class="radar-form" id="radarForm">
+        <div class="field"><label for="radarNiche">Segmento / tipo de negócio</label><input id="radarNiche" required minlength="2" maxlength="80" value="Lojas geek e colecionáveis" placeholder="Ex.: lojas de action figures e quadrinhos" autocomplete="off"></div>
+        <div class="field"><label for="radarRegion">Onde procurar</label><input id="radarRegion" required minlength="2" maxlength="80" value="Brasil" placeholder="Brasil ou cidade específica" autocomplete="off"><small class="radar-field-note">Para lojas online, recomendamos Brasil inteiro.</small></div>
+        <button class="primary radar-main-action" id="radarSearch" type="submit">ENCONTRAR LOJAS <span aria-hidden="true">↗</span></button>
+      </form>
+      <div class="radar-preferences"><span>FILTROS APLICADOS</span><span class="radar-filterchip">✓ Domínios repetidos</span><span class="radar-filterchip">✓ Nuvemshop e plataformas restritivas*</span><span class="radar-filterchip">✓ Diretórios e marketplaces</span></div>
+      <p class="radar-caveat">* Filtro por indícios textuais — tecnologias em domínio próprio podem passar. Resultados são candidatos encontrados na web, não auditorias nem contatos verificados.</p>
+    </div>
+    <div class="radar-status" role="group" aria-label="Estado da integração"><div class="radar-status-icon">◎</div><div class="radar-status-copy"><strong>Conexão com o mecanismo de busca</strong><p id="radarStatus" role="status" aria-live="polite">Verificando configuração do servidor…</p></div><button class="ghost" id="radarCheck" type="button">TESTAR CONEXÃO ↻</button></div>
+    <div class="radar-results-heading"><div><div class="eyebrow">SUA LISTA DE CANDIDATOS</div><h2>Oportunidades encontradas</h2></div><span class="radar-feature-tag">REVISÃO MANUAL</span></div>
     <div class="radar-summary" id="radarSummary"></div><div class="radar-source" id="radarSource"></div>
-    <div class="radar-results" id="radarResults"></div>
-    <details class="radar-guide"><summary>Como funciona e como ativar</summary><p>A busca usa Brave Search no servidor, com limite diário e mensal compartilhado. Se faltar configuração, nenhuma consulta é feita. Consulte o <a href="https://github.com/riiqzin/Portfolio-2026/blob/feat/radar-clientes-v1/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">guia de ativação</a>.</p><p>Os cartões mostram títulos e descrições indexados, sem nota de qualidade, análise de IA ou contatos inventados. Prepare um lead somente após conferir a empresa. O cadastro exige a URL do seu projeto e não envia mensagens. Os resultados ficam apenas nesta sessão da página.</p></details>
+    <div class="radar-results" id="radarResults"><div class="radar-welcome"><span class="radar-welcome-icon">⌕</span><h3>Um bom projeto começa com o cliente certo.</h3><p>Escolha um segmento e inicie uma busca. Quando as APIs estiverem configuradas, os resultados reais aparecerão aqui — sem empresas inventadas.</p></div></div>
+    <details class="radar-guide"><summary>Configuração e funcionalidades futuras <span aria-hidden="true">↗</span></summary><p>Para ativar a busca real, configure no servidor a chave do Brave, acesso do painel, Redis e limites de consultas. <a href="https://github.com/riiqzin/Portfolio-2026/blob/main/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">Abrir guia de configuração</a>.</p><p>A análise de aparência, velocidade, contatos comerciais e mensagens de abordagem virá nas próximas etapas. Não exibimos notas falsas de qualidade ou listas fictícias como se fossem resultados reais.</p></details>
   </section>
 
   <div class="dashboard-layout">
