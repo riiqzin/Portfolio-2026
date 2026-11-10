@@ -66,7 +66,7 @@ export function createHandler({ env = process.env, fetcher = fetch, now = () => 
     } catch { return fail('invalid_request', 'Busca inválida.', 400); }
     const valid = s => typeof s === 'string' && s.trim().length >= 2 && s.length <= 80 && /^[\p{L}\p{N}\s,.'’&()/-]+$/u.test(s);
     if (!valid(body?.niche) || !valid(body?.region)) return fail('invalid_request', 'Informe nicho e região com 2 a 80 caracteres, sem operadores de busca.', 400);
-    const query = `${body.niche.trim()} ${body.region.trim()} site oficial -nuvemshop -shopify -wix -lojaintegrada -tiendanube`;
+    const query = `${body.niche.trim()} loja online produtos catálogo comprar ${body.region.trim()} -nuvemshop -shopify -wix -lojaintegrada -tiendanube -mercadolivre -shopee`;
     let usage;
     try {
       const date = now().toISOString();
