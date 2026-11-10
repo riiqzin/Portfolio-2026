@@ -1,0 +1,307 @@
+const { chromium, expect } = require("@playwright/test");
+const fs = require("fs"),
+  http = require("http"),
+  path = require("path");
+const root = path.resolve(__dirname, "../..");
+const artifacts =
+  process.env.CRM_ARTIFACTS || path.join(__dirname, "artifacts");
+fs.mkdirSync(artifacts, { recursive: true });
+const ago = (n) => new Date(Date.now() - n * 60000).toISOString();
+const base = (id, name, extra = {}) => ({
+  id,
+  name,
+  active: true,
+  project_url: "https://example.test/" + id,
+  tracking_token: "token-" + id,
+  created_at: ago(500),
+  email_sent_at: ago(300),
+  opened_count: 0,
+  interaction_count: 0,
+  ...extra,
+});
+(async () => {
+  const server = http
+    .createServer((req, res) => {
+      const f = path.join(
+        root,
+        req.url.split("?")[0].replace(/\/$/, "/index.html"),
+      );
+      if (!f.startsWith(root)) {
+        res.writeHead(403).end();
+        return;
+      }
+      try {
+        res.setHeader(
+          "Content-Type",
+          f.endsWith(".css") ? "text/css" : "text/html",
+        );
+        res.end(fs.readFileSync(f));
+      } catch {
+        res.writeHead(404).end();
+      }
+    })
+    .listen(4173, "127.0.0.1");
+  const browser = await chromium.launch({
+    ...(process.env.CRM_BROWSER_CHANNEL
+      ? { channel: process.env.CRM_BROWSER_CHANNEL }
+      : {}),
+    headless: true,
+  });
+  try {
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 1050 },
+      reducedMotion: "reduce",
+    });
+    let leads = [
+      base("1", "Batcaverna", {
+        opened_count: 4,
+        interaction_count: 2,
+        first_opened_at: ago(150),
+        last_activity: ago(5),
+        prospect_email: "contato@batcaverna.test",
+        notes: "Retomar a conversa após a apresentação.",
+      }),
+      base("2", "MW Informática", {
+        opened_count: 2,
+        first_opened_at: ago(180),
+        responded_at: ago(30),
+      }),
+      base("3", "Isabela Boscov"),
+      base("4", "Brunox", {
+        email_sent_at: null,
+        email_scheduled_at: new Date(Date.now() + 86400000).toISOString(),
+      }),
+      base("5", "Central HQs", { active: false }),
+      base("6", "Novo projeto", { email_sent_at: null }),
+    ];
+    let events = [
+      {
+        lead_id: "1",
+        event_type: "engaged",
+        created_at: ago(5),
+        network_id: "7",
+        device: "desktop",
+      },
+      {
+        lead_id: "1",
+        event_type: "opened",
+        created_at: ago(8),
+        is_self: true,
+        device: "mobile",
+      },
+      {
+        lead_id: "2",
+        event_type: "opened",
+        created_at: ago(180),
+        network_id: "8",
+        device: "desktop",
+      },
+    ];
+    const calls = [],
+      errors = [];
+    await context.route("**/*", async (r) => {
+      let u = new URL(r.request().url());
+      if (u.hostname === "127.0.0.1") return r.continue();
+      if (!u.hostname.endsWith(".supabase.co")) return r.abort();
+      const name = u.pathname.split("/").pop(),
+        body = r.request().postDataJSON();
+      calls.push({ name, body });
+      if (body.p_key !== "test-key")
+        return r.fulfill({
+          headers: { "access-control-allow-origin": "*" },
+          status: 401,
+          json: { message: "Invalid key" },
+        });
+      let data = {};
+      if (name === "crm_get_dashboard_v2")
+        data = {
+          leads,
+          events,
+          current_ip: "192.0.2.10",
+          current_network_id: 3,
+          own_networks_count: 1,
+          network_tracking_active: true,
+        };
+      if (name === "crm_update_lead")
+        Object.assign(
+          leads.find((l) => l.id === body.p_lead_id),
+          body.p_patch,
+        );
+      if (name === "crm_create_lead") {
+        leads.push(
+          base("7", body.p_name, {
+            project_url: body.p_project_url,
+            prospect_email: body.p_email,
+            email_scheduled_at: body.p_scheduled_at,
+          }),
+        );
+        data = { tracked_url: body.p_project_url + "?r=new-token" };
+      }
+      if (name === "crm_clear_lead_events") {
+        data = { deleted: events.length };
+        events = events.filter((e) => e.lead_id !== body.p_lead_id);
+      }
+      return r.fulfill({
+        headers: { "access-control-allow-origin": "*" },
+        json: data,
+      });
+    });
+    await context.addInitScript(
+      ({ last }) => {
+        localStorage.setItem("ricky_crm_last_seen", last);
+        Object.defineProperty(navigator, "clipboard", {
+          value: {
+            writeText: async (text) => {
+              window.copied = text;
+            },
+          },
+        });
+      },
+      { last: ago(60) },
+    );
+    const page = await context.newPage();
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto("http://127.0.0.1:4173/CRM/");
+    await expect(page.locator("#loginOverlay")).toBeVisible();
+    await page.locator("#loginKey").fill("invalid");
+    await page.locator("#loginBtn").click();
+    await expect(page.locator("#loginError")).toBeVisible();
+    await page.locator("#loginKey").fill("test-key");
+    await page.locator("#loginBtn").click();
+    await expect(page.locator("#loginOverlay")).toBeHidden();
+    await expect(page.locator(".lead-row")).toHaveCount(5);
+    await expect(page.locator("#mNews")).toHaveText("1");
+    await expect(page.locator("#mOpened")).toHaveText("2");
+    await expect(page.locator("#mReplied")).toHaveText("1");
+    await expect(page.locator("#mWaiting")).toHaveText("1");
+    await page.screenshot({
+      path: path.resolve(artifacts, "crm-desktop.png"),
+      fullPage: true,
+    });
+    await page.locator("#markSeenBtn").click();
+    await expect(page.locator("#mNews")).toHaveText("0");
+    await page.locator("#leadSearch").fill("BATCAVERNA");
+    await expect(page.locator(".lead-row")).toHaveCount(1);
+    await page.locator("#leadSearch").fill("no-match");
+    await expect(page.locator(".empty")).toContainText("Nenhum lead");
+    await page.locator("#leadSearch").fill("");
+    await page.locator('[data-filter="waiting"]').click();
+    await expect(page.locator(".lead-row")).toHaveCount(1);
+    await page.locator('[data-filter="all"]').click();
+    await expect(page.locator(".lead-row")).toHaveCount(6);
+    await page.locator('[data-filter="active"]').click();
+    await page.locator('[data-id="1"]').focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("#drawerWrap")).toHaveClass("drawer-wrap open");
+    await expect(page.locator(".event")).toHaveCount(2);
+    await expect(page.locator(".own-event")).toHaveCount(1);
+    await page.locator("#drawerCopy").click();
+    expect(await page.evaluate(() => window.copied)).toBe(
+      "https://example.test/1?r=token-1",
+    );
+    await page.locator("#drawerLeadEmail").fill("novo@example.test");
+    await page.locator("#saveLeadEmail").click();
+    await expect(page.locator("#drawerLeadEmail")).toHaveValue(
+      "novo@example.test",
+    );
+    await page.locator('[data-action="reply"]').click();
+    await expect(page.locator('[data-action="unreply"]')).toBeVisible();
+    await page.locator('[data-action="unreply"]').click();
+    await expect(page.locator('[data-action="reply"]')).toBeVisible();
+    await page.locator('[data-action="archive"]').click();
+    await expect(page.locator('[data-action="activate"]')).toBeVisible();
+    await page.locator('[data-action="activate"]').click();
+    await expect(page.locator('[data-action="archive"]')).toBeVisible();
+    await page.screenshot({
+      path: path.resolve(artifacts, "crm-detalhes.png"),
+    });
+    page.once("dialog", (d) => d.dismiss());
+    await page.locator("#clearTrackingBtn").click();
+    expect(
+      calls.filter((c) => c.name === "crm_clear_lead_events"),
+    ).toHaveLength(0);
+    page.once("dialog", (d) => d.accept());
+    await page.locator("#clearTrackingBtn").click();
+    await expect(page.locator(".event")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await page.locator("#newLeadBtn").click();
+    await page.locator("#leadName").fill("Conexão Nova");
+    await expect(page.locator("#leadSlug")).toHaveValue("conexao-nova");
+    await page.locator("#leadUrl").fill("https://example.test/new");
+    await page.locator("#leadEmail").fill("lead@example.test");
+    await page.locator("#leadSchedule").fill("2027-01-02T10:30");
+    await page.locator("#saveLead").click();
+    await expect(page.locator("#leadName")).toHaveValue("");
+    await expect
+      .poll(() => calls.some((c) => c.name === "crm_create_lead"))
+      .toBe(true);
+    expect(calls.find((c) => c.name === "crm_create_lead").body).toMatchObject({
+      p_name: "Conexão Nova",
+      p_slug: "conexao-nova",
+      p_email: "lead@example.test",
+    });
+    await page.locator("#modalClose").click();
+    await page.locator('[data-id="4"]').click();
+    await page.locator('[data-action="sent"]').click();
+    await expect(page.locator('[data-action="sent"]')).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    for (const width of [320, 390, 768, 1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      if (width === 390) {
+        await page
+          .locator("#toast")
+          .evaluate((e) => e.classList.remove("show"));
+      }
+      if (width === 390)
+        await page.screenshot({
+          path: path.resolve(artifacts, "crm-mobile.png"),
+          fullPage: true,
+        });
+    }
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    expect(
+      await page
+        .locator(".workspace")
+        .evaluate((e) => getComputedStyle(e).animationName),
+    ).toBe("none");
+    expect(errors).toEqual([]);
+    console.log(
+      JSON.stringify(
+        {
+          result: "PASS",
+          checks: [
+            "login valid/invalid",
+            "metrics and own event exclusion",
+            "search and filters",
+            "keyboard lead opening",
+            "tracked link copy",
+            "email edit",
+            "reply/unreply",
+            "archive/reactivate",
+            "clear events cancel/confirm",
+            "create lead schedule slug payload",
+            "mark sent",
+            "mark seen",
+            "5 responsive widths no overflow",
+            "reduced motion",
+            "no JavaScript errors",
+          ],
+          rpcCalls: calls.length,
+        },
+        null,
+        2,
+      ),
+    );
+  } finally {
+    await browser.close();
+    server.close();
+  }
+})().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});

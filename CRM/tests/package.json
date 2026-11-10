@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node crm.cjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0"
+  }
+}
