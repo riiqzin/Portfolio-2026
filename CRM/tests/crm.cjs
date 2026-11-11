@@ -260,6 +260,16 @@ const base = (id, name, extra = {}) => ({
     await expect(page.locator('#radarPanel')).toBeVisible();
     await expect(page.locator('.dashboard-layout')).toBeHidden();
     await expect(page.locator('#radarStatus')).toContainText('Motor pronto');
+    await expect(page.locator('.sidebar nav a')).toHaveCount(2);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationDuration)).toBe('14s');
+    const idleTransform = await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).transform);
+    await expect.poll(() => page.locator('.scope-ray').evaluate(el => getComputedStyle(el).transform)).not.toBe(idleTransform);
+    await page.locator('#radarMotion').click();
+    await expect(page.locator('#radarMotion')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationPlayState)).toBe('paused');
+    await page.locator('#radarMotion').click();
+    await page.screenshot({ path: path.resolve(artifacts, 'radar-idle.png'), fullPage: true });
     expect(radarCalls).toHaveLength(0);
     await page.locator('#radarNiche').fill('Dentistas');
     await page.locator('#radarRegion').fill('Campinas, SP');
@@ -270,6 +280,8 @@ const base = (id, name, extra = {}) => ({
     await expect(page.locator('#radarSearch')).toContainText('Buscando');
     await expect(page.locator('#radarPanel')).toHaveClass(/is-searching/);
     expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationName)).toBe('radar-sweep');
+    expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationDuration)).toBe('2s');
+    await page.screenshot({ path: path.resolve(artifacts, 'radar-searching.png'), fullPage: true });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
     releaseSearch(); searchGate = null;
@@ -327,6 +339,7 @@ const base = (id, name, extra = {}) => ({
     await expect(page.locator('#radarPanel')).not.toHaveClass(/is-searching/);
     await expect(page.locator('#radarSearch')).toBeEnabled();
     await expect(page.locator('#radarResults')).toContainText('Busca não concluída');
+    expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationPlayState)).toBe('paused');
     radarEnv.BRAVE_SEARCH_API_KEY = '';
     await page.locator('#radarCheck').click();
     await expect(page.locator('#radarStatus')).toContainText('Configure Brave Search');
@@ -334,6 +347,8 @@ const base = (id, name, extra = {}) => ({
     await page.locator('.sidebar nav a[href="#app"]').click();
     await expect(page.locator('.dashboard-layout')).toBeVisible();
     await expect(page.locator('#radarPanel')).toBeHidden();
+    await page.evaluate(() => { location.hash = '#workspace'; });
+    await expect(page.locator('.sidebar nav a[href="#app"]')).toHaveAttribute('aria-current', 'page');
     await page.locator("#newLeadBtn").click();
     await page.locator("#leadName").fill("Conexão Nova");
     await expect(page.locator("#leadSlug")).toHaveValue("conexao-nova");

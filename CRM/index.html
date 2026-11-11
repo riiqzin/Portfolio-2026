@@ -20,7 +20,6 @@
   <nav aria-label="Etapas da prospecção">
     <a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">⌘</span> Central</a>
     <a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar</a>
-    <a class="nav-item" href="#workspace"><span aria-hidden="true">▦</span> Leads</a>
   </nav>
   <div class="header-links"><span class="private-label"><i></i> AMBIENTE PRIVADO</span><a class="portfolio-link" href="../" target="_blank" rel="noopener">Meu portfólio <span aria-hidden="true">↗</span></a></div>
 </header>
@@ -41,11 +40,12 @@
   <section class="radar-panel" id="radarPanel" aria-labelledby="radarTitle" hidden>
     <div class="radar-intro"><h1 id="radarTitle">Radar</h1><a href="#workspace" class="ops-quiet-link">Abrir leads ↗</a></div>
     <div class="engine-shell">
-      <div class="engine-strip"><span><i class="engine-led"></i> VARREDURA</span><span>BRAVE SEARCH</span><span>FONTES PÚBLICAS</span></div>
+      <div class="engine-strip"><span><i class="engine-led"></i> RICKY / RADAR</span><span>PROSPECÇÃO · FONTES PÚBLICAS</span><button type="button" id="radarMotion" aria-pressed="false">Pausar animação</button></div>
       <div class="engine-grid">
-        <div class="engine-chamber" aria-hidden="true">
-          <div class="engine-scope"><span class="scope-grid"></span><span class="scope-ray"></span><span class="scope-ring ring-one"></span><span class="scope-ring ring-two"></span><span class="scope-ring ring-three"></span><span class="scope-center">R<span>SCAN</span></span><span class="scope-ping ping-one"></span><span class="scope-ping ping-two"></span></div>
-          <div class="engine-chamber-label"><span>RADAR</span><span id="radarEngineState">EM ESPERA</span></div>
+        <div class="engine-chamber">
+          <div class="scope-caption"><span>DISCOVERY ENGINE</span><span aria-hidden="true">⌖</span></div>
+          <div class="scope-instrument" aria-hidden="true"><div class="scope-orbit"></div><div class="engine-scope"><span class="scope-grid"></span><span class="scope-ray"></span><span class="scope-ring ring-one"></span><span class="scope-ring ring-two"></span><span class="scope-ring ring-three"></span><span class="scope-wave"></span><span class="scope-center">r<span>RADAR</span></span></div><span class="scope-axis axis-top">N</span><span class="scope-axis axis-right">E</span><span class="scope-axis axis-bottom">S</span><span class="scope-axis axis-left">W</span></div>
+          <div class="engine-readout"><div class="signal-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="engine-chamber-label"><span id="radarEngineState">EM ESPERA</span><span class="engine-provider">BRAVE SEARCH</span></div></div>
         </div>
         <div class="engine-controls">
           <h2>Nova varredura</h2>

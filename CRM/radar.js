@@ -10,6 +10,7 @@ window.RickyRadar = {
     const engine = (label, searching = false) => {
       $('#radarEngineState').textContent = label;
       $('#radarPanel').classList.toggle('is-searching', searching);
+      $('#radarPanel').classList.toggle('is-unavailable', ['INDISPONÍVEL', 'BUSCA INTERROMPIDA'].includes(label));
     };
     function revealResults() {
       const output = $('#radarOutput');
@@ -85,7 +86,7 @@ window.RickyRadar = {
       document.body.classList.toggle('leads-focused', location.hash === '#workspace');
       $('#radarPanel').hidden = !active;
       document.querySelectorAll('.sidebar nav .nav-item').forEach(a => {
-        const selected = active ? a.hash === '#radar' : a.hash === (location.hash === '#workspace' ? '#workspace' : '#app');
+        const selected = active ? a.hash === '#radar' : a.hash === '#app';
         a.classList.toggle('selected', selected);
         if (selected) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
       });
@@ -99,6 +100,11 @@ window.RickyRadar = {
       if (!button.dataset.radarNiche) $('#radarNiche').focus();
     }));
     $('#radarCheck').addEventListener('click', () => { if (!busy) status(); });
+    $('#radarMotion').addEventListener('click', () => {
+      const paused = $('#radarPanel').classList.toggle('motion-paused');
+      $('#radarMotion').setAttribute('aria-pressed', String(paused));
+      $('#radarMotion').textContent = paused ? 'Retomar animação' : 'Pausar animação';
+    });
     $('#radarNewSearch').addEventListener('click', () => $('#radarNiche').focus());
     $('#radarForm').addEventListener('submit', async event => {
       event.preventDefault(); if (busy) return;
