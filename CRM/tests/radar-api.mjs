@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHandler, normalizeResults, publicUrl } from '../../api/radar.js';
 
-const env = { RADAR_DASHBOARD_KEY: 'test-key', BRAVE_SEARCH_API_KEY: 'provider-secret', UPSTASH_REDIS_REST_URL: 'https://fixture.upstash.io', UPSTASH_REDIS_REST_TOKEN: 'budget-secret', RADAR_DAILY_LIMIT: '10', RADAR_MONTHLY_LIMIT: '30' };
+const env = { RADAR_DASHBOARD_KEY: 'test-key', BRAVE_SEARCH_API_KEY: 'provider-secret', UPSTASH_REDIS_REST_URL: 'https://fixture.upstash.io', UPSTASH_REDIS_REST_TOKEN: 'budget-secret', RADAR_DAILY_LIMIT: '10', RADAR_MONTHLY_LIMIT: '30', RADAR_BUDGET_CENTS: '8000', RADAR_SEARCH_RESERVE_CENTS: '10', RADAR_AUDIT_RESERVE_CENTS: '100' };
 const request = (body = { niche: 'Dentistas', region: 'Campinas, SP' }, options = {}) => new Request('https://crm.example.com/api/radar', { method: 'POST', headers: { Authorization: 'Bearer test-key', 'Content-Type': 'application/json', ...options.headers }, body: JSON.stringify(body) });
 function fixture({ config = env, budget = [1, 1, 1], providerStatus = 200, provider = { web: { results: [{ title: 'Clínica Exemplo', url: 'https://clinica.example.com', description: 'Atendimento em Campinas' }] } }, throws, budgetStatus = 200 } = {}) {
   const calls = [];
@@ -10,7 +10,7 @@ function fixture({ config = env, budget = [1, 1, 1], providerStatus = 200, provi
     calls.push({ url: String(url), options });
     const redis = String(url).includes('upstash');
     if (throws === (redis ? 'budget' : 'provider')) throw new Error('secret exception');
-    return Response.json(redis ? { result: budget } : provider, { status: redis ? budgetStatus : providerStatus });
+    return Response.json(redis ? { result: JSON.parse(options.body)[2] === 1 && Array.isArray(budget) && budget[0] === 1 ? [1, 10] : budget } : provider, { status: redis ? budgetStatus : providerStatus });
   } });
   return { handler, calls };
 }
@@ -45,16 +45,16 @@ test('budget exhaustion, cooldown, failed and malformed counters never call sear
 });
 test('one atomic reservation then one bounded Brave call with protected credentials', async () => {
   const f = fixture(), response = await f.handler(request()), data = await response.json();
-  assert.equal(response.status, 200); assert.equal(f.calls.length, 2); assert.equal(data.results[0].name, 'Clínica Exemplo');
+  assert.equal(response.status, 200); assert.equal(f.calls.length, 3); assert.equal(data.results[0].name, 'Clínica Exemplo');
   const command = JSON.parse(f.calls[0].options.body);
   assert.equal(command[0], 'EVAL'); assert.equal(command[2], 3); assert.equal(command[3], 'radar:v1:day:2026-11-10');
-  const url = new URL(f.calls[1].url); assert.equal(url.searchParams.get('count'), '20'); assert.equal(url.searchParams.get('search_lang'), 'pt-br');
-  assert.equal(f.calls[1].options.headers['X-Subscription-Token'], 'provider-secret');
+  const url = new URL(f.calls[2].url); assert.equal(url.searchParams.get('count'), '20'); assert.equal(url.searchParams.get('search_lang'), 'pt-br');
+  assert.equal(f.calls[2].options.headers['X-Subscription-Token'], 'provider-secret');
   assert.ok(!JSON.stringify(data).includes('secret')); assert.equal(data.results[0].platform, 'Não verificada');
 });
 test('provider denial, quota, timeouts and malformed results have no retries or secret leakage', async () => {
   for (const options of [{ providerStatus: 401 }, { providerStatus: 429 }, { throws: 'provider' }, { provider: { web: { results: {} } } }]) {
-    const f = fixture(options), r = await f.handler(request()); assert.equal(r.status, 502); assert.equal(f.calls.length, 2); assert.ok(!(await r.text()).includes('secret'));
+    const f = fixture(options), r = await f.handler(request()); assert.equal(r.status, 502); assert.equal(f.calls.length, 3); assert.ok(!(await r.text()).includes('secret'));
   }
 });
 test('genuine empty result remains empty', async () => {

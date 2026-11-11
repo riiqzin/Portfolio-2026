@@ -61,6 +61,7 @@
           <form class="radar-form" id="radarForm">
             <div class="field"><label for="radarNiche">01 / SEGMENTO</label><input id="radarNiche" required minlength="2" maxlength="80" value="Lojas geek e colecionáveis" placeholder="Ex.: quadrinhos e action figures"></div>
             <div class="field"><label for="radarRegion">02 / ALCANCE GEOGRÁFICO</label><input id="radarRegion" required minlength="2" maxlength="80" value="Brasil" placeholder="Brasil ou cidade específica"><small class="radar-field-note">Recomendado: Brasil inteiro para e-commerces.</small></div>
+            <label class="audit-option"><input id="radarAutoAudit" type="checkbox"><span>Auditar automaticamente até 3 candidatos após buscar (reserva orçamento).</span></label>
             <button class="primary radar-main-action" id="radarSearch" type="submit"><span class="action-icon">◎</span> INICIAR VARREDURA <span aria-hidden="true">↗</span></button>
           </form>
         </div>
@@ -69,10 +70,11 @@
     </div>
     <div class="radar-status" role="group" aria-label="Estado do sistema"><span class="radar-status-icon">◈</span><div class="radar-status-copy"><strong>STATUS DO MOTOR</strong><p id="radarStatus" role="status" aria-live="polite">Verificando configuração…</p></div><button class="ghost" id="radarCheck" type="button">DIAGNOSTICAR CONEXÃO ↻</button></div>
     <div class="output-header"><div><div class="ops-eyebrow">OUTPUT / DESCOBERTA</div><h2>Candidatos capturados.</h2><p>Da busca para a análise. Da análise para o CRM.</p></div><a href="#workspace" class="ops-quiet-link">ABRIR PIPELINE ↗</a></div>
+    <p id="auditStatus" class="audit-budget" role="status">Auditorias exigem executor conectado e orçamento configurado.</p>
     <div class="radar-summary" id="radarSummary"></div><div class="radar-source" id="radarSource"></div>
     <div class="radar-results" id="radarResults"><div class="radar-welcome"><span class="radar-welcome-icon">◎</span><h3>Nenhuma varredura iniciada.</h3><p>Escolha um segmento e ative o motor. Os candidatos aparecerão aqui após configurarmos as APIs de busca, sem dados fictícios.</p></div></div>
-    <div class="next-modules"><div><span>02</span><strong>Auditoria visual</strong><small>Capturas e diagnóstico com IA — futura integração</small></div><div><span>03</span><strong>Contato inteligente</strong><small>Contatos públicos e mensagens — futura integração</small></div></div>
-    <details class="radar-guide"><summary>Configuração do motor e limites atuais ↗</summary><p>A descoberta precisa das variáveis privadas do Brave Search, Redis e limites de uso. <a href="https://github.com/riiqzin/Portfolio-2026/blob/main/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">Ver instruções de ativação</a>.</p><p>Não há auditoria de design, contatos ou IA configurados nesta versão. Os resultados retornados são apenas sugestões de sites para conferir e não têm nota de conversão verificada. * A identificação de plataformas depende de indícios indexados.</p></details>
+    <div class="next-modules"><div><span>02</span><strong>Auditoria com evidências</strong><small>Capturas desktop e celular · IA opcional · revisão humana</small></div><div><span>03</span><strong>Preparar e acompanhar</strong><small>Revise o candidato e prepare o lead no CRM. Contato sempre manual.</small></div></div>
+    <details class="radar-guide"><summary>Configuração do motor e limites atuais ↗</summary><p>A descoberta precisa das variáveis privadas do Brave Search, Redis e limites de uso. <a href="https://github.com/riiqzin/Portfolio-2026/blob/main/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">Ver instruções de ativação</a>.</p><p>Auditorias dependem do executor Windows, orçamento e configuração privada. Capturas estáticas e sugestões da IA exigem revisão humana; não medem conversão. Nenhuma mensagem é enviada automaticamente. * A identificação de plataformas usa indícios e pode errar.</p></details>
   </section>
 
   <section class="mission-home" aria-label="Central de operações">
@@ -198,6 +200,7 @@
 
 <div class="toast" id="toast" role="status"></div>
 
+<script src="/CRM/radar-audit.js"></script>
 <script src="/CRM/radar.js"></script>
 <script>
 (() => {

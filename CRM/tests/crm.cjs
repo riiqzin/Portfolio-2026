@@ -22,11 +22,13 @@ const base = (id, name, extra = {}) => ({
 (async () => {
   const { createHandler } = await import('../../api/radar.js');
   let radarMode = 'ready';
-  const radarEnv = { RADAR_DASHBOARD_KEY: 'test-key', BRAVE_SEARCH_API_KEY: 'fixture-key', UPSTASH_REDIS_REST_URL: 'https://fixture.upstash.io', UPSTASH_REDIS_REST_TOKEN: 'fixture-token', RADAR_DAILY_LIMIT: '10', RADAR_MONTHLY_LIMIT: '30' };
+  const radarEnv = { RADAR_DASHBOARD_KEY: 'test-key', BRAVE_SEARCH_API_KEY: 'fixture-key', UPSTASH_REDIS_REST_URL: 'https://fixture.upstash.io', UPSTASH_REDIS_REST_TOKEN: 'fixture-token', RADAR_DAILY_LIMIT: '10', RADAR_MONTHLY_LIMIT: '30', RADAR_BUDGET_CENTS: '8000', RADAR_SEARCH_RESERVE_CENTS: '10', RADAR_AUDIT_RESERVE_CENTS: '100' };
   const radarCalls = [];
+  const auditCalls = [];
+  const auditFixture = { id: '11111111-1111-4111-8111-111111111111', status: 'completed', evidence: { capturedAt: '2026-11-10T12:00:00Z', limitations: ['Fixture: captura estática sem JavaScript.'], screenshots: [] }, technical: [{ observation: 'Fixture: viewport ausente', evidence: 'meta[name=viewport] ausente' }], visual: { status: 'completed', summary: 'Fixture: <script>não executar</script>', uncertainty: 'Fixture: revisar manualmente', findings: [] }, priority: { score: 0, label: 'Sem problema forte identificado', reason: 'Fixture: prioridade provisória, sem métricas de conversão.' }, pagespeed: { message: 'PageSpeed não consultado.' } };
   const radar = createHandler({ env: radarEnv, fetcher: async (url, options) => {
     radarCalls.push(String(url));
-    if (String(url).includes('upstash')) return Response.json({ result: radarMode === 'quota' ? [0, 10, 10] : [1, 1, 1] });
+    if (String(url).includes('upstash')) return Response.json({ result: radarMode === 'quota' ? [0, 10, 10] : JSON.parse(options.body)[2] === 1 ? [1, 10] : [1, 1, 1] });
     if (radarMode === 'error') return Response.json({}, { status: 429 });
     return Response.json({ web: { results: radarMode === 'empty' ? [] : [
       { title: 'Batcaverna', url: 'https://batcaverna.example.com', description: 'Fixture: existing CRM lead' },
@@ -117,6 +119,11 @@ const base = (id, name, extra = {}) => ({
       errors = [];
     await context.route("**/*", async (r) => {
       let u = new URL(r.request().url());
+      if (u.hostname === '127.0.0.1' && u.pathname === '/api/radar-audit') {
+        auditCalls.push(r.request().method());
+        if (r.request().method() === 'POST') return r.fulfill({ status: 202, json: { id: auditFixture.id } });
+        return r.fulfill({ json: u.searchParams.has('id') ? auditFixture : { workerOnline: true, reservedCents: 100, budgetCents: 8000, auditReserveCents: 100, dailyLimit: 10 } });
+      }
       if (u.hostname === '127.0.0.1' && u.pathname === '/api/radar') {
         const req = r.request();
         const response = await radar(new Request(req.url(), { method: req.method(), headers: req.headers(), ...(req.method() === 'POST' ? { body: req.postData() } : {}) }));
@@ -204,7 +211,7 @@ const base = (id, name, extra = {}) => ({
     await page.locator("#leadSearch").fill("BATCAVERNA");
     await expect(page.locator(".lead-row")).toHaveCount(1);
     await page.locator("#leadSearch").fill("no-match");
-    await expect(page.locator(".empty")).toContainText("Nenhum lead");
+    await expect(page.locator(".empty")).toContainText("Nenhum contato");
     await page.locator("#leadSearch").fill("");
     await page.locator('[data-filter="waiting"]').click();
     await expect(page.locator(".lead-row")).toHaveCount(1);
@@ -257,7 +264,7 @@ const base = (id, name, extra = {}) => ({
     await expect(page.locator('#radarSummary')).toContainText('2 duplicados');
     await expect(page.locator('#radarSummary')).toContainText('1 com indícios');
     await expect(page.locator('#radarSource')).toContainText('Brave Search');
-    expect(radarCalls).toHaveLength(2);
+    expect(radarCalls).toHaveLength(3);
     expect(await page.locator('.prospect-card img').count()).toBe(0);
     const writesBefore = calls.filter(c => c.name === 'crm_create_lead').length;
     await page.locator('.prospect-card button').first().click();
@@ -267,11 +274,25 @@ const base = (id, name, extra = {}) => ({
     expect(calls.filter(c => c.name === 'crm_create_lead').length).toBe(writesBefore);
     await page.locator('#modalClose').click();
     await page.locator('#toast').evaluate(e => e.classList.remove('show'));
+    expect(auditCalls.filter(method => method === 'POST')).toHaveLength(0);
+    await page.getByRole('button', { name: 'Auditar site', exact: true }).first().click();
+    await expect(page.locator('.audit-state').first()).toContainText('Auditoria disponível');
+    await page.locator('.audit-details summary').first().click();
+    await expect(page.locator('.audit-details').first()).toContainText('Fixture: <script>não executar</script>');
+    expect(await page.locator('.audit-details script').count()).toBe(0);
+    expect(calls.filter(c => c.name === 'crm_create_lead').length).toBe(writesBefore);
     for (const width of [320, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 1000 });
+      await page.evaluate(() => document.activeElement?.blur());
+      expect(await page.locator('#radarAutoAudit').evaluate(el => el.getBoundingClientRect().width)).toBe(18);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       if ([390, 1440].includes(width)) await page.screenshot({ path: path.resolve(artifacts, `radar-${width}.png`), fullPage: true });
     }
+    await page.locator('#radarAutoAudit').check();
+    await page.locator('#radarSearch').click();
+    await expect(page.locator('#radarSearch')).toBeEnabled();
+    expect(auditCalls.filter(method => method === 'POST')).toHaveLength(3);
+    await page.locator('#radarAutoAudit').uncheck();
     radarMode = 'empty';
     await page.locator('#radarSearch').click();
     await expect(page.locator('#radarResults')).toContainText('Nenhum candidato novo');
