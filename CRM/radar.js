@@ -6,6 +6,86 @@ window.RickyRadar = {
     const domain = s => { try { return new URL(s).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
     let results = [], searchMeta = null, busy = false;
     const audits = window.RadarAudit.mount({ getKey, render });
+    // Local history keeps public search results only, never keys or expired audit tickets.
+    // This first version is intentionally device-local, not a server-side shared archive.
+    const HISTORY_KEY = 'ricky-radar-history-v1';
+    const HISTORY_MAX = 30;
+    const HISTORY_TTL = 90 * 24 * 60 * 60 * 1000;
+    let loadedFromHistory = false;
+    const getHistory = () => {
+      try {
+        const data = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        if (!Array.isArray(data)) return [];
+        return data.filter(item => item && typeof item.id === 'string' && typeof item.niche === 'string' &&
+          typeof item.region === 'string' && Array.isArray(item.results) && Number.isFinite(Date.parse(item.searchedAt)) &&
+          Date.now() - Date.parse(item.searchedAt) < HISTORY_TTL).slice(0, HISTORY_MAX);
+      } catch { return []; }
+    };
+    function saveHistory(niche, region, data) {
+      const safeResults = (Array.isArray(data.results) ? data.results : []).slice(0, 20).map(row => ({
+        name: String(row.name || '').slice(0, 160), domain: String(row.domain || '').slice(0, 255),
+        url: String(row.url || '').slice(0, 2048), description: String(row.description || '').slice(0, 600)
+      }));
+      const item = {
+        id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8),
+        niche: niche.slice(0, 80), region: region.slice(0, 80),
+        searchedAt: data.searchedAt, query: String(data.query || '').slice(0, 500),
+        removed: data.removed || { duplicates: 0, platforms: 0, other: 0 },
+        results: safeResults
+      };
+      const updated = [item, ...getHistory()].slice(0, HISTORY_MAX);
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(updated)); }
+      catch { message('Busca concluída, mas o navegador não conseguiu guardar o histórico.'); }
+      renderHistory();
+    }
+    function renderHistory() {
+      let section = $('#radarHistory');
+      if (!section) {
+        section = node('section', '', 'radar-history');
+        section.id = 'radarHistory';
+        section.setAttribute('aria-label', 'Varreduras salvas neste navegador');
+        $('#radarOutput').parentElement.insertBefore(section, $('#radarOutput'));
+      }
+      section.replaceChildren();
+      const header = node('div', '', 'radar-history-head');
+      header.append(node('h2', 'Varreduras salvas'), node('small', 'Neste navegador · até 30 buscas · 90 dias'));
+      section.append(header);
+      const history = getHistory();
+      if (!history.length) { section.append(node('p', 'As próximas buscas ficarão salvas aqui, por segmento.', 'radar-history-empty')); return; }
+      const groups = new Map();
+      history.forEach(item => {
+        const key = item.niche.trim().toLocaleLowerCase('pt-BR');
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(item);
+      });
+      groups.forEach(items => {
+        const group = node('div', '', 'radar-history-group');
+        group.append(node('h3', items[0].niche));
+        const entries = node('div', '', 'radar-history-entries');
+        items.forEach(item => {
+          const open = node('button', '', 'radar-history-item');
+          open.type = 'button';
+          open.append(node('strong', item.region), node('span', new Date(item.searchedAt).toLocaleString('pt-BR')),
+            node('small', item.results.length + ' candidatos · abrir sem nova consulta'));
+          open.addEventListener('click', () => {
+            if (busy) return;
+            results = item.results.map(row => ({ ...row, ticket: null }));
+            searchMeta = { ...item, removed: item.removed || { duplicates: 0, platforms: 0, other: 0 } };
+            loadedFromHistory = true;
+            $('#radarNiche').value = item.niche;
+            $('#radarRegion').value = item.region;
+            render();
+            engine('HISTÓRICO ABERTO');
+            message('Varredura salva · nenhuma consulta ao Brave realizada. Para auditar novos sites, faça uma nova busca.');
+            revealResults();
+          });
+          entries.append(open);
+        });
+        group.append(entries);
+        section.append(group);
+      });
+    }
+
     const message = value => { $('#radarStatus').textContent = value; };
     const engine = (label, searching = false) => {
       $('#radarEngineState').textContent = label;
@@ -67,9 +147,9 @@ window.RickyRadar = {
         actions.append(link, add, draft); audits.append(row, card, actions); card.append(actions); list.append(card);
       });
       if (searchMeta) {
-        const removed = searchMeta.removed;
+        const removed = searchMeta.removed || { duplicates: 0, platforms: 0, other: 0 };
         $('#radarSummary').textContent = `${list.children.length} candidatos · ${removed.duplicates + duplicates} duplicados · ${removed.platforms} com indícios de plataforma · ${removed.other} outros descartados`;
-        $('#radarSource').textContent = `Brave Search · ${new Date(searchMeta.searchedAt).toLocaleString('pt-BR')} · Consulta: ${searchMeta.query}`;
+        $('#radarSource').textContent = `${loadedFromHistory ? 'HISTÓRICO SALVO · sem nova consulta' : 'Brave Search'} · ${new Date(searchMeta.searchedAt).toLocaleString('pt-BR')} · Consulta: ${searchMeta.query}`;
         if (!list.children.length) list.append(node('p', 'Nenhum candidato novo após os filtros. Experimente outro nicho ou região.', 'radar-empty'));
       }
     }
@@ -114,11 +194,12 @@ window.RickyRadar = {
       engine('BUSCANDO', true);
       $('#radarOutput').classList.remove('is-revealed');
       $('#radarResults').setAttribute('aria-busy', 'true');
-      results = []; searchMeta = null; $('#radarResults').replaceChildren(); $('#radarSummary').textContent = ''; $('#radarSource').textContent = '';
+      results = []; searchMeta = null; loadedFromHistory = false; $('#radarResults').replaceChildren(); $('#radarSummary').textContent = ''; $('#radarSource').textContent = '';
       message('Buscando fontes públicas e filtrando resultados…');
       try {
         const data = await api('POST', { niche: $('#radarNiche').value.trim(), region: $('#radarRegion').value.trim() });
-        results = data.results; searchMeta = data; render();
+        results = data.results; searchMeta = data; loadedFromHistory = false; render();
+        saveHistory($('#radarNiche').value.trim(), $('#radarRegion').value.trim(), data);
         engine('BUSCA CONCLUÍDA');
         $('#radarResults').removeAttribute('aria-busy');
         message(`Busca concluída. Uso: ${data.usage.daily}/${data.usage.limits.daily} no dia e ${data.usage.monthly}/${data.usage.limits.monthly} no mês (UTC).`);
@@ -139,6 +220,7 @@ window.RickyRadar = {
       }
     });
     window.addEventListener('hashchange', navigate);
+    renderHistory();
     navigate();
   }
 };
