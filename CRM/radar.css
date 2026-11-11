@@ -118,3 +118,19 @@
 .audit-shot{margin:14px 0;background:#101511;border:1px solid #34413b;border-radius:8px;overflow:hidden}
 .audit-shot img{display:block;width:100%;height:auto}
 .audit-shot figcaption{padding:8px;font-size:11px;color:#afbaae}
+
+/* Private Radar scan history: compact, grouped and clearly historical. */
+.radar-history{margin:18px 0 22px;padding:16px 18px;border:1px solid #355747;background:#111e1b;border-radius:12px}
+.radar-history-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.radar-history-head h2{margin:0;color:#dcf8e9;font-size:15px;font-weight:750;letter-spacing:-.02em}
+.radar-history-head small{color:#92aa9d;font-size:11px}
+.radar-history-group{padding:11px 0;border-top:1px solid #2b4337}
+.radar-history-group h3{margin:0 0 9px;color:#b8e3cb;font-size:12px;font-weight:700}
+.radar-history-entries{display:flex;flex-wrap:wrap;gap:9px}
+.radar-history-item{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:185px;max-width:100%;padding:10px 13px;border:1px solid #3b5e4b;border-radius:8px;background:#172822;color:#d8eee0;text-align:left;cursor:pointer}
+.radar-history-item:hover,.radar-history-item:focus-visible{border-color:#8ed1ab;background:#1c3529;box-shadow:0 0 0 2px #8ed1ab22}
+.radar-history-item strong{font-size:12px}
+.radar-history-item span{color:#add0ba;font-size:11px}
+.radar-history-item small,.radar-history-empty{color:#91ad9d;font-size:11px}
+.radar-history-empty{margin:0}
+@media(max-width:600px){.radar-history{padding:13px}.radar-history-head{align-items:flex-start;flex-direction:column}.radar-history-entries{display:grid;grid-template-columns:1fr}.radar-history-item{width:100%;min-width:0}}
