@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { authorized, boundedText, configured, integer, json, readTicket, redisClient, spendingConfigured, SPEND_KEY } from '../lib/radar-control.mjs';
+import { authorized, boundedText, configured, integer, json, readTicket, redisClient, spendingConfigured, SPEND_KEY } from '../lib/radar-control.js';
 import { publicUrl } from './radar.js';
 
 export const ENQUEUE = `
