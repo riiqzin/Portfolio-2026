@@ -39,7 +39,7 @@ window.RadarAudit = {
     }
     function append(row, card, actions) {
       const button = node('button', row.auditBusy ? 'Reservando…' : row.auditId ? 'Atualizar auditoria' : 'Auditar site', 'ghost');
-      button.type = 'button'; button.disabled = !!row.auditBusy;
+      button.type = 'button'; button.disabled = !!row.auditBusy || (!row.ticket && !row.auditId); if (!row.ticket && !row.auditId) { button.textContent = 'Auditoria: faça nova busca'; button.title = 'Os tickets de auditoria expiram; abrir histórico não consome Brave, mas uma nova consulta é necessária para auditar.'; }
       button.addEventListener('click', () => row.auditId ? refresh(row) : start(row)); actions.append(button);
       if (row.auditError) card.append(node('p', row.auditError, 'audit-warning'));
       const job = row.audit;
