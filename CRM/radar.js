@@ -7,6 +7,18 @@ window.RickyRadar = {
     let results = [], searchMeta = null, busy = false;
     const audits = window.RadarAudit.mount({ getKey, render });
     const message = value => { $('#radarStatus').textContent = value; };
+    const engine = (label, searching = false) => {
+      $('#radarEngineState').textContent = label;
+      $('#radarPanel').classList.toggle('is-searching', searching);
+    };
+    function revealResults() {
+      const output = $('#radarOutput');
+      output.classList.add('is-revealed');
+      // Do not pull the user back if they left the Radar while the request ran.
+      if (location.hash !== '#radar') return;
+      output.focus({ preventScroll: true });
+      output.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
+    }
     const node = (tag, value, className) => { const el = document.createElement(tag); el.textContent = value; if (className) el.className = className; return el; };
     async function api(method, body) {
       let response;
@@ -25,8 +37,11 @@ window.RickyRadar = {
       [...results].sort((a, b) => (b.audit?.priority?.score ?? -1) - (a.audit?.priority?.score ?? -1)).forEach(row => {
         if (existing(row)) { duplicates++; return; }
         const card = node('article', '', 'prospect-card');
-        card.append(node('span', 'REVISÃO MANUAL', 'prospect-label'), node('h3', row.name), node('p', row.description || 'Sem descrição pública retornada pelo provedor.'));
-        card.append(node('small', `${row.domain} · Plataforma não verificada`, 'prospect-meta'));
+        card.append(node('span', 'REVISÃO MANUAL', 'prospect-label'), node('h3', row.name));
+        card.append(node('small', row.domain, 'prospect-meta'));
+        const description = node('p', row.description || 'Sem descrição pública retornada pelo provedor.', 'prospect-description');
+        description.title = row.description || '';
+        card.append(description);
         const actions = node('div', '', 'prospect-actions');
         const link = node('a', 'Consultar fonte ↗', 'ghost');
         // Defense in depth: only web URLs, even if an upstream response is malformed.
@@ -61,8 +76,8 @@ window.RickyRadar = {
       if (!getKey()) { message('Entre no CRM para usar o Radar.'); return; }
       audits.status();
       message('Consultando o servidor. Nenhuma busca será cobrada nesta verificação…');
-      try { const data = await api('GET'); message(`Pronto para buscar · até ${data.limits.daily} consultas/dia e ${data.limits.monthly}/mês (UTC). Cada busca usa uma consulta.`); }
-      catch (error) { message(error.message); }
+      try { const data = await api('GET'); if (busy) return; engine('MOTOR PRONTO'); message(`Motor pronto · até ${data.limits.daily} consultas/dia e ${data.limits.monthly}/mês (UTC). Cada busca usa uma consulta.`); }
+      catch (error) { if (!busy) { engine('INDISPONÍVEL'); message(error.message); } }
     }
     function navigate() {
       const active = location.hash === '#radar';
@@ -74,7 +89,6 @@ window.RickyRadar = {
         a.classList.toggle('selected', selected);
         if (selected) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
       });
-      $('.brand-copy b').textContent = active ? 'Radar de Clientes' : 'Visão geral';
       if (active && !busy && !searchMeta) status();
       if (active && searchMeta) render();
     }
@@ -85,22 +99,38 @@ window.RickyRadar = {
       if (!button.dataset.radarNiche) $('#radarNiche').focus();
     }));
     $('#radarCheck').addEventListener('click', () => { if (!busy) status(); });
+    $('#radarNewSearch').addEventListener('click', () => $('#radarNiche').focus());
     $('#radarForm').addEventListener('submit', async event => {
       event.preventDefault(); if (busy) return;
       if (!getKey()) { message('Entre no CRM para usar o Radar.'); return; }
       busy = true; $('#radarSearch').disabled = true; $('#radarCheck').disabled = true;
-      $('#radarPanel').setAttribute('aria-busy', 'true');
+      $('#radarSearch').textContent = '◎ Buscando…';
+      engine('BUSCANDO', true);
+      $('#radarOutput').classList.remove('is-revealed');
+      $('#radarResults').setAttribute('aria-busy', 'true');
       results = []; searchMeta = null; $('#radarResults').replaceChildren(); $('#radarSummary').textContent = ''; $('#radarSource').textContent = '';
       message('Buscando fontes públicas e filtrando resultados…');
       try {
         const data = await api('POST', { niche: $('#radarNiche').value.trim(), region: $('#radarRegion').value.trim() });
         results = data.results; searchMeta = data; render();
+        engine('BUSCA CONCLUÍDA');
+        $('#radarResults').removeAttribute('aria-busy');
         message(`Busca concluída. Uso: ${data.usage.daily}/${data.usage.limits.daily} no dia e ${data.usage.monthly}/${data.usage.limits.monthly} no mês (UTC).`);
+        revealResults();
         if ($('#radarAutoAudit').checked) {
+          $('#radarSearch').textContent = 'Enfileirando auditorias…';
           for (const row of results.filter(row => !existing(row)).slice(0, 3)) await audits.start(row);
         }
-      } catch (error) { message(error.message); }
-      finally { busy = false; $('#radarSearch').disabled = false; $('#radarCheck').disabled = false; $('#radarPanel').removeAttribute('aria-busy'); }
+      } catch (error) {
+        engine('BUSCA INTERROMPIDA'); message(error.message);
+        $('#radarResults').replaceChildren(node('p', 'Busca não concluída. Verifique o status do motor e tente novamente.', 'radar-empty'));
+      }
+      finally {
+        busy = false; $('#radarSearch').disabled = false; $('#radarCheck').disabled = false;
+        $('#radarSearch').textContent = '◎ Iniciar varredura';
+        $('#radarPanel').classList.remove('is-searching');
+        $('#radarResults').removeAttribute('aria-busy');
+      }
     });
     window.addEventListener('hashchange', navigate);
     navigate();

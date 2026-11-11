@@ -6,9 +6,9 @@
 <title>Ricky CRM</title>
 <meta name="robots" content="noindex,nofollow,noarchive">
 <link rel="stylesheet" href="/CRM/crm.css">
-<link rel="stylesheet" href="/CRM/radar.css">
 <link rel="stylesheet" href="/CRM/refresh.css">
 <link rel="stylesheet" href="/CRM/command.css">
+<link rel="stylesheet" href="/CRM/radar.css">
 <link rel="stylesheet" href="/CRM/pipeline-v4.css">
 </head>
 <body>
@@ -19,8 +19,8 @@
   <div class="nav-label">OPERATIONS</div>
   <nav aria-label="Etapas da prospecção">
     <a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">⌘</span> Central</a>
-    <a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Máquina de oportunidades</a>
-    <a class="nav-item" href="#workspace"><span aria-hidden="true">▦</span> Pipeline de leads</a>
+    <a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar</a>
+    <a class="nav-item" href="#workspace"><span aria-hidden="true">▦</span> Leads</a>
   </nav>
   <div class="header-links"><span class="private-label"><i></i> AMBIENTE PRIVADO</span><a class="portfolio-link" href="../" target="_blank" rel="noopener">Meu portfólio <span aria-hidden="true">↗</span></a></div>
 </header>
@@ -28,7 +28,7 @@
   <header class="topbar">
     <div class="brand">
       <div class="brand-avatar" aria-hidden="true">R</div>
-      <div class="brand-copy"><span>RICKY / OPERAÇÕES</span><b>Visão geral</b></div>
+      <div class="brand-copy"><span>RICKY / OPERAÇÕES</span><b>CRM privado</b></div>
     </div>
     <div class="top-actions">
       <div class="sync"><span class="sync-dot"></span><span id="syncText">atualizando</span></div>
@@ -39,19 +39,16 @@
   </header>
 
   <section class="radar-panel" id="radarPanel" aria-labelledby="radarTitle" hidden>
-    <div class="ops-eyebrow"><span class="ops-light"></span> SISTEMA DE DESCOBERTA <span class="ops-separator">/</span> MÓDULO 01</div>
-    <div class="radar-intro"><div><h1 id="radarTitle">Ative a máquina.<br><em>Encontre o próximo projeto.</em></h1><p>Uma estação de prospecção para descobrir lojas digitais, qualificar oportunidades e enviá-las ao seu pipeline. Nada de listas genéricas de estabelecimentos.</p></div><a href="#workspace" class="ops-quiet-link">IR PARA MEUS LEADS <span aria-hidden="true">↗</span></a></div>
+    <div class="radar-intro"><h1 id="radarTitle">Radar</h1><a href="#workspace" class="ops-quiet-link">Abrir leads ↗</a></div>
     <div class="engine-shell">
-      <div class="engine-strip"><span><i class="engine-led"></i> RICKY / DISCOVERY ENGINE</span><span>WEB SEARCH <b>01</b></span><span>AMBIENTE CONTROLADO</span></div>
+      <div class="engine-strip"><span><i class="engine-led"></i> VARREDURA</span><span>BRAVE SEARCH</span><span>FONTES PÚBLICAS</span></div>
       <div class="engine-grid">
         <div class="engine-chamber" aria-hidden="true">
           <div class="engine-scope"><span class="scope-grid"></span><span class="scope-ray"></span><span class="scope-ring ring-one"></span><span class="scope-ring ring-two"></span><span class="scope-ring ring-three"></span><span class="scope-center">R<span>SCAN</span></span><span class="scope-ping ping-one"></span><span class="scope-ping ping-two"></span></div>
-          <div class="engine-chamber-label"><span>SECTOR 001 / BR</span><span>SISTEMA EM ESPERA</span></div>
+          <div class="engine-chamber-label"><span>RADAR</span><span id="radarEngineState">EM ESPERA</span></div>
         </div>
         <div class="engine-controls">
-          <div class="engine-kicker">CONFIGURAR MISSÃO <span>01 — 03</span></div>
-          <h2>Qual oportunidade<br>vamos rastrear?</h2>
-          <p>Defina o universo de empresas. Você receberá fontes públicas para revisar. A auditoria visual será uma etapa separada.</p>
+          <h2>Nova varredura</h2>
           <div class="radar-segments" aria-label="Escolher segmento">
             <button type="button" class="radar-segment is-active" data-radar-niche="Lojas geek e colecionáveis">✦ Geek</button>
             <button type="button" class="radar-segment" data-radar-niche="Lojas de camisetas e produtos de futebol">⚽ Futebol</button>
@@ -59,65 +56,43 @@
             <button type="button" class="radar-segment" data-radar-niche="">+ Outro nicho</button>
           </div>
           <form class="radar-form" id="radarForm">
-            <div class="field"><label for="radarNiche">01 / SEGMENTO</label><input id="radarNiche" required minlength="2" maxlength="80" value="Lojas geek e colecionáveis" placeholder="Ex.: quadrinhos e action figures"></div>
-            <div class="field"><label for="radarRegion">02 / ALCANCE GEOGRÁFICO</label><input id="radarRegion" required minlength="2" maxlength="80" value="Brasil" placeholder="Brasil ou cidade específica"><small class="radar-field-note">Recomendado: Brasil inteiro para e-commerces.</small></div>
+            <div class="field"><label for="radarNiche">Segmento</label><input id="radarNiche" required minlength="2" maxlength="80" value="Lojas geek e colecionáveis" placeholder="Ex.: quadrinhos e action figures"></div>
+            <div class="field"><label for="radarRegion">Localidade</label><input id="radarRegion" required minlength="2" maxlength="80" value="Brasil" placeholder="Brasil ou cidade específica"><small class="radar-field-note">Recomendado: Brasil inteiro para e-commerces.</small></div>
             <label class="audit-option"><input id="radarAutoAudit" type="checkbox"><span>Auditar automaticamente até 3 candidatos após buscar (reserva orçamento).</span></label>
-            <button class="primary radar-main-action" id="radarSearch" type="submit"><span class="action-icon">◎</span> INICIAR VARREDURA <span aria-hidden="true">↗</span></button>
+            <button class="primary radar-main-action" id="radarSearch" type="submit">◎ Iniciar varredura</button>
           </form>
         </div>
       </div>
       <div class="engine-footer"><span>FILTROS <b>Duplicados · Marketplaces · Plataformas restritivas*</b></span><span>ATÉ 20 FONTES / BUSCA</span><span>ENVIO COMERCIAL <b>MANUAL</b></span></div>
     </div>
-    <div class="radar-status" role="group" aria-label="Estado do sistema"><span class="radar-status-icon">◈</span><div class="radar-status-copy"><strong>STATUS DO MOTOR</strong><p id="radarStatus" role="status" aria-live="polite">Verificando configuração…</p></div><button class="ghost" id="radarCheck" type="button">DIAGNOSTICAR CONEXÃO ↻</button></div>
-    <div class="output-header"><div><div class="ops-eyebrow">OUTPUT / DESCOBERTA</div><h2>Candidatos capturados.</h2><p>Da busca para a análise. Da análise para o CRM.</p></div><a href="#workspace" class="ops-quiet-link">ABRIR PIPELINE ↗</a></div>
+    <div class="radar-status" role="group" aria-label="Estado do sistema"><span class="radar-status-icon">◈</span><div class="radar-status-copy"><strong>Motor</strong><p id="radarStatus" role="status" aria-live="polite">Verificando configuração…</p></div><button class="ghost" id="radarCheck" type="button">Verificar conexão ↻</button></div>
+    <section class="radar-output" id="radarOutput" aria-labelledby="resultsTitle" tabindex="-1">
+    <div class="output-header"><h2 id="resultsTitle">Resultados</h2><button type="button" id="radarNewSearch" class="ghost">Nova varredura ↑</button></div>
     <p id="auditStatus" class="audit-budget" role="status">Auditorias exigem executor conectado e orçamento configurado.</p>
     <div class="radar-summary" id="radarSummary"></div><div class="radar-source" id="radarSource"></div>
-    <div class="radar-results" id="radarResults"><div class="radar-welcome"><span class="radar-welcome-icon">◎</span><h3>Nenhuma varredura iniciada.</h3><p>Escolha um segmento e ative o motor. Os candidatos aparecerão aqui após configurarmos as APIs de busca, sem dados fictícios.</p></div></div>
-    <div class="next-modules"><div><span>02</span><strong>Auditoria com evidências</strong><small>Capturas desktop e celular · IA opcional · revisão humana</small></div><div><span>03</span><strong>Preparar e acompanhar</strong><small>Revise o candidato e prepare o lead no CRM. Contato sempre manual.</small></div></div>
+    <div class="radar-results" id="radarResults"><div class="radar-welcome"><span class="radar-welcome-icon">◎</span><h3>Nenhuma busca iniciada</h3><p>Defina segmento e localidade para buscar candidatos.</p></div></div>
+    </section>
     <details class="radar-guide"><summary>Configuração do motor e limites atuais ↗</summary><p>A descoberta precisa das variáveis privadas do Brave Search, Redis e limites de uso. <a href="https://github.com/riiqzin/Portfolio-2026/blob/main/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">Ver instruções de ativação</a>.</p><p>Auditorias dependem do executor Windows, orçamento e configuração privada. Capturas estáticas e sugestões da IA exigem revisão humana; não medem conversão. Nenhuma mensagem é enviada automaticamente. * A identificação de plataformas usa indícios e pode errar.</p></details>
   </section>
 
-  <section class="mission-home" aria-label="Central de operações">
-    <div class="mission-stamp"><span class="ops-light"></span> CENTRO DE COMANDO <span class="ops-separator">/</span> SEU ESPAÇO DE TRABALHO</div>
-    <div class="mission-intro"><div><h1>Encontre.<br>Crie.<br><em>Conquiste.</em></h1><p>Seu processo comercial, do primeiro sinal até a proposta. Uma operação conectada para você passar menos tempo procurando e mais tempo criando.</p><div class="mission-actions"><a href="#radar" class="mission-start"><span>◎</span> INICIAR PROSPECÇÃO <span aria-hidden="true">↗</span></a><a href="#workspace" class="mission-secondary">REVISAR MEUS LEADS ↗</a></div></div><div class="mission-art" aria-hidden="true"><div class="mission-orbit o-one"></div><div class="mission-orbit o-two"></div><div class="mission-center">R<span>OPERATIONS</span></div><div class="mission-star star-one">✦</div><div class="mission-star star-two">✦</div></div></div>
-    <div class="workflow-rail" aria-label="Etapas do trabalho">
-      <a href="#radar" class="workflow-step"><span class="flow-n">01</span><strong>Descobrir</strong><small>Buscar oportunidades</small><span class="flow-arrow">↗</span></a>
-      <a href="#workspace" class="workflow-step"><span class="flow-n">02</span><strong>Organizar</strong><small>Qualificar contatos</small><span class="flow-arrow">↗</span></a>
-      <a href="#workspace" class="workflow-step"><span class="flow-n">03</span><strong>Apresentar</strong><small>Protótipo e proposta</small><span class="flow-arrow">↗</span></a>
-      <a href="#workspace" class="workflow-step"><span class="flow-n">04</span><strong>Acompanhar</strong><small>Visitas e respostas</small><span class="flow-arrow">↗</span></a>
-    </div>
-  </section>
-
-  <div class="dashboard-layout">
-    <div class="operations-intro">
-      <div class="operations-identity"><span class="ops-eyebrow"><span class="ops-light"></span> RICKY STUDIO / CENTRAL DE RELACIONAMENTOS</span>
-        <h1 id="heroTitle">Seu trabalho.<br><em>Em movimento.</em></h1>
-        <p id="heroText">Acompanhe cada contato, descubra sinais de interesse e avance para a próxima conversa.</p>
-        <div class="updated" id="updatedText">CARREGANDO...</div>
-      </div>
-      <div class="operations-control">
-        <span class="control-label">SUA PRÓXIMA AÇÃO</span>
-        <h2>Transforme oportunidades<br>em projetos reais.</h2>
-        <p>Encontre um negócio no Radar, prepare uma prévia e acompanhe o interesse aqui.</p>
-        <div class="control-links"><a href="#radar">◎ ABRIR RADAR <span>↗</span></a><button type="button" id="pipelineNewLead" class="control-secondary">+ ADICIONAR CONTATO</button></div>
-      </div>
-    </div>
+<div class="dashboard-layout">
+    <div class="operations-intro"><h1>Central</h1><div class="updated" id="updatedText">Carregando…</div></div>
     <section class="pipeline-pulse" aria-label="Resumo de atividades">
-      <div class="pulse-top"><span class="ops-eyebrow">SINAIS / ATIVIDADE EM TEMPO REAL</span><span>ATUALIZAÇÃO A CADA 30 SEGUNDOS</span></div>
+      <div class="pulse-top"><span class="ops-eyebrow">Atividade</span><span>ATUALIZAÇÃO A CADA 30 SEGUNDOS</span></div>
       <div class="metrics">
         <article class="metric news" id="newsMetric"><small>01 / Novidades</small><b id="mNews">0</b><span>desde sua última visita</span></article>
-        <article class="metric opened"><small>02 / Visualizaram</small><b id="mOpened">0</b><span>leads ativos</span></article>
+        <article class="metric opened"><small>02 / Visitas</small><b id="mOpened">0</b><span>leads ativos</span></article>
         <article class="metric waiting"><small>03 / Aguardando</small><b id="mWaiting">0</b><span>primeira abertura</span></article>
         <article class="metric replied"><small>04 / Responderam</small><b id="mReplied">0</b><span>marcados no CRM</span></article>
       </div>
     </section>
     <section class="workspace" id="workspace">
       <div class="pipeline-header">
-        <div class="pipeline-title"><span class="ops-eyebrow">02 / GERENCIAMENTO DE RELACIONAMENTOS</span><h2>Seus contatos.<br><em>Sua próxima oportunidade.</em></h2><p>Selecione uma empresa para ver a linha do tempo, abrir a demonstração ou acompanhar a resposta.</p></div>
+        <div class="pipeline-title"><h2>Pipeline de leads</h2></div>
         <div class="pipeline-header-action"><span class="pipeline-total"><b id="leadCount">0</b><small>NA LISTA</small></span><button id="pipelineAddBtn" type="button" class="primary">+ NOVO LEAD</button></div>
       </div>
       <div class="news-alert hidden" id="newsAlert" aria-live="polite">
-        <div class="news-alert-top"><div><div class="news-alert-kicker" id="newsAlertKicker">ATIVIDADE NOVA</div><h3 id="newsAlertTitle">Tem coisa nova desde sua última visita.</h3></div><div class="news-alert-actions"><button class="news-alert-btn" id="viewNewsBtn" type="button">VER NOVIDADES</button><button class="news-alert-btn subtle" id="markSeenBtn" type="button">MARCAR COMO VISTO</button></div></div>
+        <div class="news-alert-top"><div><div class="news-alert-kicker" id="newsAlertKicker">ATIVIDADE NOVA</div><h3 id="newsAlertTitle">Novas atividades</h3></div><div class="news-alert-actions"><button class="news-alert-btn" id="viewNewsBtn" type="button">VER NOVIDADES</button><button class="news-alert-btn subtle" id="markSeenBtn" type="button">MARCAR COMO VISTO</button></div></div>
         <div class="news-alert-list" id="newsAlertList"></div>
       </div>
       <div class="pipeline-toolbar">
@@ -129,9 +104,7 @@
         </div>
         <label class="search-box"><span aria-hidden="true">⌕</span><input id="leadSearch" type="search" placeholder="Encontrar empresa, e-mail ou projeto" aria-label="Buscar leads"></label>
       </div>
-      <div class="pipeline-list-intro"><span>EMPRESAS EM ACOMPANHAMENTO</span><span>SELECIONE UM CARD PARA EXPLORAR ↗</span></div>
-      <div class="leads" id="leadList" aria-live="polite"><div class="empty"><b>Seu próximo projeto começa aqui.</b><span>Adicione um contato ou abra o Radar para descobrir empresas.</span></div></div>
-      <div class="pipeline-bottom"><div><span>PRÓXIMA ETAPA</span><strong>Novos contatos podem começar no Radar.</strong></div><a href="#radar">DESCOBRIR EMPRESAS ↗</a></div>
+      <div class="leads" id="leadList" aria-live="polite"><div class="empty"><b>Nenhum lead cadastrado.</b><span>Adicione um contato ou abra o Radar para descobrir empresas.</span></div></div>
     </section>
     <details class="identity-details">
       <summary><span>◎</span> Diagnóstico de identificação de acessos <span class="identity-arrow">⌄</span></summary>
@@ -151,8 +124,8 @@
 <div class="overlay hidden" id="loginOverlay">
   <div class="login" role="dialog" aria-modal="true" aria-label="Entrar no CRM">
     <div class="login-mark">R</div>
-    <span class="login-eyebrow">BEM-VINDO AO RICKY CRM</span><h2>Boas conexões<br>começam aqui.</h2>
-    <p>Use sua chave de acesso para acompanhar leads, respostas e o interesse nos seus projetos.</p>
+    <span class="login-eyebrow">RICKY CRM · PRIVADO</span><h2>Entrar</h2>
+    <p>Use sua chave de acesso para abrir o CRM.</p>
     <div class="field">
       <label for="loginKey">Chave do painel</label>
       <input id="loginKey" type="password" autocomplete="current-password" placeholder="cole a chave aqui">
@@ -482,16 +455,11 @@
 
     if (hasNews){
       $('#newsChipCount').textContent = unreadEvents.length || newsLeads.length;
-      $('#heroTitle').innerHTML = `Tem <em>${newsLeads.length} ${newsLeads.length === 1 ? 'novidade' : 'novidades'}.</em>`;
-      $('#heroText').textContent = newsLeads.length === 1
-        ? `${newsLeads[0].name} teve atividade nova desde a sua última visita.`
-        : `${newsLeads.map(l=>l.name).slice(0,3).join(', ')}${newsLeads.length>3?' e outros':''} tiveram atividade nova.`;
-
       const eventCount = unreadEvents.length;
       $('#newsAlertKicker').textContent = `${eventCount} ${eventCount === 1 ? 'EVENTO NOVO' : 'EVENTOS NOVOS'} · ${newsLeads.length} ${newsLeads.length === 1 ? 'LEAD' : 'LEADS'}`;
       $('#newsAlertTitle').innerHTML = eventCount === 1
-        ? `Aconteceu <em>uma coisa nova</em> desde que você saiu.`
-        : `Aconteceram <em>${eventCount} coisas novas</em> desde que você saiu.`;
+        ? `<em>1 evento novo</em>`
+        : `<em>${eventCount} eventos novos</em>`;
 
       const preview = unreadEvents.slice(0,3).map(event => {
         const lead = leadById(event.lead_id);
@@ -501,8 +469,6 @@
       $('#newsAlertList').innerHTML = preview || `<div class="news-alert-item"><b>${esc(newsLeads[0]?.name || 'Lead')}</b><span>Atividade nova detectada.</span></div>`;
       document.title = `(${eventCount || newsLeads.length}) Ricky CRM`;
     } else {
-      $('#heroTitle').innerHTML = `Tudo em dia.<br><em>Vamos em frente.</em>`;
-      $('#heroText').textContent = 'Acompanhe suas conexões e transforme interesse em uma boa conversa.';
       $('#newsAlertList').innerHTML = '';
       document.title = 'Ricky CRM';
     }
@@ -949,7 +915,7 @@
   renderSelfIdentity();
 
   // O painel novo reutiliza o mesmo fluxo existente de criação de leads.
-  ['pipelineNewLead','pipelineAddBtn'].forEach(id => document.getElementById(id)?.addEventListener('click', () => $('#newLeadBtn').click()));
+  ['pipelineAddBtn'].forEach(id => document.getElementById(id)?.addEventListener('click', () => $('#newLeadBtn').click()));
 
   // Primeira entrada.
   window.RickyRadar.mount({

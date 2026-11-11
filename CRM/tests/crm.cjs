@@ -22,6 +22,7 @@ const base = (id, name, extra = {}) => ({
 (async () => {
   const { createHandler } = await import('../../api/radar.js');
   let radarMode = 'ready';
+  let releaseSearch, searchGate;
   const radarEnv = { RADAR_DASHBOARD_KEY: 'test-key', BRAVE_SEARCH_API_KEY: 'fixture-key', UPSTASH_REDIS_REST_URL: 'https://fixture.upstash.io', UPSTASH_REDIS_REST_TOKEN: 'fixture-token', RADAR_DAILY_LIMIT: '10', RADAR_MONTHLY_LIMIT: '30', RADAR_BUDGET_CENTS: '8000', RADAR_SEARCH_RESERVE_CENTS: '10', RADAR_AUDIT_RESERVE_CENTS: '100' };
   const radarCalls = [];
   const auditCalls = [];
@@ -126,6 +127,7 @@ const base = (id, name, extra = {}) => ({
       }
       if (u.hostname === '127.0.0.1' && u.pathname === '/api/radar') {
         const req = r.request();
+        if (req.method() === 'POST' && searchGate) await searchGate;
         const response = await radar(new Request(req.url(), { method: req.method(), headers: req.headers(), ...(req.method() === 'POST' ? { body: req.postData() } : {}) }));
         return r.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
       }
@@ -199,6 +201,7 @@ const base = (id, name, extra = {}) => ({
     await expect(page.locator("#loginOverlay")).toBeHidden();
     await expect(page.locator(".lead-row")).toHaveCount(5);
     await expect(page.locator("#mNews")).toHaveText("1");
+    await expect(page.locator('.lead-row.has-news')).toHaveCount(1);
     await expect(page.locator("#mOpened")).toHaveText("2");
     await expect(page.locator("#mReplied")).toHaveText("1");
     await expect(page.locator("#mWaiting")).toHaveText("1");
@@ -208,6 +211,7 @@ const base = (id, name, extra = {}) => ({
     });
     await page.locator("#markSeenBtn").click();
     await expect(page.locator("#mNews")).toHaveText("0");
+    await expect(page.locator('.lead-row.has-news')).toHaveCount(0);
     await page.locator("#leadSearch").fill("BATCAVERNA");
     await expect(page.locator(".lead-row")).toHaveCount(1);
     await page.locator("#leadSearch").fill("no-match");
@@ -255,12 +259,30 @@ const base = (id, name, extra = {}) => ({
     await page.locator('.sidebar nav a[href="#radar"]').click();
     await expect(page.locator('#radarPanel')).toBeVisible();
     await expect(page.locator('.dashboard-layout')).toBeHidden();
-    await expect(page.locator('#radarStatus')).toContainText('Pronto para buscar');
+    await expect(page.locator('#radarStatus')).toContainText('Motor pronto');
     expect(radarCalls).toHaveLength(0);
     await page.locator('#radarNiche').fill('Dentistas');
     await page.locator('#radarRegion').fill('Campinas, SP');
+    searchGate = new Promise(resolve => { releaseSearch = resolve; });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.locator('#radarSearch').click();
+    await expect(page.locator('#radarSearch')).toBeDisabled();
+    await expect(page.locator('#radarSearch')).toContainText('Buscando');
+    await expect(page.locator('#radarPanel')).toHaveClass(/is-searching/);
+    expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationName)).toBe('radar-sweep');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+    releaseSearch(); searchGate = null;
     await expect(page.locator('.prospect-card')).toHaveCount(2);
+    await expect(page.locator('#radarPanel')).not.toHaveClass(/is-searching/);
+    await expect(page.locator('#radarOutput')).toBeFocused();
+    const outputTop = await page.locator('#radarOutput').evaluate(el => el.getBoundingClientRect().top);
+    expect(outputTop).toBeGreaterThan(64);
+    // Short result sets may reach the document end before aligning at the top.
+    expect(outputTop).toBeLessThan(page.viewportSize().height / 2);
+    await page.locator('#radarNewSearch').click();
+    await expect(page.locator('#radarNiche')).toBeFocused();
+    await expect(page.locator('#radarPanel')).toBeVisible();
     await expect(page.locator('#radarSummary')).toContainText('2 duplicados');
     await expect(page.locator('#radarSummary')).toContainText('1 com indícios');
     await expect(page.locator('#radarSource')).toContainText('Brave Search');
@@ -286,7 +308,7 @@ const base = (id, name, extra = {}) => ({
       await page.evaluate(() => document.activeElement?.blur());
       expect(await page.locator('#radarAutoAudit').evaluate(el => el.getBoundingClientRect().width)).toBe(18);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      if ([390, 1440].includes(width)) await page.screenshot({ path: path.resolve(artifacts, `radar-${width}.png`), fullPage: true });
+      await page.screenshot({ path: path.resolve(artifacts, `radar-${width}.png`), fullPage: true });
     }
     await page.locator('#radarAutoAudit').check();
     await page.locator('#radarSearch').click();
@@ -302,6 +324,9 @@ const base = (id, name, extra = {}) => ({
     radarMode = 'error';
     await page.locator('#radarSearch').click();
     await expect(page.locator('#radarStatus')).toContainText('O provedor atingiu seu limite');
+    await expect(page.locator('#radarPanel')).not.toHaveClass(/is-searching/);
+    await expect(page.locator('#radarSearch')).toBeEnabled();
+    await expect(page.locator('#radarResults')).toContainText('Busca não concluída');
     radarEnv.BRAVE_SEARCH_API_KEY = '';
     await page.locator('#radarCheck').click();
     await expect(page.locator('#radarStatus')).toContainText('Configure Brave Search');
@@ -332,6 +357,7 @@ const base = (id, name, extra = {}) => ({
     await page.keyboard.press("Escape");
     for (const width of [320, 390, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
+      await page.screenshot({ path: path.resolve(artifacts, `central-${width}.png`), fullPage: true });
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
