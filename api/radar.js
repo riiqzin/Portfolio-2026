@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { boundedText, redisClient, reserveSpend, spendingConfigured, ticket } from '../lib/radar-control.mjs';
+import { boundedText, redisClient, reserveSpend, spendingConfigured, ticket } from '../lib/radar-control.js';
 
 const PLATFORMS = /\b(nuvemshop|lojavirtualnuvem|tiendanube|shopify|myshopify|wixsite|wix|lojaintegrada|loja integrada|tray commerce|vtex|woocommerce|squarespace|bigcommerce)\b/i;
 const DIRECTORIES = ['instagram.com', 'facebook.com', 'linkedin.com', 'youtube.com', 'google.com', 'google.com.br', 'mercadolivre.com.br', 'shopee.com.br', 'yelp.com', 'tripadvisor.com.br', 'econodata.com.br', 'solutudo.com.br'];
