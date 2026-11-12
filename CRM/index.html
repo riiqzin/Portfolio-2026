@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/CRM/gmail.css">
 <link rel="stylesheet" href="/CRM/outreach.css">
 <link rel="stylesheet" href="/CRM/studio.css">
+<link rel="stylesheet" href="/CRM/flow.css">
 </head>
 <body>
 
@@ -70,12 +71,18 @@
       <div class="engine-footer"><span>FILTROS <b>Duplicados · Marketplaces · Plataformas restritivas*</b></span><span>ATÉ 20 FONTES / BUSCA</span><span>ENVIO COMERCIAL <b>MANUAL</b></span></div>
     </div>
     <div class="radar-status" role="group" aria-label="Estado do sistema"><span class="radar-status-icon">◈</span><div class="radar-status-copy"><strong>Motor</strong><p id="radarStatus" role="status" aria-live="polite">Verificando configuração…</p></div><button class="ghost" id="radarCheck" type="button">Verificar conexão ↻</button></div>
+    <section class="radar-journey" id="radarJourney" data-stage="idle" aria-label="Acompanhamento da varredura" hidden>
+      <div class="radar-journey-head"><span class="radar-journey-signal"><i></i> OPERAÇÃO EM TEMPO REAL</span><span id="radarJourneyCount">AGUARDANDO RESULTADOS</span></div>
+      <div class="radar-journey-core"><div class="radar-journey-orb" aria-hidden="true"><span></span><i></i><i></i></div><div class="radar-journey-info"><span class="radar-journey-overline">RADAR / MONITOR DE BUSCA</span><h3 id="radarJourneyLabel">Preparando a varredura</h3><p>Os resultados aparecem à medida que o sistema conclui as consultas. Os dados analisados são reais, não simulados.</p></div></div>
+      <div class="radar-journey-track" aria-hidden="true"><span id="radarJourneyFill"></span></div>
+      <div class="radar-journey-steps"><span data-journey-step>01 <b>Descobrir</b></span><span data-journey-step>02 <b>Apresentar</b></span><span data-journey-step>03 <b>Verificar</b></span><span data-journey-step>04 <b>Concluir</b></span></div>
+    </section>
     <section class="radar-output" id="radarOutput" aria-labelledby="resultsTitle" tabindex="-1">
     <div class="output-header"><h2 id="resultsTitle">Lojas encontradas</h2><button type="button" id="radarNewSearch" class="ghost">Nova varredura ↑</button></div>
     <div class="radar-summary" id="radarSummary"></div><div class="radar-source" id="radarSource"></div>
     <div class="radar-results" id="radarResults"><div class="radar-welcome"><span class="radar-welcome-icon">◎</span><h3>Nenhuma busca iniciada</h3><p>Defina segmento e localidade para buscar candidatos.</p></div></div>
     </section>
-<details class="radar-guide"><summary>Como funciona a varredura ↗</summary><p>O Brave encontra lojas, e o CRM tenta localizar contatos comerciais públicos nos primeiros candidatos. Alguns sites bloqueiam consultas automáticas; nesses casos, você pode informar um e-mail manualmente. Nenhum e-mail é enviado sem sua confirmação.</p></details>
+<details class="radar-guide"><summary>Como funciona a varredura ↗</summary><p>O Brave encontra lojas, e o CRM tenta localizar contatos comerciais públicos e indicadores técnicos em todos os candidatos elegíveis. Alguns sites bloqueiam consultas automáticas; nesses casos, você pode informar um e-mail manualmente. Nenhum e-mail é enviado sem sua confirmação.</p></details>
   </section>
 
 <section class="gmail-panel" id="gmailPanel" hidden aria-labelledby="gmailTitle">
