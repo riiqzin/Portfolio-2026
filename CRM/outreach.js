@@ -5,6 +5,8 @@ window.RickyOutreach={
   const panel=$('#outreachPanel'),list=$('#outQueue'),timeline=$('#outTimeline'),templates=$('#outTemplates'),status=$('#outStatus');
   const leadSel=$('#outLead'),templateSel=$('#outTemplate'),subject=$('#outSubject'),body=$('#outBody');
   let data={templates:[],queue:[],sent:[],followups:[],connected:false,canSend:false},busy=false;
+  const NEW_PHASE=Date.parse('2026-11-12T00:00:00-03:00');
+  const chosenTemplate=()=>localStorage.getItem('ricky_crm_template_default')||'initial';
   async function api(action,payload={}){
    const isRead=action==='GET';
    const response=await fetch('/api/outreach',{method:isRead?'GET':'POST',headers:{Authorization:'Bearer '+getKey(),'Content-Type':'application/json'},...(!isRead?{body:JSON.stringify({...payload,action})}:{}),cache:'no-store',signal:AbortSignal.timeout(isRead?18000:35000)});
@@ -27,7 +29,7 @@ window.RickyOutreach={
     const item=option(lead.name+' · '+email,lead.id);item.dataset.email=email;leadSel.append(item);names.add(lead.id);
    }
    if(names.has(previous))leadSel.value=previous;
-   const selected=templateSel.value;templateSel.replaceChildren();
+   const selected=templateSel.value||chosenTemplate();templateSel.replaceChildren();
    for(const t of data.templates)templateSel.append(option(t.name,t.id));
    if(data.templates.some(t=>t.id===selected))templateSel.value=selected;
   }
@@ -75,7 +77,7 @@ window.RickyOutreach={
    const oldFollowups=getLeads().filter(lead=>{
      const date=lead.email_sent_at||lead.email_sent_date;
      const email=String(lead.prospect_email||'').toLowerCase().split(/[,;\s]+/)[0];
-     return lead.active&&email&&date&&now-Date.parse(date)>5*86400000&&!lead.responded_at
+     return lead.active&&email&&date&&Date.parse(date)>=NEW_PHASE&&now-Date.parse(date)>5*86400000&&!lead.responded_at
        &&!data.sent.some(sent=>sent.email===email)&&!data.queue.some(item=>item.email===email);
    }).slice(0,15);
    const totalFollowups=data.followups.length+oldFollowups.length;
@@ -153,7 +155,7 @@ window.RickyOutreach={
    $('#outMailbox').textContent=data.connected?(data.canSend?'Gmail conectado · leitura e envio autorizados':'Gmail conectado · falta autorizar o envio'):'Gmail não conectado';
    $('#outSendHelp').hidden=data.canSend;
    $('#outCount').textContent=data.queue.length+' para revisar';
-   for(const [selector,value] of [['#dashQueued',data.queue.length],['#dashFollowups',data.followups.length+getLeads().filter(l=>l.active&&l.prospect_email&&!l.responded_at&&(l.email_sent_at||l.email_sent_date)&&Date.now()-Date.parse(l.email_sent_at||l.email_sent_date)>5*86400000&&!data.sent.some(s=>s.email===String(l.prospect_email).toLowerCase().split(/[,;\s]+/)[0])).length],['#dashSent',data.sent.length]]){
+   for(const [selector,value] of [['#dashQueued',data.queue.length],['#dashFollowups',data.followups.length+getLeads().filter(l=>l.active&&l.prospect_email&&!l.responded_at&&(l.email_sent_at||l.email_sent_date)&&Date.parse(l.email_sent_at||l.email_sent_date)>=NEW_PHASE&&Date.now()-Date.parse(l.email_sent_at||l.email_sent_date)>5*86400000&&!data.sent.some(s=>s.email===String(l.prospect_email).toLowerCase().split(/[,;\s]+/)[0])).length],['#dashSent',data.sent.length]]){
      const el=$(selector);if(el)el.textContent=String(value);
    }
   }
@@ -167,7 +169,7 @@ window.RickyOutreach={
    const email=String(lead.prospect_email||'').split(/[,;\s]+/)[0];
    await invoke('queue-add',{leadId:lead.id,company:lead.name,email,subject:subject.value,text:body.value,type:'initial'},'Mensagem adicionada à fila. Revise antes de enviar.');
   });
-  leadSel.addEventListener('change',compose);templateSel.addEventListener('change',compose);
+  leadSel.addEventListener('change',compose);templateSel.addEventListener('change',()=>{localStorage.setItem('ricky_crm_template_default',templateSel.value);compose()});
   $('#outReload').addEventListener('click',refresh);
   $('#outNewTemplate').addEventListener('click',async()=>{
    const name=prompt('Nome do novo modelo:');if(!name)return;
