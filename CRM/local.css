@@ -31,3 +31,12 @@
 .history-entry small{color:#7d9d96;font-size:10px}
 .status-buttons .btn{padding:8px 11px}
 .template button{margin-top:11px}
+
+.template-settings{grid-column:1/-1;border:1px solid rgba(157,224,201,.19);background:rgba(17,42,37,.54);border-radius:13px;padding:15px}
+.template-settings-top{display:flex;align-items:center;justify-content:space-between;gap:13px;margin-bottom:12px}
+.template-settings-top strong{font-size:12px;color:#c9f0d9}.template-settings-top small{font-size:10px;color:#8daaa6}
+.template-settings-row{display:grid;grid-template-columns:1fr 1fr auto;gap:9px}
+.template-settings-row input,.template-editor{background:#0a171e;border:1px solid rgba(174,224,198,.22);border-radius:10px;padding:11px 12px;color:#e4f3e9;min-width:0;font-size:12px}
+.template-actions{display:flex;gap:7px;margin-top:12px}
+.template-editor{margin-top:12px;width:100%;resize:vertical;line-height:1.6}
+@media(max-width:640px){.template-settings-row{grid-template-columns:1fr}.template-settings-row .btn{width:100%}}
