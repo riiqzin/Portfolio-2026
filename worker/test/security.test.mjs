@@ -30,7 +30,13 @@ test('robots policy respects exclusions and blocks unavailable policies', async 
   const rules = await crawlPolicy('https://store.com', async () => ({ status: 200, body: Buffer.from('User-agent: *\nDisallow: /private\nAllow: /\nCrawl-delay: 2') }));
   assert.equal(rules.allows('https://store.com/private/item'), false); assert.equal(rules.delay, 2000);
   assert.equal(rules.allows('https://store.com/catalog'), true);
-  for (const status of [301, 401, 403, 429, 500]) await assert.rejects(crawlPolicy('https://store.com', async () => ({ status })));
+  for (const status of [400, 401, 403, 404, 410, 429, 499]) {
+    const policy = await crawlPolicy('https://store.com', async () => ({ status }));
+    assert.equal(policy.allows('https://store.com/assets/app.js'), true, `robots ${status}`);
+    assert.equal(policy.delay, 1000);
+  }
+  for (const status of [301, 302, 500, 503]) await assert.rejects(crawlPolicy('https://store.com', async () => ({ status })));
+  await assert.rejects(crawlPolicy('https://store.com', async () => { throw new Error('network_timeout'); }));
 });
 const evidence = { screenshots: [{ id: 'desktop', width: 1365, height: 900, data: 'data:image/jpeg;base64,AAAA' }, { id: 'mobile', width: 390, height: 844, data: 'data:image/jpeg;base64,AAAA' }], views: [{ name: 'mobile', textLength: 200, width: 390 }], limitations: ['Static fixture'], commerceEvidence: true, network: { blocked: 0 }, platform: null };
 const diagnosis = { summary: 'Fixture only', uncertainty: 'Manual review', findings: [{ observation: 'Fixture observation', recommendation: 'Check manually', severity: 'high', confidence: 'high', screenshot: 'mobile', box: { x: 0, y: 0, width: 0.5, height: 0.5 } }] };
