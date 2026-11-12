@@ -184,6 +184,81 @@ window.RickyOutreach={
    await refresh();location.hash='#outreach';setStatus('Loja adicionada à fila. Confira e aprove o envio.');
    return result;
   }
+
+  // Fast contextual composer for Radar: no extra navigation or project URL required.
+  const radarModal=document.createElement('div');
+  radarModal.className='out-quick-overlay';
+  radarModal.hidden=true;
+  radarModal.innerHTML='<div class="out-quick-dialog" role="dialog" aria-modal="true" aria-labelledby="outQuickTitle"><div class="out-quick-header"><div><span class="out-eyebrow">RADAR / NOVA OPORTUNIDADE</span><h2 id="outQuickTitle">Preparar abordagem</h2></div><button type="button" class="out-quick-close" aria-label="Fechar">×</button></div><form class="out-quick-form"><div class="out-quick-row"><label>Loja<input name="company" required maxlength="130"></label><label>E-mail comercial<input name="email" type="email" required placeholder="contato@loja.com.br"></label></div><label>Modelo<select name="template"></select></label><label>Assunto<input name="subject" maxlength="180" required></label><label>Mensagem<textarea name="message" rows="8" required maxlength="5500"></textarea></label><p class="out-muted">Pode incluir o link completo do seu portfólio (https://...). O Gmail exibirá esse link no e-mail enviado. Nenhuma mensagem é disparada automaticamente.</p><p class="out-quick-status" role="status"></p><div class="out-quick-actions"><button class="ghost" name="queue" type="button">Salvar para depois</button><button class="primary" name="send" type="button">Revisar e enviar agora</button></div></form></div>';
+  document.body.append(radarModal);
+  const qf=radarModal.querySelector('form'),qc=qf.elements.company,qe=qf.elements.email,qt=qf.elements.template,qs=qf.elements.subject,qb=qf.elements.message;
+  let quickContext=null,quickBusy=false,quickSavedId=null;
+  function quickMessage(text){radarModal.querySelector('.out-quick-status').textContent=text}
+  function closeQuick(){if(quickBusy)return;radarModal.hidden=true;document.body.classList.remove('out-quick-open')}
+  radarModal.querySelector('.out-quick-close').addEventListener('click',closeQuick);
+  radarModal.addEventListener('click',e=>{if(e.target===radarModal)closeQuick()});
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&!radarModal.hidden)closeQuick()});
+  function quickTemplate(){
+    const selected=data.templates.find(t=>t.id===qt.value)||data.templates[0];
+    if(!selected)return;
+    const v=templateValues(selected,{name:qc.value,segment:quickContext?.segment||'lojas virtuais'});
+    qs.value=v.subject;qb.value=v.text;localStorage.setItem('ricky_crm_template_default',selected.id);
+    quickSavedId=null;
+  }
+  qt.addEventListener('change',quickTemplate);
+  async function openRadarComposer(prospect){
+    if(!getKey())throw Error('Entre no CRM para preparar o contato.');
+    if(quickBusy)return;
+    await refresh();
+    quickContext=prospect;quickSavedId=null;
+    qc.value=String(prospect.name||'').replace(/\s+[|–—-]\s+.*$/,'').trim().slice(0,130);
+    qe.value=String(prospect.email||'').trim();
+    qt.replaceChildren();
+    for(const item of data.templates)qt.append(option(item.name,item.id));
+    if(data.templates.some(t=>t.id===chosenTemplate()))qt.value=chosenTemplate();
+    quickTemplate();
+    quickMessage(!qe.value?'Contato não encontrado automaticamente. Preencha o e-mail comercial para continuar.':'Confira o contato e revise a mensagem antes de enviar.');
+    radarModal.hidden=false;document.body.classList.add('out-quick-open');
+    (qe.value?qt:qe).focus();
+  }
+  async function saveQuick(){
+    if(!qf.reportValidity())return null;
+    quickBusy=true;quickMessage('Preparando lead e mensagem...');
+    try{
+      let lead;
+      if(quickContext?.leadId){lead=getLeads().find(l=>l.id===quickContext.leadId)}
+      if(!lead)lead=await addRadarLead({name:qc.value,domain:quickContext?.domain,email:qe.value});
+      const payload={company:qc.value,email:qe.value,leadId:lead?.id||'',subject:qs.value,text:qb.value,type:'initial'};
+      if(!quickSavedId){
+        const result=await api('queue-add',payload);quickSavedId=result.item.id;
+      }else await api('queue-update',{id:quickSavedId,subject:qs.value,text:qb.value});
+      quickMessage('Mensagem salva na fila. Você pode enviar agora ou voltar depois.');
+      await refresh();return quickSavedId;
+    }catch(error){quickMessage(error.message||'Erro ao preparar abordagem.');return null}
+    finally{quickBusy=false}
+  }
+  qf.elements.queue.addEventListener('click',async()=>{
+    const id=await saveQuick();if(id){closeQuick();location.hash='#outreach';setStatus('Abordagem na fila para revisão.')}
+  });
+  qf.elements.send.addEventListener('click',async()=>{
+    if(!qf.reportValidity())return;
+    // Keep the lead and unsent draft even if Google has not authorized gmail.send.
+    const id=await saveQuick();if(!id)return;
+    if(!data.canSend){quickMessage('Rascunho salvo. Para enviar, autorize a permissão de envio na aba Respostas.');return}
+    if(!confirm('Enviar UMA mensagem comercial para '+qe.value+' usando rickymanginidev@gmail.com?\n\nAssunto: '+qs.value+'\n\nConfirme que revisou o conteúdo.'))return;
+    quickBusy=true;quickMessage('Enviando pelo Gmail...');
+    try{
+      const result=await api('send',{id,approved:true});
+      if(result?.sent&&markSent)await markSent(result.sent);
+      quickMessage('Envio confirmado pelo Gmail e registrado no CRM.');
+      quickSavedId=null;await refresh();
+      quickBusy=false;closeQuick();location.hash='#outreach';
+      setStatus('Enviado com sucesso. O histórico foi atualizado.');
+    }catch(error){quickMessage('O rascunho permanece salvo: '+(error.message||'Envio não confirmado.'))}
+    finally{quickBusy=false}
+  });
+  window.RickyOutreach.openRadarComposer=openRadarComposer;
+
   window.RickyOutreach.stageProspect=stageProspect;
   window.RickyOutreach.openForLead=id=>{location.hash='#outreach';refresh().then(()=>{leadSel.value=id;compose()})};
   function navigate(){
