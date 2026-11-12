@@ -90,7 +90,7 @@ export function createHandler({ env = process.env, fetcher = fetch, now = () => 
       const data = await response.json();
       if (data.web?.results !== undefined && !Array.isArray(data.web.results)) throw new Error('invalid_response');
       const normalized = normalizeResults(data.web?.results || []);
-      normalized.results = normalized.results.map(row => ({ ...row, ticket: ticket(row.url, env, now().getTime()) }));
+      normalized.results = normalized.results.map(row => ({ ...row, ticket: ticket(row.url, env, now().getTime()), historyTicket: ticket(row.url, env, now().getTime(), 90 * 24 * 60 * 60 * 1000) }));
       return json({ ...normalized, query, searchedAt: now().toISOString(), usage });
     } catch { return fail('provider_unavailable', 'A busca não foi concluída. Verifique a conexão e tente novamente. Esta tentativa pode ter consumido uma consulta.', 502); }
   };
