@@ -167,3 +167,18 @@
 @keyframes radarScanSpin{from{filter:brightness(1);transform:rotate(0deg)}to{filter:brightness(1.18);transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.radar-prospect-modern:hover{transform:none}.radar-contact-loading:before,.radar-panel.is-searching .engine-scope{animation:none}}
 @media(max-width:600px){.radar-prospect-modern{padding:15px}.radar-prospect-head{align-items:flex-start}.radar-modern-actions{flex-direction:column}.radar-modern-actions>*{width:100%}}
+
+
+/* Evidence-based opportunity score. Detailed criteria live inside the card. */
+.radar-opportunity{padding:13px 14px;margin:5px 0 0;border:1px solid #455e50;border-radius:12px;background:linear-gradient(110deg,#10251b,#0d1e17);display:flex;flex-direction:column;gap:9px}
+.radar-opportunity-scoreline{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.radar-opportunity-number{font-size:21px;letter-spacing:-.035em;color:#d9f2e0;font-weight:700;font-variant-numeric:tabular-nums}
+.radar-opportunity-state{font-size:11px;color:#adceba}
+.radar-opportunity-bar{height:6px;background:#273e30;border-radius:9px;overflow:hidden}
+.radar-opportunity-fill{height:100%;display:block;border-radius:9px;background:#a7ddbc;transition:width .3s ease}
+.radar-score-details{border-top:1px solid #354d3e;padding-top:8px}
+.radar-score-details summary{font-size:11px;min-height:25px;color:#c9e7d0;font-weight:600;cursor:pointer}
+.radar-score-criterion{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px}
+.radar-score-criterion strong{font-size:11px;color:#d7e5db}
+.radar-score-criterion span{font-size:11px;color:#aedac0;font-variant-numeric:tabular-nums}
+.radar-score-details .radar-contact-note{display:block;font-size:10px;margin:3px 0 6px;line-height:1.55;color:#a6b6ac}
