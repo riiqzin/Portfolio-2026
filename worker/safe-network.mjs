@@ -45,7 +45,9 @@ export async function safeGet(value, { resolve = lookup, transport = https.reque
 export async function crawlPolicy(url, get = safeGet) {
   const u = safeUrl(url), robotsUrl = `${u.origin}/robots.txt`;
   const r = await get(robotsUrl, { maxBytes: 256000 });
-  if ([404, 410].includes(r.status)) return { allows: () => true, delay: 1000 };
+  // RFC 9309 §2.3.1.3: 4xx means robots.txt is unavailable; crawlers MAY access resources.
+  // Network failures and 5xx remain fail-closed. Keep pacing and safeGet checks.
+  if (r.status >= 400 && r.status <= 499) return { allows: () => true, delay: 1000 };
   if (r.status !== 200) throw new Error('robots_unavailable');
   const robots = robotsParser(robotsUrl, r.body.toString('utf8'));
   const delay = Math.max(1000, Number(robots.getCrawlDelay(AGENT) || 0) * 1000);
