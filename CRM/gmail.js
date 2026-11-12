@@ -25,7 +25,8 @@ window.RickyGmail = {
       const a=node('a','Abrir conversa no Gmail ↗','gmail-link');a.href='https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(item.threadId||'');a.target='_blank';a.rel='noopener noreferrer';card.append(a);
       list.append(card);
     }
-    const awaiting=leadInput().filter(l=>!!l.sentAt&&!sorted.some(x=>x.leadId===l.id)&&Date.now()-Date.parse(l.sentAt)>4*86400000).slice(0,15);
+    const PHASE_START=Date.parse('2026-11-12T00:00:00-03:00');
+    const awaiting=leadInput().filter(l=>!!l.sentAt&&Date.parse(l.sentAt)>=PHASE_START&&!sorted.some(x=>x.leadId===l.id&&Date.parse(x.receivedAt)>=Date.parse(l.sentAt))&&Date.now()-Date.parse(l.sentAt)>5*86400000).slice(0,15);
     for(const l of awaiting){const card=node('article','','gmail-card');card.append(node('strong',l.name),node('small','Follow-up sugerido · sem resposta identificada','gmail-muted'),node('p','Revisar a conversa e escolher uma abordagem de acompanhamento.','gmail-next'));list.append(card);}
     if(!list.children.length)list.append(node('p','Nenhuma resposta vinculada aos leads ainda. Cadastre o e-mail do contato no lead para que ele seja acompanhado.','gmail-muted'));
     $('#gmailCount').textContent=sorted.length+' resposta(s) · '+awaiting.length+' follow-up(s) sugerido(s)';
