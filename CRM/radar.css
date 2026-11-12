@@ -144,3 +144,26 @@
 .radar-contact select{width:100%;min-height:37px;border:1px solid #4c7260;border-radius:8px;background:#101e18;color:#effcf3;padding:8px;font-size:12px;min-width:0}
 .radar-contact button{min-height:37px;padding:8px 12px;border-radius:8px;cursor:pointer}
 @media(max-width:600px){.radar-collect-bulk{width:100%}}
+
+
+/* New Radar result cards — keep the upper discovery engine unchanged. */
+.radar-prospect-modern{position:relative;background:linear-gradient(150deg,#18271f 0%,#101c17 100%);border:1px solid #3b5947;border-radius:16px;padding:21px;gap:10px;box-shadow:0 8px 24px #020b0720;transition:border-color .2s,transform .2s}
+.radar-prospect-modern:hover{transform:translateY(-2px);border-color:#87b89a}
+.radar-prospect-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.radar-prospect-head .prospect-label{padding:5px 9px;border-radius:7px;border:1px solid #4d715d;background:#1d3b29;color:#bcebd0;font-size:9px;font-weight:800}
+.radar-prospect-head .prospect-meta{margin:0;color:#97b5a4;text-align:right;font-size:11px}
+.radar-prospect-modern h3{font-size:17px;line-height:1.35;letter-spacing:-.02em;margin:2px 0}
+.radar-prospect-modern .prospect-description{margin:0;font-size:12px;color:#bacbc0;min-height:40px}
+.radar-prospect-modern .radar-contact{margin:4px 0;padding:11px 13px;border-radius:11px;background:#0c1b15;border:1px solid #344e3c}
+.radar-prospect-modern .radar-contact strong{font-size:12px;line-height:1.4}
+.radar-prospect-modern .radar-contact button{align-self:start}
+.radar-modern-actions{display:flex;gap:8px;margin-top:auto;padding:7px 0 0;flex-wrap:wrap}
+.radar-modern-actions>*{border-radius:9px;justify-content:center;flex:1;min-width:110px;min-height:40px;font-size:12px!important}
+.radar-modern-actions .primary{flex:1.5}
+.radar-contact-loading{height:4px;width:100%;overflow:hidden;background:#294335;border-radius:4px;position:relative}
+.radar-contact-loading:before{content:"";position:absolute;inset:0;width:35%;background:#a1e8b4;border-radius:4px;animation:radarContactWait 1.15s ease-in-out infinite alternate}
+@keyframes radarContactWait{from{transform:translateX(-25%)}to{transform:translateX(250%)}}
+.radar-panel.is-searching .engine-scope{animation:radarScanSpin 2.5s linear infinite}
+@keyframes radarScanSpin{from{filter:brightness(1);transform:rotate(0deg)}to{filter:brightness(1.18);transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.radar-prospect-modern:hover{transform:none}.radar-contact-loading:before,.radar-panel.is-searching .engine-scope{animation:none}}
+@media(max-width:600px){.radar-prospect-modern{padding:15px}.radar-prospect-head{align-items:flex-start}.radar-modern-actions{flex-direction:column}.radar-modern-actions>*{width:100%}}
