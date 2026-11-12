@@ -39,6 +39,7 @@ window.RickyRadar = {
       try { localStorage.setItem(HISTORY_KEY, JSON.stringify(updated)); }
       catch { message('Busca concluída, mas o navegador não conseguiu guardar o histórico.'); }
       renderHistory();
+      return item.id;
     }
     function renderHistory() {
       let section = $('#radarHistory');
@@ -290,7 +291,7 @@ window.RickyRadar = {
       try {
         const data = await api('POST', { niche: $('#radarNiche').value.trim(), region: $('#radarRegion').value.trim() });
         results = data.results; searchMeta = data; loadedFromHistory = false; render();
-        saveHistory($('#radarNiche').value.trim(), $('#radarRegion').value.trim(), data);
+        searchMeta.id=saveHistory($('#radarNiche').value.trim(), $('#radarRegion').value.trim(), data);
         engine('BUSCA CONCLUÍDA');
         $('#radarResults').removeAttribute('aria-busy');
         message(`Busca concluída. Uso: ${data.usage.daily}/${data.usage.limits.daily} no dia e ${data.usage.monthly}/${data.usage.limits.monthly} no mês (UTC).`);
