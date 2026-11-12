@@ -6,6 +6,7 @@ window.RickyRadar = {
     const domain = s => { try { return new URL(s).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
     let results = [], searchMeta = null, busy = false;
     const audits = window.RadarAudit.mount({ getKey, render });
+    let collecting = false;
     // Local history stores public search snippets and server-signed audit receipts; never API keys or dashboard credentials.
     // This first version is intentionally device-local, not a server-side shared archive.
     const HISTORY_KEY = 'ricky-radar-history-v1';
@@ -25,7 +26,7 @@ window.RickyRadar = {
       const safeResults = (Array.isArray(data.results) ? data.results : []).slice(0, 20).map(row => ({
         name: String(row.name || '').slice(0, 160), domain: String(row.domain || '').slice(0, 255),
         url: String(row.url || '').slice(0, 2048), description: String(row.description || '').slice(0, 600),
-        historyTicket: String(row.historyTicket || '').slice(0, 4096)
+        historyTicket: String(row.historyTicket || '').slice(0, 4096), contact: row.contact && typeof row.contact === 'object' ? row.contact : null
       }));
       const item = {
         id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8),
@@ -113,8 +114,97 @@ window.RickyRadar = {
       return data;
     }
     const existing = row => getLeads().some(lead => normalize(lead.name) === normalize(row.name) || (domain(lead.project_url) && domain(lead.project_url) === row.domain));
+
+    function saveContactToHistory(row) {
+      if (!searchMeta?.id) return;
+      try {
+        const data=getHistory();
+        const match=data.find(item=>item.id===searchMeta.id);
+        if(!match)return;
+        const record=match.results.find(item=>item.domain===row.domain);
+        if(!record)return;
+        record.contact=row.contact;
+        localStorage.setItem(HISTORY_KEY,JSON.stringify(data));
+      }catch{}
+    }
+    async function findContact(row,button) {
+      if(!getKey()) {message('Entre no CRM para buscar contatos.');return}
+      if(row.contact && row.contact.status==='scanned')return;
+      const ticket=row.ticket||row.historyTicket;
+      if(!ticket){message('Comprovante da busca expirado. Faça uma nova varredura.');return}
+      button.disabled=true;
+      button.textContent='Buscando contato…';
+      try {
+        const response=await fetch('/api/radar-contact',{
+          method:'POST',headers:{Authorization:'Bearer '+getKey(),'Content-Type':'application/json'},
+          body:JSON.stringify({domain:row.domain,ticket}),signal:AbortSignal.timeout(35000)
+        });
+        const data=await response.json();
+        if(!response.ok)throw Error(data.message||'Consulta indisponível');
+        row.contact=data;
+        saveContactToHistory(row);
+        render();
+      }catch(error){
+        button.disabled=false;
+        button.textContent='Encontrar contato';
+        message('Contato de '+row.name+': '+String(error.message||'falhou'));
+      }
+    }
+    function contactPanel(row,card,actions) {
+      if(!row.contact){
+        const button=node('button','Encontrar contato','ghost');button.type='button';
+        button.addEventListener('click',()=>findContact(row,button));actions.append(button);return;
+      }
+      const c=row.contact;
+      const area=node('div','','radar-contact');
+      if(c.status!=='scanned'){
+        area.append(node('small','Não foi possível verificar este site automaticamente. Confira o contato manualmente.','radar-contact-note'));
+      }else{
+        area.append(node('strong',c.priority==='Evitar'?'Plataforma a evitar':c.emails?.length?'Contato comercial encontrado':'Nenhum e-mail público localizado'));
+        area.append(node('small',(c.platform||'Plataforma não verificada')+' · '+(c.cached?'Verificação em cache':'Site consultado')+' · Pontuação preliminar '+(c.score||0)+'/100','radar-contact-note'));
+        if(c.emails?.length){
+          const select=document.createElement('select');select.setAttribute('aria-label','E-mail da loja');
+          for(const email of c.emails){const option=document.createElement('option');option.textContent=email;option.value=email;select.append(option)}
+          const start=node('button','Preparar e-mail','primary');start.type='button';
+          start.addEventListener('click',()=>{
+            const businessName=row.name.replace(/\s+[|–—-]\s+.*$/,'').trim();
+            const body='Oi! Tudo bem? Encontrei a '+businessName+' pesquisando lojas do segmento e trabalho com reformulação e modernização de lojas virtuais. Gostaria de conversar sobre possíveis melhorias na apresentação dos produtos e experiência de compra. Faz sentido para vocês?';
+            const url='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(select.value)+'&su='+encodeURIComponent('Ideia para a '+businessName)+'&body='+encodeURIComponent(body);
+            window.open(url,'_blank','noopener');
+          });
+          const use=node('button','Criar lead com contato','ghost');use.type='button';use.addEventListener('click',()=>{
+            createLead({...row,contactEmail:select.value});
+          });
+          area.append(select,start,use);
+        }
+      }
+      card.append(area);
+      if(c.pagesChecked?.length){
+        const proof=node('small','Fontes verificadas: '+c.pagesChecked.length+' páginas públicas. Confirme antes de enviar.','radar-contact-note');
+        card.append(proof);
+      }
+    }
+    async function collectFive() {
+      if(collecting||busy||!results.length)return;
+      collecting=true;
+      const candidates=results.filter(row=>!existing(row)&&!row.contact).slice(0,5);
+      message('Buscando contatos públicos dos primeiros '+candidates.length+' candidatos...');
+      for(let i=0;i<candidates.length;i++){
+        const row=candidates[i];
+        const button=[...document.querySelectorAll('#radarResults button')].find(btn=>btn.textContent==='Encontrar contato'&&btn.closest('.prospect-card')?.querySelector('.prospect-meta')?.textContent===row.domain);
+        if(button)await findContact(row,button);
+      }
+      collecting=false;
+      message('Coleta concluída. Revise os contatos identificados e prepare suas abordagens.');
+    }
+    const bulk=node('button','Encontrar contatos dos 5 primeiros','ghost');
+    bulk.type='button';bulk.className='radar-collect-bulk';
+    bulk.addEventListener('click',collectFive);
+    $('#radarOutput').insertBefore(bulk,$('#radarResults'));
+
     function render() {
       const list = $('#radarResults'); list.replaceChildren();
+      bulk.hidden = !results.length;
       let duplicates = 0;
       [...results].sort((a, b) => (b.audit?.priority?.score ?? -1) - (a.audit?.priority?.score ?? -1)).forEach(row => {
         if (existing(row)) { duplicates++; return; }
@@ -145,7 +235,7 @@ window.RickyRadar = {
             setTimeout(() => { if (draft.isConnected) draft.textContent = previous; }, 1800);
           } catch { window.prompt('Copie sua mensagem:', message); }
         });
-        actions.append(link, add, draft); audits.append(row, card, actions); card.append(actions); list.append(card);
+        actions.append(link, add, draft); audits.append(row, card, actions); card.append(actions); contactPanel(row,card,actions); list.append(card);
       });
       if (searchMeta) {
         const removed = searchMeta.removed || { duplicates: 0, platforms: 0, other: 0 };
