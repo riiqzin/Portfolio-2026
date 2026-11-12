@@ -552,6 +552,7 @@ function bind(){
  window.addEventListener('hashchange',setNav);
  $('#loginForm').addEventListener('submit',e=>{e.preventDefault();signIn()});
  $('#refreshApp').onclick=()=>refresh().then(()=>toast('Carteira atualizada.')).catch(e=>toast(e.message));
+ $('#logoutButton').onclick=()=>{localStorage.removeItem(KEY_NAME);sessionStorage.removeItem(KEY_NAME);state.key='';state.leads=[];state.results=[];state.gmail.items=[];state.emailQueue=[];render();showLogin();location.hash='#central';toast('Sessão local encerrada.');};
  $('#localForm').addEventListener('submit',scan);
  $$('[data-niche]').forEach(b=>b.addEventListener('click',()=>{
   $$('[data-niche]').forEach(x=>x.classList.toggle('active',x===b));
