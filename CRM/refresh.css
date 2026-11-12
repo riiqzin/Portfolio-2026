@@ -36,3 +36,10 @@ body{background:radial-gradient(ellipse 65% 48% at 97% 0%,#18312e55,transparent 
 .drawer-wrap .drawer{background:#111922!important}.modal-wrap .modal{background:#151e28!important}
 .overlay,.modal-wrap{background:#03090ccc!important}
 a,button{transition:color .18s ease,border-color .18s ease,background .18s ease,transform .18s ease}
+
+/* Keep the lead creation modal entirely in the private dark workspace theme. */
+#leadModal .modal-foot{background:#151e28!important;border-top:1px solid #2c3945!important;color:#e9f1f4!important}
+#leadModal .modal-foot .ghost{background:#1b2831!important;color:#e6f0f1!important;border-color:#3a4c56!important}
+#leadModal .modal-foot .ghost:hover{background:#263841!important}
+#leadModal .modal-foot .primary{background:#a5e6ce!important;color:#10251c!important;border-color:#a5e6ce!important}
+#leadModal .modal-foot .primary:hover{background:#baf4dc!important}
