@@ -26,8 +26,9 @@ function safeUrl(url,host) {
   try{const u=new URL(url);return u.protocol==='https:'&&(u.hostname===host||u.hostname==='www.'+host)&&!u.username&&!u.password&&!u.port}catch{return false}
 }
 function decodeEntities(html) {
-  return html.replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)))
-    .replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n)))
+  const cp=n=>{const value=Number(n);return Number.isInteger(value)&&value>0&&value<=0x10ffff?String.fromCodePoint(value):''};
+  return html.replace(/&#x([0-9a-f]+);/gi,(_,n)=>cp(parseInt(n,16)))
+    .replace(/&#(\d+);/g,(_,n)=>cp(n))
     .replace(/&commat;/gi,'@').replace(/&period;/gi,'.').replace(/&amp;/gi,'&');
 }
 const emailRe=/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
@@ -98,11 +99,10 @@ export async function inspectContact(site,fetcher=fetch) {
  const target=publicUrl(site);
  if(!target)return {status:'invalid',emails:[],score:0};
  const host=target.domain;
- if(!await externalHost(host))return {status:'unavailable',emails:[],score:0};
  const base='https://'+host;
  let html;
  try{html=await fetchPage(base+'/',host,fetcher)}catch{}
- if(!html&&host.split('.').length===2){try{html=await fetchPage('https://www.'+host+'/',host,fetcher)}catch{}}
+ if(!html){try{html=await fetchPage('https://www.'+host+'/',host,fetcher)}catch{}}
  if(!html)return {status:'unavailable',emails:[],score:0,reason:'Acesso automatizado bloqueado ou site indisponível. Você pode informar o e-mail manualmente.'};
  const result={status:'scanned',domain:host,emails:[],platform:platform(html),pagesChecked:[base+'/'],score:0,signals:[]};
  const emailSet=new Set(extractEmails(html,host));
