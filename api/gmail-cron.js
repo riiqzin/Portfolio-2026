@@ -1,3 +1,4 @@
+import { sendDue } from './outreach.js';
 import { ready,redisClient,syncInbox } from '../lib/gmail.js';
 import { json } from '../lib/radar-control.js';
 
@@ -8,7 +9,8 @@ export async function handler(request){
  if(!ready(env))return json({message:'Integração Gmail não configurada.'},503);
  try {
    const result=await syncInbox(env,redisClient(env));
-   return json({ok:true,checked:result.count||0,busy:!!result.busy});
+   const scheduled=await sendDue({env});
+   return json({ok:true,checked:result.count||0,busy:!!result.busy,scheduled});
  }catch{return json({ok:false,message:'Sincronização adiada; reconecte o Gmail se a autorização expirou.'},503)}
 }
 export default { fetch:handler };
