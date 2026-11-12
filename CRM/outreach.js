@@ -84,6 +84,24 @@ window.RickyOutreach={
     const metric=make('div',undefined,'out-stat');metric.append(make('strong',String(num)),make('span',label));summary.append(metric);
    }
    timeline.append(summary);
+   const candidates=getLeads().filter(lead=>{
+     const email=String(lead.prospect_email||'').toLowerCase().split(/[,;\s]+/)[0];
+     return lead.active&&email&&!lead.email_sent_at&&!lead.responded_at&&!data.queue.some(x=>x.email===email)&&!data.sent.some(x=>x.email===email);
+   }).slice(0,5);
+   timeline.append(make('h3','Até 5 leads prontos para abordar'));
+   if(!candidates.length)timeline.append(make('p','Nenhum lead novo com e-mail disponível. Use o Radar para encontrar mais lojas.','out-muted'));
+   for(const lead of candidates){
+     const email=String(lead.prospect_email).toLowerCase().split(/[,;\s]+/)[0];
+     const row=make('article',undefined,'out-card out-followup');
+     row.append(cardTitle(lead.name,email+' · Ainda não abordado'));
+     const btn=make('button','Preparar abordagem','primary');btn.type='button';
+     btn.addEventListener('click',async()=>{
+       const template=data.templates.find(t=>t.id==='initial')||data.templates[0];
+       const v=templateValues(template,{name:lead.name,segment:'e-commerce'});
+       await invoke('queue-add',{company:lead.name,email,leadId:lead.id,type:'initial',subject:v.subject,text:v.text},'Abordagem colocada na fila para aprovação.');
+     });
+     row.append(btn);timeline.append(row);
+   }
    const heading=make('h3','Acompanhamentos para revisar');timeline.append(heading);
    if(!totalFollowups)timeline.append(make('p','Nenhum follow-up vencido registrado no CRM.','out-muted'));
    for(const sent of data.followups){
