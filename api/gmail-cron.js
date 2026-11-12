@@ -8,9 +8,11 @@ export async function handler(request){
  if(!env.CRON_SECRET || request.headers.get('authorization')!==('Bearer '+env.CRON_SECRET))return json({message:'Não autorizado.'},401);
  if(!ready(env))return json({message:'Integração Gmail não configurada.'},503);
  try {
-   const result=await syncInbox(env,redisClient(env));
    const scheduled=await sendDue({env});
-   return json({ok:true,checked:result.count||0,busy:!!result.busy,scheduled});
+   try{
+     const result=await syncInbox(env,redisClient(env));
+     return json({ok:true,checked:result.count||0,busy:!!result.busy,scheduled});
+   }catch{return json({ok:true,checked:0,inboxSyncPending:true,scheduled})}
  }catch{return json({ok:false,message:'Sincronização adiada; reconecte o Gmail se a autorização expirou.'},503)}
 }
 export default { fetch:handler };
