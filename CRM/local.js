@@ -89,6 +89,7 @@ function priority(c){
  if(v.possible_chain||c.chain_hint)return {type:'baixa',why:'Possível rede ou franquia; verificar antes de oferecer.'};
  if(v.site_mobile_ok)return {type:'baixa',why:'Você confirmou que o site já funciona bem no celular.'};
  const contact=!!normalizePhone(c.phone)||['social','whatsapp'].includes(c.link_type);
+ if(!c.place_id&&!c.maps_url)return {type:'investigar',why:'Cadastro manual: confirme a presença digital e o canal antes da abordagem.'};
  if(['none','social','bio','whatsapp'].includes(c.link_type)&&contact)return {type:'alta',why:c.link_type==='none'?'O Google não informa um site; investigar presença digital antes da abordagem.':'O link cadastrado é '+siteLabel(c.link_type).toLowerCase()+'; site próprio ainda não confirmado.'};
  if(c.link_type==='booking'&&contact)return {type:'investigar',why:'Já usa agendamento externo; uma landing pode fortalecer a marca sem substituir reservas.'};
  if(c.link_type==='own')return {type:'investigar',why:'Existe um domínio cadastrado. Verifique se há oportunidade real de melhoria.'};
@@ -107,7 +108,7 @@ function evidencePhrase(c){
  if(type==='bio')return 'Vi que o link no Google leva a uma página de links; pensei numa página própria para apresentar melhor o negócio.';
  if(type==='booking')return 'Vi que vocês usam uma plataforma externa de agendamento; pensei numa página com a identidade da barbearia que leva direto às reservas.';
  if(type==='whatsapp')return 'Vi que o link cadastrado no Google abre o WhatsApp; uma página poderia reunir serviços, preços e localização antes do contato.';
- if(type==='none')return 'Não encontrei um link de site cadastrado no Google; queria entender onde novos clientes veem serviços e agendamentos.';
+ if(type==='none')return (c.place_id||c.maps_url)?'Não encontrei um link de site cadastrado no Google; queria entender onde novos clientes veem serviços e agendamentos.':'Queria entender onde seus novos clientes podem conhecer serviços e agendar horários.';
  if(v.site_mobile_ok)return 'Vi que o site de vocês funciona bem no celular.';
  return 'Encontrei a empresa no Google e fiquei curioso sobre como vocês recebem novos agendamentos.';
 }
@@ -318,7 +319,7 @@ function populateLead(){
  platformInput.id='verifiedPlatform';platformInput.placeholder='Ex.: Trinks, Booksy';platformInput.maxLength=100;platformInput.value=d.verified.platform_name||'';
  platformInput.addEventListener('change',()=>{fromFields();updateRecommendation(false)});
  platform.append(platformText,platformInput);grid.append(platform);
- $('#leadMessage').value=d.last_message||templateMessage(d);
+ $('#leadMessage').value=d.last_message||(offerFor(d).blocked?'':templateMessage(d));
  $('#leadActionBar').hidden=true;
  $('#openWhatsapp').hidden=d.channel==='email';
  $('#queueGmail').hidden=d.channel!=='email';
@@ -329,7 +330,7 @@ function updateRecommendation(replaceText){
  const recommendation=offerFor(d),container=$('#leadRecommendation');container.replaceChildren();
  container.append(dom('strong','',recommendation.blocked?'Atenção · revisar antes de abordar':('Prioridade '+({alta:'alta',investigar:'vale investigar',baixa:'baixa'})[priority(d).type]+' · '+(d.offer==='bot'?'Oferta: bot':'Oferta: landing'))),dom('p','',priority(d).why+' '+recommendation.why));
  $('#leadWarning').textContent=recommendation.blocked?'O Radar não recomenda gerar landing automaticamente para este caso. Confira antes de prosseguir.':d.link_type==='none'?'Sem link no Google não significa que o negócio não tenha site. Confirme antes de afirmar isso.':'Todo dado não verificado deve permanecer como hipótese.';
- if(replaceText){d.offer=recommendation.offer;d.angle=recommendation.angle;$('#leadOffer').value=d.offer;$('#leadAngle').value=d.angle;$('#leadMessage').value=templateMessage(d);d.last_message=$('#leadMessage').value}
+ if(replaceText){d.offer=recommendation.offer;d.angle=recommendation.angle;$('#leadOffer').value=d.offer;$('#leadAngle').value=d.angle;$('#leadMessage').value=recommendation.blocked?'':templateMessage(d);d.last_message=$('#leadMessage').value}
 }
 function openLead(candidate){
  const stored=candidate.id?state.leads.find(x=>x.id===candidate.id):state.leads.find(x=>candidate.place_id&&x.place_id===candidate.place_id);
@@ -369,7 +370,8 @@ function openWhatsApp(){
  window.open(url,'_blank','noopener,noreferrer');
  state.pendingSend=true;
  $('#leadActionBar').hidden=false;
- void saveLead(false);
+ $('#confirmSent').disabled=true;
+ void saveLead(false).then(saved=>{if(!$('#leadActionBar').hidden)$('#confirmSent').disabled=!saved});
  toast('Conversa aberta. Só marque enviado depois de confirmar o envio no WhatsApp.');
 }
 async function prepareEmail(){
@@ -453,7 +455,7 @@ async function loadEmailQueue(){
     try{
      const sent=await backend('outreach','POST',{action:'send',id:q.id,approved:true});
      await rpc('crm_local_action',{p_lead_id:q.leadId,p_type:'abordado',p_note:'E-mail enviado com aprovação humana: '+q.subject,p_channel:'email',p_offer:'landing',p_angle:'A'});
-     const c=state.leads.find(x=>x.id===q.leadId);if(c){c.contacted_at=sent.sent?.sentAt||now();c.channel='email';await rpc('crm_local_save',{p_data:c})}
+     const c=state.leads.find(x=>x.id===q.leadId);if(c){c.contacted_at=sent.sent?.sentAt||now();c.channel='email';c.status='abordado';c.followup_at=new Date(Date.now()+4*86400000).toISOString();await rpc('crm_local_save',{p_data:c})}
      await refresh();await loadEmailQueue();toast('E-mail enviado e registrado.');
     }catch(e){toast('Envio não confirmado: '+e.message)}
     finally{action.disabled=false}
