@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="/CRM/command.css">
 <link rel="stylesheet" href="/CRM/radar.css">
 <link rel="stylesheet" href="/CRM/pipeline-v4.css">
+<link rel="stylesheet" href="/CRM/gmail.css">
 </head>
 <body>
 
@@ -20,6 +21,7 @@
   <nav aria-label="Etapas da prospecção">
     <a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">⌘</span> Central</a>
     <a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar</a>
+    <a class="nav-item" href="#inbox"><span aria-hidden="true">✉</span> Respostas</a>
   </nav>
   <div class="header-links"><span class="private-label"><i></i> AMBIENTE PRIVADO</span><a class="portfolio-link" href="../" target="_blank" rel="noopener">Meu portfólio <span aria-hidden="true">↗</span></a></div>
 </header>
@@ -75,6 +77,21 @@
     <details class="radar-guide"><summary>Configuração do motor e limites atuais ↗</summary><p>A descoberta precisa das variáveis privadas do Brave Search, Redis e limites de uso. <a href="https://github.com/riiqzin/Portfolio-2026/blob/main/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">Ver instruções de ativação</a>.</p><p>Auditorias dependem do executor Windows, orçamento e configuração privada. Capturas estáticas e sugestões da IA exigem revisão humana; não medem conversão. Nenhuma mensagem é enviada automaticamente. * A identificação de plataformas usa indícios e pode errar.</p></details>
   </section>
 
+<section class="gmail-panel" id="gmailPanel" hidden aria-labelledby="gmailTitle">
+  <div class="gmail-head"><div><h1 id="gmailTitle">Central de respostas</h1><p class="gmail-muted">Gmail · prospecção · prioridade automática</p></div><span class="private-label">AMBIENTE PRIVADO</span></div>
+  <div class="gmail-shell">
+    <strong id="gmailConnection">Verificando a conexão do Gmail...</strong>
+    <p id="gmailStatus" class="gmail-muted" role="status">Aguardando autenticação.</p>
+    <div class="gmail-actions">
+      <button id="gmailConnect" type="button" class="primary">Conectar Gmail</button>
+      <button id="gmailSync" type="button" class="primary" hidden>Sincronizar agora</button>
+      <button id="gmailDisconnect" type="button" class="ghost" hidden>Desconectar</button>
+    </div>
+    <p class="gmail-note">Somente mensagens de remetentes associados aos leads cadastrados são analisadas. O CRM não envia e-mails automaticamente. A sincronização ocorre enquanto o painel estiver aberto; o monitoramento em segundo plano será configurado separadamente.</p>
+  </div>
+  <div class="gmail-head"><div><h2>Oportunidades recebidas</h2><p id="gmailCount" class="gmail-muted">Nenhuma resposta carregada</p></div></div>
+  <div class="gmail-grid" id="gmailResults"></div>
+</section>
 <div class="dashboard-layout">
     <div class="operations-intro"><h1>Central</h1><div class="updated" id="updatedText">Carregando…</div></div>
     <section class="pipeline-pulse" aria-label="Resumo de atividades">
@@ -175,6 +192,7 @@
 
 <script src="/CRM/radar-audit.js"></script>
 <script src="/CRM/radar.js"></script>
+<script src="/CRM/gmail.js"></script>
 <script>
 (() => {
   const SUPABASE_URL = 'https://crjnawbtlwtruwwzbkzk.supabase.co';
@@ -963,6 +981,8 @@
       toast('Confira o nome e informe a URL do seu projeto. Nenhuma mensagem será enviada.');
     }
   });
+
+  window.RickyGmail.mount({getKey:()=>state.key,getLeads:()=>state.leads});
 
   if (!state.key) $('#loginOverlay').classList.remove('hidden');
   else loadDashboard();
