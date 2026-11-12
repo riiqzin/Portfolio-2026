@@ -13,10 +13,46 @@ const initial=()=>({templates:DEFAULTS,queue:[],sent:[],dismissed:[]});
 async function load(redis,env){const raw=await redis(['GET',DB]);return raw?unseal(raw,env):initial()}
 async function save(redis,env,data){await redis(['SET',DB,seal(data,env)])}
 const draftOf=(o)=>{const company=trim(o.company,130),email=trim(o.email,180).toLowerCase(),subject=trim(o.subject,180),text=trim(o.text,5500);if(!company||!validEmail(email)||!subject||!text||/[\r\n]/.test(subject))return null;return {id:randomUUID(),company,email,subject,text,leadId:trim(o.leadId,50),type:o.type==='followup'?'followup':'initial',createdAt:new Date().toISOString()};};
+function htmlEscape(value){
+ return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function htmlBody(message){
+ const pattern=/https?:\/\/[^\s<>"']+/gi;
+ let html='',last=0;
+ for(const match of message.matchAll(pattern)){
+   const start=match.index;
+   html+=htmlEscape(message.slice(last,start));
+   const raw=match[0],url=raw.replace(/[.,;!?)]+$/,'');
+   html+='<a href="'+htmlEscape(url)+'" rel="noopener noreferrer">'+htmlEscape(url)+'</a>'+htmlEscape(raw.slice(url.length));
+   last=start+raw.length;
+ }
+ return '<!doctype html><html><body><div style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.6">'+html+htmlEscape(message.slice(last))+'</div></body></html>';
+}
 function mime(item){
- const lines=['From: Ricky CRM <'+ADDRESS+'>','To: <'+item.email+'>','Subject: =?UTF-8?B?'+Buffer.from(item.subject).toString('base64')+'?=','MIME-Version: 1.0','Content-Type: text/plain; charset="UTF-8"','Content-Transfer-Encoding: base64','',''];
- const raw=lines.join('\r\n')+Buffer.from(item.text+'\n\nSe preferirem não receber mais contatos, é só avisar.','utf8').toString('base64');
- return Buffer.from(raw).toString('base64url');
+ const plain=item.text+'\n\nSe preferirem não receber mais contatos, é só avisar.';
+ const boundary='ricky_'+randomUUID().replace(/-/g,'');
+ const subject='=?UTF-8?B?'+Buffer.from(item.subject,'utf8').toString('base64')+'?=';
+ const lines=[
+  'From: Ricky CRM <'+ADDRESS+'>',
+  'To: <'+item.email+'>',
+  'Subject: '+subject,
+  'MIME-Version: 1.0',
+  'Content-Type: multipart/alternative; boundary="'+boundary+'"',
+  '',
+  '--'+boundary,
+  'Content-Type: text/plain; charset="UTF-8"',
+  'Content-Transfer-Encoding: base64',
+  '',
+  Buffer.from(plain,'utf8').toString('base64'),
+  '--'+boundary,
+  'Content-Type: text/html; charset="UTF-8"',
+  'Content-Transfer-Encoding: base64',
+  '',
+  Buffer.from(htmlBody(plain),'utf8').toString('base64'),
+  '--'+boundary+'--',
+  ''
+ ];
+ return Buffer.from(lines.join('\r\n'),'utf8').toString('base64url');
 }
 export async function sendGmail(token,item,fetcher=fetch){
  const response=await fetcher('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({raw:mime(item)}),signal:AbortSignal.timeout(16000)});
