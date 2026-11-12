@@ -1,7 +1,7 @@
 import { ready,redisClient,REDIRECT,STORE,ADDRESS,seal,exchange,gmail } from '../../lib/gmail.js';
 
 const go=(status)=>new Response(null,{status:302,headers:{Location:'/CRM/?gmail='+encodeURIComponent(status)+'#inbox','Cache-Control':'no-store','Referrer-Policy':'no-referrer'}});
-export default async function handler(request){
+export async function handler(request){
  if(request.method!=='GET')return new Response('Method not allowed',{status:405});
  const env=process.env;
  if(!ready(env))return go('setup');
@@ -19,3 +19,5 @@ export default async function handler(request){
    return go('connected');
  }catch{return go('failed')}
 }
+
+export default { fetch: handler };
