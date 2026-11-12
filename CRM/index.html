@@ -62,8 +62,7 @@
           <form class="radar-form" id="radarForm">
             <div class="field"><label for="radarNiche">Segmento</label><input id="radarNiche" required minlength="2" maxlength="80" value="Lojas geek e colecionáveis" placeholder="Ex.: quadrinhos e action figures"></div>
             <div class="field"><label for="radarRegion">Localidade</label><input id="radarRegion" required minlength="2" maxlength="80" value="Brasil" placeholder="Brasil ou cidade específica"><small class="radar-field-note">Recomendado: Brasil inteiro para e-commerces.</small></div>
-            <label class="audit-option"><input id="radarAutoAudit" type="checkbox"><span>Auditar automaticamente até 3 candidatos após buscar (reserva orçamento).</span></label>
-            <button class="primary radar-main-action" id="radarSearch" type="submit">◎ Iniciar varredura</button>
+            <button class="primary radar-main-action" id="radarSearch" type="submit">◎ Encontrar lojas</button>
           </form>
         </div>
       </div>
@@ -71,12 +70,11 @@
     </div>
     <div class="radar-status" role="group" aria-label="Estado do sistema"><span class="radar-status-icon">◈</span><div class="radar-status-copy"><strong>Motor</strong><p id="radarStatus" role="status" aria-live="polite">Verificando configuração…</p></div><button class="ghost" id="radarCheck" type="button">Verificar conexão ↻</button></div>
     <section class="radar-output" id="radarOutput" aria-labelledby="resultsTitle" tabindex="-1">
-    <div class="output-header"><h2 id="resultsTitle">Resultados</h2><button type="button" id="radarNewSearch" class="ghost">Nova varredura ↑</button></div>
-    <p id="auditStatus" class="audit-budget" role="status">Auditorias exigem executor conectado e orçamento configurado.</p>
+    <div class="output-header"><h2 id="resultsTitle">Lojas encontradas</h2><button type="button" id="radarNewSearch" class="ghost">Nova varredura ↑</button></div>
     <div class="radar-summary" id="radarSummary"></div><div class="radar-source" id="radarSource"></div>
     <div class="radar-results" id="radarResults"><div class="radar-welcome"><span class="radar-welcome-icon">◎</span><h3>Nenhuma busca iniciada</h3><p>Defina segmento e localidade para buscar candidatos.</p></div></div>
     </section>
-    <details class="radar-guide"><summary>Configuração do motor e limites atuais ↗</summary><p>A descoberta precisa das variáveis privadas do Brave Search, Redis e limites de uso. <a href="https://github.com/riiqzin/Portfolio-2026/blob/main/CRM/RADAR.md" target="_blank" rel="noopener noreferrer">Ver instruções de ativação</a>.</p><p>Auditorias dependem do executor Windows, orçamento e configuração privada. Capturas estáticas e sugestões da IA exigem revisão humana; não medem conversão. Nenhuma mensagem é enviada automaticamente. * A identificação de plataformas usa indícios e pode errar.</p></details>
+<details class="radar-guide"><summary>Como funciona a varredura ↗</summary><p>O Brave encontra lojas, e o CRM tenta localizar contatos comerciais públicos nos primeiros candidatos. Alguns sites bloqueiam consultas automáticas; nesses casos, você pode informar um e-mail manualmente. Nenhum e-mail é enviado sem sua confirmação.</p></details>
   </section>
 
 <section class="gmail-panel" id="gmailPanel" hidden aria-labelledby="gmailTitle">
@@ -229,7 +227,6 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/CRM/radar-audit.js"></script>
 <script src="/CRM/radar.js"></script>
 <script src="/CRM/gmail.js"></script>
 <script src="/CRM/outreach.js"></script>
