@@ -10,6 +10,7 @@ window.RickyRadar = {
     // Motion is presentation only. Analysis and contacts always come from real API responses.
     let visibleCount=Infinity, revealEpoch=0;
     let pulseState='idle';
+    const animatedCards=new Set();
     const prefersReduced=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     function setSearchVisual(stage,label,current=0,total=0) {
       const box=$('#radarJourney');if(!box)return;
@@ -26,6 +27,7 @@ window.RickyRadar = {
     }
     function progressivelyReveal(){
       const epoch=++revealEpoch;
+      animatedCards.clear();
       visibleCount=prefersReduced()?Infinity:0;
       render();
       if(visibleCount===Infinity)return;
@@ -114,7 +116,7 @@ window.RickyRadar = {
         open.append(heading,main,metrics,foot);
         open.addEventListener('click',()=>{
           if(busy)return;
-          ++revealEpoch;visibleCount=Infinity;
+          ++revealEpoch;visibleCount=Infinity;animatedCards.clear();
           results=item.results.map(row=>({...row,ticket:row.historyTicket||null}));
           searchMeta={...item,removed:item.removed||{duplicates:0,platforms:0,other:0}};
           loadedFromHistory=true;
@@ -167,6 +169,7 @@ window.RickyRadar = {
         if(!record)return;
         record.contact=row.contact;
         localStorage.setItem(HISTORY_KEY,JSON.stringify(data));
+        renderHistory();
       }catch{}
     }
     async function findContact(row,button) {
@@ -248,7 +251,9 @@ window.RickyRadar = {
     $('#radarOutput').insertBefore(bulk,$('#radarResults'));
 
     function render() {
-      const list=$('#radarResults');list.replaceChildren();
+      const list=$('#radarResults');
+      const opened=new Set([...list.querySelectorAll('details[open]')].map(el=>el.closest('[data-prospect-domain]')?.dataset.prospectDomain).filter(Boolean));
+      list.replaceChildren();
       let rendered=0;
       bulk.hidden=!results.length||collecting;
       let duplicates=0;
@@ -264,6 +269,8 @@ window.RickyRadar = {
         if(existing(row)){duplicates++;continue}
         if(rendered++>=visibleCount)continue;
         const card=node('article','','prospect-card radar-prospect-modern');
+        card.dataset.prospectDomain=row.domain;
+        if(!animatedCards.has(row.domain)){card.classList.add('is-entering');animatedCards.add(row.domain)}
         const top=node('div','','radar-prospect-head');
         top.append(node('span',/Nuvemshop/i.test(row.contact?.platform||'')?'PLATAFORMA A EVITAR':row.contact?.emails?.length?'CONTATO ENCONTRADO':'CANDIDATO','prospect-label'),node('small',row.domain,'prospect-meta'));
         card.append(top,node('h3',row.name),node('p',row.description||'Resultado público do mecanismo de busca.','prospect-description'));
@@ -282,6 +289,7 @@ window.RickyRadar = {
         if(op?.criteria){
           const detail=document.createElement('details');detail.className='radar-score-details';
           const summary=node('summary','Ver critérios e evidências ('+op.coverage+'/100 pontos cobertos)','');
+          detail.open=opened.has(row.domain);
           detail.append(summary);
           const names={compatibility:'Compatibilidade · 30',improvement:'Melhorias verificáveis · 25',contact:'Contato comercial · 20',activity:'Sinais de loja ativa · 15',approach:'Facilidade de abordagem · 10'};
           for(const [key,criterion] of Object.entries(op.criteria)){
