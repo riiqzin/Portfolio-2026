@@ -43,3 +43,12 @@ a,button{transition:color .18s ease,border-color .18s ease,background .18s ease,
 #leadModal .modal-foot .ghost:hover{background:#263841!important}
 #leadModal .modal-foot .primary{background:#a5e6ce!important;color:#10251c!important;border-color:#a5e6ce!important}
 #leadModal .modal-foot .primary:hover{background:#baf4dc!important}
+
+/* Attach a sample link only after the prospect requests one. */
+.drawer-project-attach{margin:14px 0 4px}
+.drawer-project-attach label{display:block;margin-bottom:7px;color:#b8c9c9}
+.drawer-project-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.drawer-project-row input{min-width:0}
+.drawer-project-row button{white-space:nowrap}
+#drawerProject:disabled,#drawerCopy:disabled{opacity:.38;cursor:not-allowed;box-shadow:none}
+@media(max-width:420px){.drawer-project-row{grid-template-columns:1fr}.drawer-project-row button{width:100%}}
