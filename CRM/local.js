@@ -136,6 +136,7 @@ function getTodos(){
   if(c.status==='novo')todos.push({c,type:'new',label:'Preparar abordagem',detail:'Ainda não abordado · escolha um ângulo e revise a mensagem',order:2});
   else if(dueFor(c))todos.push({c,type:'followup',label:'Follow-up pendente',detail:'Último contato há '+daysSince(c.contacted_at)+' dias · confira a conversa antes de enviar',order:0});
   else if(['respondeu','interessado'].includes(c.status))todos.push({c,type:'reply',label:c.status==='interessado'?'Oportunidade quente':'Responder contato',detail:'A conversa precisa de uma próxima ação',order:1});
+  else if(c.status==='proposta'&&c.followup_at&&Date.parse(c.followup_at)<=Date.now())todos.push({c,type:'reply',label:'Acompanhar proposta',detail:'Já passaram quatro dias desde a proposta · confira a conversa',order:1});
  }
  return todos.sort((a,b)=>a.order-b.order||new Date(b.c.updated_at)-new Date(a.c.updated_at));
 }
@@ -363,6 +364,8 @@ async function action(type,note=''){
 function openWhatsApp(){
  fromFields();
  const d=state.draft,number=normalizePhone(d?.phone);
+ if(d&&['sem_interesse','fechou'].includes(d.status)){toast('Contato encerrado. Não vamos sugerir novas mensagens.');return}
+ if(d?.status==='abordado'&&!dueFor(d)){toast('Follow-up ainda não está previsto. Confira a data na Central.');return}
  if(!number){toast('Informe um telefone com DDD antes de abrir o WhatsApp.');return}
  const msg=($('#leadMessage').value||'').trim();
  if(!msg){toast('Revise a mensagem antes de abrir.');return}
@@ -454,9 +457,16 @@ async function loadEmailQueue(){
     action.disabled=true;
     try{
      const sent=await backend('outreach','POST',{action:'send',id:q.id,approved:true});
-     await rpc('crm_local_action',{p_lead_id:q.leadId,p_type:'abordado',p_note:'E-mail enviado com aprovação humana: '+q.subject,p_channel:'email',p_offer:'landing',p_angle:'A'});
-     const c=state.leads.find(x=>x.id===q.leadId);if(c){c.contacted_at=sent.sent?.sentAt||now();c.channel='email';c.status='abordado';c.followup_at=new Date(Date.now()+4*86400000).toISOString();await rpc('crm_local_save',{p_data:c})}
-     await refresh();await loadEmailQueue();toast('E-mail enviado e registrado.');
+     const c=state.leads.find(x=>x.id===q.leadId);
+     try{
+       if(c){
+         const kind=c.status==='novo'?'abordado':dueFor(c)?'followup':'mensagem';
+         const updated=await rpc('crm_local_action',{p_lead_id:c.id,p_type:kind,p_note:'E-mail enviado com aprovação humana: '+q.subject,p_channel:'email',p_offer:'landing',p_angle:'A'});
+         updated.contacted_at=sent.sent?.sentAt||now();updated.channel='email';
+         await rpc('crm_local_save',{p_data:updated});
+       }
+       await refresh();await loadEmailQueue();toast('E-mail enviado e registrado.');
+     }catch(regError){await loadEmailQueue();toast('E-mail enviado pelo Gmail, mas falhou o registro no CRM: '+regError.message)}
     }catch(e){toast('Envio não confirmado: '+e.message)}
     finally{action.disabled=false}
    };
@@ -488,7 +498,7 @@ function bind(){
  $('#saveLead').onclick=()=>saveLead();
  $('#markResponse').onclick=statusChooser;
  $('#openWhatsapp').onclick=openWhatsApp;
- $('#confirmSent').onclick=async()=>{if(!confirm('Você realmente enviou a mensagem pelo WhatsApp?'))return;fromFields();const d=state.draft;if(!d)return;await action(d.status==='abordado'?'followup':'abordado',d.last_message)};
+ $('#confirmSent').onclick=async()=>{if(!confirm('Você realmente enviou a mensagem pelo WhatsApp?'))return;fromFields();const d=state.draft;if(!d)return;const kind=d.status==='novo'?'abordado':d.status==='abordado'?'followup':'mensagem';await action(kind,d.last_message)};
  $('#queueGmail').onclick=prepareEmail;
  $('#leadChannel').addEventListener('change',()=>{fromFields();$('#openWhatsapp').hidden=state.draft.channel==='email';$('#queueGmail').hidden=state.draft.channel!=='email'});
  $('#leadOffer').addEventListener('change',()=>{fromFields();$('#leadMessage').value=templateMessage(state.draft);state.draft.last_message=$('#leadMessage').value;updateRecommendation(false)});
