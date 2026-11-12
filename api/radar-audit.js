@@ -4,7 +4,15 @@ import { publicUrl } from './radar.js';
 
 export const ENQUEUE = `
 local duplicate = redis.call('GET', KEYS[1])
-if duplicate then return {2, duplicate} end
+if duplicate then
+  local previous = redis.call('GET', 'radar:v2:job:' .. duplicate)
+  if previous then
+    local ok, job = pcall(cjson.decode, previous)
+    if ok and job and job.status ~= 'failed' and job.status ~= 'interrupted' then
+      return {2, duplicate}
+    end
+  end
+end
 if redis.call('EXISTS', KEYS[6]) == 0 then return {-2, ''} end
 local used = tonumber(redis.call('GET', KEYS[2]) or '0')
 local spent = tonumber(redis.call('GET', KEYS[3]) or '0')
