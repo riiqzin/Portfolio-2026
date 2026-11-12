@@ -22,10 +22,15 @@ window.RadarAudit = {
       render();
     }
     async function start(row) {
-      if (row.auditBusy || row.auditId) return;
+      if (row.auditBusy || !row.ticket) return;
+      const retry = !!row.auditId;
+      if (retry && !['failed', 'interrupted'].includes(row.audit?.status)) return;
+      if (retry && !window.confirm('Tentar novamente a auditoria desta loja? Uma nova tentativa pode consumir uma das auditorias diárias e reservar mais orçamento. Não haverá nova busca no Brave.')) return;
       row.auditBusy = true; row.auditError = ''; render();
       try {
-        const result = await api('POST', { ticket: row.ticket }); row.auditId = result.id;
+        const result = await api('POST', { ticket: row.ticket });
+        row.auditId = result.id;
+        row.audit = null;
         await refresh(row); status();
         let polls = 0;
         const poll = async () => {
@@ -38,9 +43,11 @@ window.RadarAudit = {
       finally { row.auditBusy = false; render(); }
     }
     function append(row, card, actions) {
-      const button = node('button', row.auditBusy ? 'Reservando…' : row.auditId ? 'Atualizar auditoria' : 'Auditar site', 'ghost');
-      button.type = 'button'; button.disabled = !!row.auditBusy || (!row.ticket && !row.auditId); if (!row.ticket && !row.auditId) { button.textContent = 'Auditoria: faça nova busca'; button.title = 'Os tickets de auditoria expiram; abrir histórico não consome Brave, mas uma nova consulta é necessária para auditar.'; }
-      button.addEventListener('click', () => row.auditId ? refresh(row) : start(row)); actions.append(button);
+      const retryable = ['failed', 'interrupted'].includes(row.audit?.status);
+      const button = node('button', row.auditBusy ? 'Reservando…' : retryable && row.ticket ? 'Tentar novamente' : row.auditId ? 'Atualizar auditoria' : 'Auditar site', 'ghost');
+      button.type = 'button'; button.disabled = !!row.auditBusy || (!row.ticket && !row.auditId);
+      if (!row.ticket && !row.auditId) { button.textContent = 'Auditoria: faça nova busca'; button.title = 'Este resultado antigo não possui uma autorização assinada de auditoria.'; }
+      button.addEventListener('click', () => retryable && row.ticket ? start(row) : row.auditId ? refresh(row) : start(row)); actions.append(button);
       if (row.auditError) card.append(node('p', row.auditError, 'audit-warning'));
       const job = row.audit;
       if (!job) return;
