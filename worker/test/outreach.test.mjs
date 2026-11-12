@@ -14,9 +14,12 @@ test('approved outreach produces MIME message with exact recipient and no automa
   const mime=Buffer.from(payload.raw,'base64url').toString('utf8');
   assert.match(mime,/To: <contato@lojaexemplo\.com\.br>/);
   assert.match(mime,/From: Ricky CRM <rickymanginidev@gmail\.com>/);
-  assert.match(mime,/Content-Type: text\/plain; charset="UTF-8"/);
-  const body=Buffer.from(mime.split('\r\n\r\n')[1]||'','base64').toString('utf8');
+  assert.match(mime,/Content-Type: multipart\/alternative/);
+  const plainPart=mime.match(/Content-Type: text\/plain; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n([A-Za-z0-9+/=]+)/);
+  const body=Buffer.from(plainPart?.[1]||'','base64').toString('utf8');
   assert.match(body,/Se preferirem não receber mais contatos/);
+  const htmlPart=mime.match(/Content-Type: text\/html; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n([A-Za-z0-9+/=]+)/);
+  assert.ok(htmlPart);
   return {ok:true,json:async()=>({id:'mock-gmail-msg',threadId:'mock-thread'})};
  });
  assert.equal(called,1);
