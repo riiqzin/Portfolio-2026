@@ -94,7 +94,24 @@ export function createHandler({env=process.env,send=sendGmail}={}){
    if(action==='queue-update'){
     const item=data.queue.find(x=>x.id===body.id);if(!item)return json({message:'Mensagem não encontrada.'},404);
     const fresh=draftOf({...item,subject:body.subject,text:body.text});if(!fresh)return json({message:'Assunto ou texto inválido.'},400);
+    if(item.subject!==fresh.subject||item.text!==fresh.text){item.approvedAt=null;item.scheduledAt=null;}
     item.subject=fresh.subject;item.text=fresh.text;await save(redis,env,data);return json({ok:true});
+   }
+   if(action==='schedule'){
+     if(body.approved!==true)return json({message:'Agendamento exige confirmação explícita.'},400);
+     const item=data.queue.find(x=>x.id===body.id);
+     if(!item)return json({message:'Mensagem não encontrada.'},404);
+     const at=Date.parse(body.scheduledAt);
+     if(!Number.isFinite(at)||at<Date.now()+120000||at>Date.now()+90*86400000)return json({message:'Escolha data futura entre 2 minutos e 90 dias.'},400);
+     const raw=await redis(['GET',STORE]),stored=raw?unseal(raw,env):null;
+     if(stored?.email!==ADDRESS||!String(stored.scopes||'').includes('gmail.send'))return json({message:'Autorize a permissão de envio do Gmail antes de agendar.',needsReconnect:true},409);
+     item.scheduledAt=new Date(at).toISOString();item.approvedAt=new Date().toISOString();item.needsReview=false;
+     await save(redis,env,data);return json({ok:true,scheduledAt:item.scheduledAt});
+   }
+   if(action==='unschedule'){
+     const item=data.queue.find(x=>x.id===body.id);
+     if(!item)return json({message:'Mensagem não encontrada.'},404);
+     item.scheduledAt=null;item.approvedAt=null;await save(redis,env,data);return json({ok:true});
    }
    if(action==='queue-remove'){data.queue=data.queue.filter(x=>x.id!==body.id);await save(redis,env,data);return json({ok:true})}
    if(action==='followup-dismiss'){if(!data.dismissed.includes(body.id))data.dismissed.push(trim(body.id,50));await save(redis,env,data);return json({ok:true})}
@@ -114,7 +131,10 @@ export function createHandler({env=process.env,send=sendGmail}={}){
     const locked=await redis(['SET',LOCK+item.id,'1','NX','EX',86400]);if(locked!=='OK')return json({message:'Envio já processado ou em andamento.'},409);
     let result;
     try{const token=await access(env,redis);result=await send(token,item)}
-    catch(e){return json({message:e.message==='send_403'?'Permissão de envio recusada. Reconecte o Gmail.':'Envio não confirmado. Confira a pasta Enviados antes de tentar novamente.',needsReconnect:e.message==='send_403'},502)}
+    catch(e){
+      const latest=await load(redis,env);const failed=latest.queue.find(x=>x.id===item.id);
+      if(failed?.approvedAt){failed.approvedAt=null;failed.scheduledAt=null;failed.needsReview=true;await save(redis,env,latest)}
+      return json({message:e.message==='send_403'?'Permissão de envio recusada. Reconecte o Gmail.':'Envio não confirmado. Confira a pasta Enviados antes de tentar novamente.',needsReconnect:e.message==='send_403'},502)}
     const latest=await load(redis,env),sent={...item,googleId:result.id,threadId:result.threadId,sentAt:new Date().toISOString()};
     latest.queue=latest.queue.filter(x=>x.id!==item.id);latest.sent.unshift(sent);latest.sent=latest.sent.slice(0,600);
     await save(redis,env,latest);return json({ok:true,sent});
@@ -123,4 +143,22 @@ export function createHandler({env=process.env,send=sendGmail}={}){
   }catch{return json({message:'Serviço temporariamente indisponível.'},503)}
  };
 }
+
+// Invoked only by the authenticated server-side Cron. Every email must have
+// already been explicitly scheduled/approved by the user while in the CRM.
+export async function sendDue({env=process.env}={}){
+ if(!ready(env))return {sent:0,skipped:0};
+ const redis=redisClient(env),data=await load(redis,env);
+ const due=data.queue.filter(x=>x.approvedAt&&x.scheduledAt&&Date.parse(x.scheduledAt)<=Date.now()).slice(0,10);
+ let sent=0,skipped=0;
+ for(const item of due){
+  const request=new Request('https://portfolio-ricky-mangini.vercel.app/api/outreach',{
+   method:'POST',headers:{Authorization:'Bearer '+env.RADAR_DASHBOARD_KEY,'Content-Type':'application/json'},
+   body:JSON.stringify({action:'send',id:item.id,approved:true})
+  });
+  try{const result=await createHandler({env})(request);if(result.ok)sent++;else skipped++}catch{skipped++}
+ }
+ return {sent,skipped};
+}
+
 export default {fetch:createHandler()};
