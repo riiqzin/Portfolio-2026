@@ -1,0 +1,139 @@
+/* RICKY FLOW — cohesive dark glass visual system, 2026-11
+   Presentation only; no transport, authentication or outbound logic here. */
+:root{--flow-bg:#070b11;--flow-panel:rgba(20,27,39,.76);--flow-panel-strong:rgba(24,33,45,.91);--flow-line:rgba(181,210,221,.13);--flow-mint:#b9f6da;--flow-blue:#91baff;--flow-text:#f0f5f7;--flow-muted:#a6b7c3;--flow-ease:cubic-bezier(.22,1,.36,1)}
+html{color-scheme:dark;scroll-behavior:smooth}
+body{background:radial-gradient(ellipse 650px 520px at 83% -8%,rgba(43,96,102,.2),transparent 72%),radial-gradient(ellipse 560px 490px at 0% 58%,rgba(34,76,104,.13),transparent 75%),linear-gradient(140deg,#070c12,#0c111a 58%,#080d13)!important;color:var(--flow-text)}
+body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(rgba(232,244,255,.045) .55px,transparent .55px);background-size:7px 7px;opacity:.2}
+::selection{background:#8bd9bc;color:#091812}
+.sidebar{background:linear-gradient(175deg,rgba(17,24,35,.95),rgba(10,17,26,.97))!important;border-color:rgba(196,220,228,.1)!important;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.sidebar .nav-item{border-radius:13px!important;transition:background .38s var(--flow-ease),border-color .38s var(--flow-ease),color .35s,transform .38s var(--flow-ease)!important}
+.sidebar .nav-item:hover{transform:translateX(5px)!important;background:rgba(132,217,194,.075)!important}
+.sidebar .nav-item.selected{background:linear-gradient(110deg,rgba(151,235,206,.16),rgba(130,180,234,.045))!important;border-color:rgba(174,235,211,.18)!important;color:#e2fff2!important}
+.topbar{background:rgba(12,18,27,.48)!important;border-color:var(--flow-line)!important;backdrop-filter:blur(20px)}
+.app{overflow:visible}
+.primary,.ghost,.filter,.radar-segment,.out-actions button,.radar-history-item{transition:background .32s var(--flow-ease),border-color .32s var(--flow-ease),box-shadow .4s var(--flow-ease),transform .42s var(--flow-ease),color .22s!important}
+.primary{background:linear-gradient(120deg,#a3e9cf,#c2e4df)!important;color:#102019!important;border:1px solid rgba(239,255,247,.35)!important;box-shadow:0 7px 25px rgba(104,208,167,.12)!important;border-radius:12px!important}
+.primary:hover:not(:disabled){background:linear-gradient(120deg,#c0f8df,#d0f5e9)!important;transform:translateY(-2px)!important;box-shadow:0 12px 35px rgba(105,217,182,.23)!important}
+.primary:active:not(:disabled){transform:translateY(0) scale(.985)!important}
+.ghost{border-radius:12px!important;background:rgba(157,193,203,.045)!important;border:1px solid rgba(180,211,226,.13)!important;color:#d9e5eb!important}
+.ghost:hover:not(:disabled){background:rgba(170,218,220,.105)!important;border-color:rgba(176,223,228,.3)!important;transform:translateY(-1px)}
+:is(button,a,input,textarea,select,summary):focus-visible{outline:2px solid #adf1d5!important;outline-offset:3px}
+:is(.out-section,.workspace,.gmail-shell,.gmail-card,.out-daily-card,.radar-status,.out-connection,.pipeline-pulse,.out-stat,.modal,.drawer){border-color:var(--flow-line)!important;box-shadow:0 15px 55px rgba(0,0,0,.12),inset 0 1px rgba(255,255,255,.035)}
+:is(.out-section,.gmail-shell,.gmail-card,.workspace,.out-connection){background:linear-gradient(145deg,rgba(27,37,49,.8),rgba(14,22,31,.82))!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:20px!important}
+:is(.out-section,.gmail-card,.lead-row,.workspace,.out-daily-card,.prospect-card){transition:transform .46s var(--flow-ease),border-color .42s var(--flow-ease),box-shadow .48s var(--flow-ease),background .32s!important}
+:is(.gmail-card,.lead-row,.out-card):hover{transform:translateY(-3px);border-color:rgba(157,223,199,.28)!important;box-shadow:0 18px 45px rgba(0,0,0,.2)}
+:is(input,select,textarea){transition:border-color .22s,box-shadow .22s,background .22s}
+:is(input,select,textarea):focus{border-color:rgba(161,240,211,.63)!important;box-shadow:0 0 0 4px rgba(137,220,191,.085)!important}
+:where(.outreach-panel,.gmail-panel,.dashboard-layout,.radar-panel):not([hidden]){animation:flowPanelEnter .65s var(--flow-ease) both}
+@keyframes flowPanelEnter{from{opacity:.25;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Radar: a softly lit instrument, preserve controls and existing actual search. */
+.radar-panel{padding-top:28px!important}
+.radar-intro h1{font-size:clamp(29px,3vw,41px)!important;font-weight:560;letter-spacing:-.06em}
+.engine-shell{border-radius:24px!important;border:1px solid rgba(186,225,207,.17)!important;background:linear-gradient(140deg,rgba(20,34,36,.88),rgba(13,20,32,.91))!important;box-shadow:0 22px 85px #0005,inset 0 1px #fff1!important}
+.engine-strip{background:rgba(168,244,218,.035)!important}
+.engine-chamber{background:radial-gradient(ellipse at 50% 48%,rgba(59,131,108,.15),transparent 72%),rgba(8,18,24,.7)!important}
+.scope-instrument{filter:drop-shadow(0 0 23px rgba(90,187,145,.11));transition:filter .5s}
+.radar-panel.is-searching .scope-instrument{filter:drop-shadow(0 0 35px rgba(91,242,166,.3))}
+.engine-controls{background:linear-gradient(120deg,rgba(255,255,255,.025),transparent)}
+.engine-controls :is(input,button){border-radius:12px}
+.radar-status{background:linear-gradient(105deg,rgba(19,31,38,.8),rgba(13,23,32,.64))!important;border-radius:16px!important;backdrop-filter:blur(16px)}
+.radar-segment:hover{transform:translateY(-2px)!important}
+.radar-output{background:transparent!important;margin-top:29px!important}
+.output-header h2{font-weight:560;letter-spacing:-.045em;font-size:clamp(23px,2.3vw,30px)!important}
+.radar-source{opacity:.75}
+
+/* Honest progress experience, with real status updates. */
+.radar-journey[hidden]{display:none!important}
+.radar-journey{position:relative;isolation:isolate;overflow:hidden;border:1px solid rgba(146,230,203,.19);border-radius:24px;padding:23px 28px 21px;margin:24px 0 20px;background:radial-gradient(ellipse at 18% 50%,rgba(54,134,108,.15),transparent 47%),linear-gradient(135deg,rgba(22,39,45,.91),rgba(14,23,36,.91));box-shadow:0 16px 65px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.055);animation:flowPanelEnter .58s var(--flow-ease)}
+.radar-journey:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.16;background:repeating-linear-gradient(90deg,transparent 0 31px,rgba(171,238,215,.08) 32px 33px)}
+.radar-journey-head{display:flex;justify-content:space-between;gap:16px;align-items:center;color:#9bc9b7;font:600 10px ui-monospace,monospace;letter-spacing:.1em}
+.radar-journey-signal{display:flex;align-items:center;gap:9px}.radar-journey-signal i{width:7px;height:7px;border-radius:100%;background:#9dedc5;box-shadow:0 0 0 5px rgba(138,234,177,.11),0 0 18px #9dedc577;animation:flowSignal 2s ease infinite}
+.radar-journey-core{display:flex;align-items:center;gap:24px;padding:20px 0 23px}
+.radar-journey-orb{flex:none;position:relative;width:76px;height:76px;border-radius:50%;border:1px solid rgba(158,237,205,.3);background:radial-gradient(circle,rgba(133,247,198,.1),rgba(21,65,53,.02) 75%);box-shadow:0 0 0 11px rgba(123,220,185,.035),inset 0 0 27px rgba(103,222,171,.06)}
+.radar-journey-orb:before,.radar-journey-orb:after{content:"";position:absolute;border:1px solid rgba(150,235,190,.25);border-radius:50%;inset:15px}.radar-journey-orb:after{inset:28px;background:#b9efcf;box-shadow:0 0 18px #9aeec8}
+.radar-journey-orb span{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 90deg,rgba(161,248,193,.5),transparent 68%,transparent);animation:flowRotate 3.2s linear infinite}
+.radar-journey-orb i{position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(142,231,192,.12)}
+.radar-journey-orb i:last-child{inset:-15px;border-color:rgba(142,231,192,.055)}
+.radar-journey-overline{font:600 9px ui-monospace,monospace;color:#83a9a5;letter-spacing:.12em}
+.radar-journey-info h3{font-size:clamp(18px,2.1vw,26px);font-weight:560;letter-spacing:-.04em;margin:7px 0}
+.radar-journey-info p{color:#9fbab6;font-size:12px;max-width:550px;line-height:1.65;margin:0}
+.radar-journey-track{height:5px;background:rgba(154,205,195,.13);overflow:hidden;border-radius:12px}
+.radar-journey-track span{height:100%;display:block;width:0;background:linear-gradient(90deg,#78c69e,#c1f8db);box-shadow:0 0 14px #9ef4ce55;border-radius:12px;transition:width .55s var(--flow-ease)}
+.radar-journey[data-stage=search] .radar-journey-track span{width:32%!important;animation:flowIndeterminate 1.6s ease-in-out infinite}
+.radar-journey[data-stage=complete] .radar-journey-track span{background:#b7f0d2}
+.radar-journey[data-stage=complete] .radar-journey-orb span,.radar-journey[data-stage=error] .radar-journey-orb span{animation:none}
+.radar-journey-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:17px}
+.radar-journey-steps span{display:flex;align-items:center;gap:8px;color:#6c8788;font:600 10px ui-monospace,monospace;white-space:nowrap}
+.radar-journey-steps b{font:600 11px "Segoe UI",sans-serif;letter-spacing:0;color:inherit}
+.radar-journey-steps .is-current{color:#d0f5e1}.radar-journey-steps .is-done{color:#9fcbb6}
+@keyframes flowSignal{50%{box-shadow:0 0 0 8px rgba(135,229,174,.04),0 0 24px #a1f4c977}}
+@keyframes flowRotate{to{transform:rotate(360deg)}}
+@keyframes flowIndeterminate{0%{transform:translateX(-105%)}50%{transform:translateX(145%)}100%{transform:translateX(340%)}}
+.radar-collect-bulk{display:inline-flex;margin:5px 0 18px;border-radius:12px!important}
+
+/* Progressive, airy prospect results. */
+.radar-results{gap:17px!important}
+.radar-prospect-modern,.prospect-card{position:relative;overflow:hidden;border-radius:21px!important;border:1px solid rgba(169,217,201,.14)!important;background:linear-gradient(153deg,rgba(32,47,53,.74),rgba(17,28,38,.78))!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:24px!important;box-shadow:0 12px 34px rgba(0,0,0,.16)!important}
+.prospect-card:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(113deg,rgba(255,255,255,.06),transparent 22%,transparent 78%,rgba(255,255,255,.016))}
+.prospect-card:hover{transform:translateY(-4px)!important;border-color:rgba(167,236,204,.37)!important;box-shadow:0 22px 52px rgba(0,0,0,.25)!important}
+.prospect-card h3{font-size:19px!important;line-height:1.28;letter-spacing:-.038em!important;font-weight:600}
+.prospect-card .prospect-description{min-height:0;color:#a9bbc1!important;font-size:12px;line-height:1.7}
+.prospect-card .prospect-label{background:rgba(132,215,182,.085)!important;border:1px solid rgba(152,238,197,.17)!important;color:#bee8d3!important;letter-spacing:.07em}
+.radar-prospect-modern .radar-contact{background:rgba(14,29,30,.46)!important;border:1px solid rgba(165,216,203,.1)!important;border-radius:12px;padding:13px!important}
+.radar-prospect-modern .radar-opportunity{background:rgba(11,29,29,.4)!important;border:1px solid rgba(155,229,199,.15)!important;border-radius:13px;padding:15px!important}
+.radar-prospect-modern .radar-opportunity-number{font-weight:600;color:#dff8ec;font-size:24px}
+.radar-prospect-modern .radar-modern-actions{border-top:1px solid rgba(172,224,201,.09)!important;padding-top:17px!important;gap:10px}
+.radar-modern-actions .primary,.radar-modern-actions .ghost{min-height:42px;border-radius:11px!important}
+.radar-score-details summary{color:#b7dccf}
+.radar-opportunity-fill{background:linear-gradient(90deg,#64bba1,#bdf0d7)!important}
+.radar-results>.prospect-card{animation:flowCardArrive .58s var(--flow-ease) backwards}
+@keyframes flowCardArrive{from{opacity:0;transform:translateY(23px) scale(.975);filter:blur(5px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+
+/* Session library instead of old stacked search buttons. */
+.radar-history{margin-top:24px!important;padding:23px!important;background:linear-gradient(130deg,rgba(23,34,47,.78),rgba(15,24,34,.75))!important;border:1px solid rgba(166,218,221,.13)!important;backdrop-filter:blur(16px);border-radius:23px!important;box-shadow:0 20px 55px #0002}
+.radar-history-head{display:flex!important;justify-content:space-between;align-items:center;gap:17px;border-bottom:1px solid rgba(185,215,217,.1);padding-bottom:19px;margin-bottom:19px!important}
+.radar-history-title{display:flex;flex-direction:column;gap:4px}
+.radar-history-kicker{font:600 9px ui-monospace,monospace;letter-spacing:.16em;color:#88b9aa}
+.radar-history-head h2{font-size:23px!important;letter-spacing:-.045em;font-weight:580;margin:3px 0}
+.radar-history-subtitle{font-size:12px;color:#8faab4;margin:0}
+.radar-history-total{border-radius:100px;border:1px solid rgba(182,221,213,.15);color:#b7d8d3;padding:8px 12px;font:600 9px ui-monospace,monospace;white-space:nowrap}
+.radar-history-rail{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:13px}
+.radar-history-item{display:flex!important;flex-direction:column;align-items:stretch!important;text-align:left!important;gap:12px!important;min-height:180px!important;border:1px solid rgba(174,214,220,.13)!important;border-radius:17px!important;padding:17px!important;background:linear-gradient(141deg,rgba(46,69,71,.35),rgba(19,30,42,.65))!important;box-shadow:inset 0 1px rgba(255,255,255,.035)}
+.radar-history-item:hover{border-color:rgba(162,241,208,.4)!important;transform:translateY(-4px)!important;background:linear-gradient(145deg,rgba(39,73,63,.5),rgba(19,36,45,.78))!important;box-shadow:0 12px 34px rgba(0,0,0,.17)}
+.radar-history-item-top,.radar-history-item-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%}
+.radar-history-index{font:600 10px ui-monospace,monospace;color:#a1e8cd}
+.radar-history-date{font:500 10px ui-monospace,monospace;color:#829ca4}
+.radar-history-item-main{display:flex;flex-direction:column;gap:5px;min-height:50px}
+.radar-history-item-main strong{font-size:14px;font-weight:600;line-height:1.3;color:#e3f3ed}
+.radar-history-region{font-size:11px;color:#91afac}
+.radar-history-item-meta{display:flex;gap:7px;flex-wrap:wrap}
+.radar-history-item-meta span{border-radius:7px;padding:5px 7px;font-size:9px;color:#a4c6bc;background:rgba(165,223,207,.065)}
+.radar-history-item-foot{margin-top:auto;border-top:1px solid rgba(165,208,198,.1);padding-top:12px;font-size:10px;color:#b9e7d0}
+.radar-history-arrow{font-size:17px;transition:transform .32s var(--flow-ease)}
+.radar-history-item:hover .radar-history-arrow{transform:translate(3px,-3px)}
+.radar-history-empty{display:flex;align-items:center;flex-direction:column;padding:30px 12px!important;text-align:center;gap:8px;color:#a6bcb5;background:transparent!important;border:1px dashed rgba(184,223,218,.17)!important;border-radius:16px}
+.radar-history-empty-icon{font-size:35px;color:#b4ecd3}
+.radar-history-empty strong{font-size:13px;color:#c9e0d5;font-weight:500}
+.radar-history-empty p{font-size:11px;margin:0}
+
+/* Prospecting workbench & inbox comfort */
+.outreach-panel .out-head h1,.gmail-head h1{font-weight:560!important;letter-spacing:-.055em;font-size:clamp(30px,3vw,43px)!important}
+.out-layout{gap:20px!important}
+.out-queue{border-color:rgba(176,240,204,.26)!important;background:linear-gradient(145deg,rgba(29,55,48,.65),rgba(19,28,40,.87))!important}
+.out-section-head h2{letter-spacing:-.045em;font-weight:580!important}
+.out-card,.out-template{background:rgba(13,23,30,.6)!important;border:1px solid rgba(178,218,208,.13)!important;border-radius:14px!important}
+.out-card:hover{border-color:rgba(174,239,202,.26)!important}
+.out-library{background:rgba(20,31,40,.5)!important}
+.out-library:not([open]):hover{border-color:rgba(175,237,211,.32)!important;transform:translateY(-1px)}
+.out-quick-overlay{backdrop-filter:blur(22px)!important}
+.out-quick-dialog{background:linear-gradient(145deg,rgba(30,47,52,.97),rgba(14,23,35,.99))!important;border-color:rgba(177,227,207,.25)!important;border-radius:23px!important;box-shadow:0 35px 120px #0009!important;animation:flowDialogIn .42s var(--flow-ease) both}
+@keyframes flowDialogIn{from{opacity:0;transform:translateY(20px) scale(.975)}to{opacity:1;transform:translateY(0) scale(1)}}
+.gmail-card{border-radius:18px!important}
+.gmail-card:hover{border-color:rgba(183,227,210,.3)!important}
+.out-daily-card{background:linear-gradient(125deg,rgba(36,70,62,.57),rgba(22,31,44,.79))!important;border-radius:20px!important}
+.pipeline-pulse .metric,.workspace .lead-row{border-radius:16px!important;background:rgba(27,38,49,.62)!important}
+.out-stat{border-radius:15px!important;background:rgba(17,31,35,.63)!important}
+@media(max-width:960px){.radar-history-rail{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}.radar-journey-core{gap:18px}}
+@media(max-width:600px){.radar-journey{padding:19px 15px;border-radius:18px}.radar-journey-head{font-size:8px}.radar-journey-core{gap:12px}.radar-journey-orb{width:55px;height:55px}.radar-journey-orb:before{inset:11px}.radar-journey-orb:after{inset:21px}.radar-journey-info h3{font-size:18px}.radar-journey-steps b{font-size:9px}.radar-journey-steps span{gap:3px;font-size:8px}.radar-history{padding:15px!important}.radar-history-rail{grid-template-columns:1fr}.radar-history-item{min-height:155px!important}.radar-history-head h2{font-size:20px!important}.radar-history-subtitle{max-width:200px}.prospect-card{padding:17px!important}.out-section{border-radius:17px!important}.out-quick-dialog{border-radius:19px 19px 0 0!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important;filter:none!important}}
