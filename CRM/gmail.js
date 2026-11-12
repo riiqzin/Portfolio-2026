@@ -1,6 +1,6 @@
 /* Gmail inbox widget: never render email content as HTML, never send email automatically. */
 window.RickyGmail = {
- mount({getKey,getLeads}) {
+ mount({getKey,getLeads,markReplied}) {
   const $=s=>document.querySelector(s);
   const panel=$('#gmailPanel'),status=$('#gmailStatus'),list=$('#gmailResults'),connect=$('#gmailConnect'),sync=$('#gmailSync'),disconnect=$('#gmailDisconnect'),state=$('#gmailConnection');
   let connected=false,busy=false,lastSync=0;
@@ -45,7 +45,7 @@ window.RickyGmail = {
     if(!getKey()||!connected||busy)return;
     const leads=leadInput();if(!leads.length){status.textContent='Cadastre e-mails de contato nos leads para iniciar a sincronização.';return;}
     busy=true;sync.disabled=true;status.textContent='Sincronizando respostas dos leads...';
-    try{const data=await api('POST',{action:'sync',leads});show(data.items||[]);lastSync=Date.now();status.textContent=data.busy?'Outra sincronização já está em andamento.':'Sincronizado. Respostas classificadas automaticamente; nenhuma mensagem enviada.';}
+    try{const data=await api('POST',{action:'sync',leads});show(data.items||[]);if(!data.busy&&markReplied)await markReplied(data.items||[]);lastSync=Date.now();status.textContent=data.busy?'Outra sincronização já está em andamento.':'Sincronizado. Respostas classificadas automaticamente; nenhuma mensagem enviada.';}
     catch(e){status.textContent=e.message;}
     finally{busy=false;sync.disabled=false}
   }
