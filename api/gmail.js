@@ -13,7 +13,7 @@ export async function handler(request) {
    const stored=raw?unseal(raw,env):null;
    const resultsRaw=await redis(['GET',RESULTS]);
    const items=resultsRaw?unseal(resultsRaw,env):[];
-   return json({connected:stored?.email===ADDRESS,email:stored?.email||null,items,aiActive:!!env.OPENAI_API_KEY&&env.GMAIL_AI_ENABLED==='true',syncMode:'Ao abrir o CRM e a cada 2 minutos enquanto estiver aberto.'});
+   return json({connected:stored?.email===ADDRESS,canSend:stored?.email===ADDRESS&&String(stored?.scopes||'').includes('gmail.send'),email:stored?.email||null,items,aiActive:!!env.OPENAI_API_KEY&&env.GMAIL_AI_ENABLED==='true',syncMode:'Ao abrir o CRM e a cada 2 minutos enquanto estiver aberto.'});
   }
   let body;
   try {body=JSON.parse(await boundedText(request,35000));}catch{return json({message:'Requisição inválida.'},400)}
