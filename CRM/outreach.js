@@ -74,7 +74,7 @@ window.RickyOutreach={
    const now=Date.now();
    const oldFollowups=getLeads().filter(lead=>{
      const date=lead.email_sent_at||lead.email_sent_date;
-     const email=String(lead.prospect_email||'').toLowerCase().split(/[,;\\s]+/)[0];
+     const email=String(lead.prospect_email||'').toLowerCase().split(/[,;\s]+/)[0];
      return lead.active&&email&&date&&now-Date.parse(date)>5*86400000&&!lead.responded_at
        &&!data.sent.some(sent=>sent.email===email)&&!data.queue.some(item=>item.email===email);
    }).slice(0,15);
@@ -99,7 +99,7 @@ window.RickyOutreach={
     row.append(actions);timeline.append(row);
    }
    for(const lead of oldFollowups){
-    const email=String(lead.prospect_email).toLowerCase().split(/[,;\\s]+/)[0];
+    const email=String(lead.prospect_email).toLowerCase().split(/[,;\s]+/)[0];
     const row=make('article',undefined,'out-card out-followup');
     row.append(cardTitle(lead.name,email+' · Envio registrado anteriormente no CRM, sem resposta marcada'));
     const draft=make('button','Preparar retorno','ghost');draft.type='button';
@@ -135,7 +135,7 @@ window.RickyOutreach={
    $('#outMailbox').textContent=data.connected?(data.canSend?'Gmail conectado · leitura e envio autorizados':'Gmail conectado · falta autorizar o envio'):'Gmail não conectado';
    $('#outSendHelp').hidden=data.canSend;
    $('#outCount').textContent=data.queue.length+' para revisar';
-   for(const [selector,value] of [['#dashQueued',data.queue.length],['#dashFollowups',data.followups.length+getLeads().filter(l=>l.active&&l.prospect_email&&!l.responded_at&&(l.email_sent_at||l.email_sent_date)&&Date.now()-Date.parse(l.email_sent_at||l.email_sent_date)>5*86400000&&!data.sent.some(s=>s.email===String(l.prospect_email).toLowerCase().split(/[,;\\s]+/)[0])).length],['#dashSent',data.sent.length]]){
+   for(const [selector,value] of [['#dashQueued',data.queue.length],['#dashFollowups',data.followups.length+getLeads().filter(l=>l.active&&l.prospect_email&&!l.responded_at&&(l.email_sent_at||l.email_sent_date)&&Date.now()-Date.parse(l.email_sent_at||l.email_sent_date)>5*86400000&&!data.sent.some(s=>s.email===String(l.prospect_email).toLowerCase().split(/[,;\s]+/)[0])).length],['#dashSent',data.sent.length]]){
      const el=$(selector);if(el)el.textContent=String(value);
    }
   }
