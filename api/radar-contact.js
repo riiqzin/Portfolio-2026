@@ -5,8 +5,6 @@ import { authorized, boundedText, configured, json, readTicket, redisClient } fr
 import { publicUrl } from './radar.js';
 
 const LIMITED='ricky:contact:v1:day:';
-const clean=(s,max=250)=>String(s||'').replace(/[\u0000-\u001f]/g,' ').trim().slice(0,max);
-const pause=()=>new Promise(resolve=>setTimeout(resolve,0));
 const blocked=/^(localhost|.*\.localhost|.*\.local|.*\.internal)$/i;
 function publicIp(address) {
   if(isIP(address)===4){
@@ -25,7 +23,7 @@ async function externalHost(host) {
   catch{return false}
 }
 function safeUrl(url,host) {
-  try{const u=new URL(url);return u.protocol==='https:'&&u.hostname===host&&!u.username&&!u.password&&!u.port}catch{return false}
+  try{const u=new URL(url);return u.protocol==='https:'&&(u.hostname===host||u.hostname==='www.'+host)&&!u.username&&!u.password&&!u.port}catch{return false}
 }
 function decodeEntities(html) {
   return html.replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)))
@@ -39,8 +37,7 @@ function extractEmails(html,domain){
  const found=new Set();
  const add=(value)=>{
    const email=String(value||'').replace(/^mailto:/i,'').split('?')[0].trim().toLowerCase();
-   if(email.length>120||!emailRe.test(email))return;
-   emailRe.lastIndex=0;
+   if(email.length>120||!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(email))return;
    if(/\.(png|jpg|jpeg|gif|webp|svg|js|css)$/i.test(email)||disposable.test(email.split('@')[1])||/^(no.?reply|donotreply|bounce|abuse|postmaster|webmaster|suporte\.tecnico)@/.test(email))return;
    found.add(email);
  };
@@ -72,9 +69,17 @@ function contactLinks(html,origin,host) {
  }
  return collected;
 }
-async function fetchPage(url,host,fetcher=fetch){
- if(!safeUrl(url,host)||!await externalHost(host))return null;
- const response=await fetcher(url,{redirect:'manual',headers:{Accept:'text/html,application/xhtml+xml;q=0.9','User-Agent':'RickyCRM-ContactDiscovery/1.0 (public business contact only)'},signal:AbortSignal.timeout(6000)});
+async function fetchPage(url,host,fetcher=fetch,depth=0){
+ if(!safeUrl(url,host))return null;
+ const target=new URL(url);
+ if(!await externalHost(target.hostname))return null;
+ const response=await fetcher(url,{redirect:'manual',headers:{Accept:'text/html,application/xhtml+xml;q=0.9','User-Agent':'RickyCRM-ContactDiscovery/1.0 (public business contact only)'},signal:AbortSignal.timeout(7500)});
+ if([301,302,303,307,308].includes(response.status)&&depth<2){
+   const location=response.headers.get('location');if(!location)return null;
+   const next=new URL(location,url).href;
+   if(!safeUrl(next,host))return null;
+   return fetchPage(next,host,fetcher,depth+1);
+ }
  if(!response.ok||!String(response.headers.get('content-type')||'').toLowerCase().includes('text/html'))return null;
  if(Number(response.headers.get('content-length'))>260000)return null;
  if(!response.body)return null;
@@ -96,8 +101,9 @@ export async function inspectContact(site,fetcher=fetch) {
  if(!await externalHost(host))return {status:'unavailable',emails:[],score:0};
  const base='https://'+host;
  let html;
- try{html=await fetchPage(base+'/',host,fetcher)}catch{return {status:'unavailable',emails:[],score:0}}
- if(!html)return {status:'unavailable',emails:[],score:0};
+ try{html=await fetchPage(base+'/',host,fetcher)}catch{}
+ if(!html&&host.split('.').length===2){try{html=await fetchPage('https://www.'+host+'/',host,fetcher)}catch{}}
+ if(!html)return {status:'unavailable',emails:[],score:0,reason:'Acesso automatizado bloqueado ou site indisponível. Você pode informar o e-mail manualmente.'};
  const result={status:'scanned',domain:host,emails:[],platform:platform(html),pagesChecked:[base+'/'],score:0,signals:[]};
  const emailSet=new Set(extractEmails(html,host));
  const paths=[...new Set([...contactLinks(html,base,host),'/contato','/contact'])].slice(0,2);
