@@ -27,5 +27,5 @@ test('gmail classifications respect explicit refusal, commercial requests and au
  assert.equal(classifyBasic('','Não temos interesse.').label,'Sem interesse');
  assert.equal(classifyBasic('','Pode enviar orçamento?').priority,'alta');
  assert.equal(classifyBasic('','Volto mês que vem.').label,'Contato futuro');
- assert.equal(classifyBasic('','','',{ 'auto-submitted':'auto-replied' }).label,'Automático');
+ assert.equal(classifyBasic('','',{ 'auto-submitted':'auto-replied' }).label,'Automático');
 });
