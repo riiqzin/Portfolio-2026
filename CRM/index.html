@@ -978,6 +978,7 @@
       openLeadModal();
       $('#leadName').value = prospect.name;
       $('#leadSlug').value = slugify(prospect.name);
+      if (prospect.contactEmail) $('#leadEmail').value=prospect.contactEmail;
       toast('Confira o nome e informe a URL do seu projeto. Nenhuma mensagem será enviada.');
     }
   });
