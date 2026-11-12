@@ -53,7 +53,9 @@ window.RickyOutreach={
     const s=make('input');s.type='text';s.maxLength=180;s.value=item.subject;s.setAttribute('aria-label','Assunto para '+item.company);
     const t=make('textarea');t.rows=5;t.maxLength=5500;t.value=item.text;t.setAttribute('aria-label','Mensagem para '+item.company);
     const actions=make('div',undefined,'out-actions'),saveBtn=make('button','Salvar alterações','ghost'),sendBtn=make('button','Revisar e enviar','primary'),delBtn=make('button','Remover','ghost');
+    if(item.scheduledAt)top.append(make('small','Envio programado: '+new Date(item.scheduledAt).toLocaleString('pt-BR')+' · próxima verificação disponível','out-scheduled'));
     [saveBtn,sendBtn,delBtn].forEach(btn=>{btn.type='button';actions.append(btn)});
+    if(item.scheduledAt){const cancel=make('button','Cancelar agendamento','ghost');cancel.type='button';cancel.addEventListener('click',()=>invoke('unschedule',{id:item.id},'Agendamento cancelado. Rascunho mantido na fila.'));actions.append(cancel)}
     saveBtn.addEventListener('click',()=>invoke('queue-update',{id:item.id,subject:s.value,text:t.value},'Rascunho salvo.'));
     delBtn.addEventListener('click',()=>invoke('queue-remove',{id:item.id},'Removido da fila.'));
     sendBtn.disabled=!data.canSend;
@@ -189,10 +191,18 @@ window.RickyOutreach={
   const radarModal=document.createElement('div');
   radarModal.className='out-quick-overlay';
   radarModal.hidden=true;
-  radarModal.innerHTML='<div class="out-quick-dialog" role="dialog" aria-modal="true" aria-labelledby="outQuickTitle"><div class="out-quick-header"><div><span class="out-eyebrow">RADAR / NOVA OPORTUNIDADE</span><h2 id="outQuickTitle">Preparar abordagem</h2></div><button type="button" class="out-quick-close" aria-label="Fechar">×</button></div><form class="out-quick-form"><div class="out-quick-row"><label>Loja<input name="company" required maxlength="130"></label><label>E-mail comercial<input name="email" type="email" required placeholder="contato@loja.com.br"></label></div><label>Modelo<select name="template"></select></label><label>Assunto<input name="subject" maxlength="180" required></label><label>Mensagem<textarea name="message" rows="8" required maxlength="5500"></textarea></label><p class="out-muted">Pode incluir o link completo do seu portfólio (https://...). O Gmail exibirá esse link no e-mail enviado. Nenhuma mensagem é disparada automaticamente.</p><p class="out-quick-status" role="status"></p><div class="out-quick-actions"><button class="ghost" name="queue" type="button">Salvar para depois</button><button class="primary" name="send" type="button">Revisar e enviar agora</button></div></form></div>';
+  radarModal.innerHTML='<div class="out-quick-dialog" role="dialog" aria-modal="true" aria-labelledby="outQuickTitle"><div class="out-quick-header"><div><span class="out-eyebrow">RADAR / NOVA OPORTUNIDADE</span><h2 id="outQuickTitle">Preparar abordagem</h2></div><button type="button" class="out-quick-close" aria-label="Fechar">×</button></div><form class="out-quick-form"><div class="out-quick-row"><label>Loja<input name="company" required maxlength="130"></label><label>E-mail comercial<input name="email" type="email" required placeholder="contato@loja.com.br"></label></div><label>Modelo<select name="template"></select></label><label>Assunto<input name="subject" maxlength="180" required></label><label>Mensagem<textarea name="message" rows="8" required maxlength="5500"></textarea></label><div class="out-quick-row"><label>Link do seu portfólio (opcional)<input name="portfolio" type="url" placeholder="https://seuportfolio.com"></label><label>Envio agendado (opcional)<input name="when" type="datetime-local"></label></div><button class="ghost out-insert-link" type="button">Inserir link na mensagem</button><p class="out-muted">Links completos com https:// serão clicáveis no Gmail. Agendamentos são verificados com o CRM aberto e na rotina diária da Vercel, sem garantia de minuto exato.</p><p class="out-quick-status" role="status"></p><div class="out-quick-actions"><button class="ghost" name="queue" type="button">Salvar para depois</button><button class="ghost" name="schedule" type="button">Agendar envio</button><button class="primary" name="send" type="button">Revisar e enviar agora</button></div></form></div>';
   document.body.append(radarModal);
   const qf=radarModal.querySelector('form'),qc=qf.elements.company,qe=qf.elements.email,qt=qf.elements.template,qs=qf.elements.subject,qb=qf.elements.message;
+  const qp=qf.elements.portfolio,qw=qf.elements.when;
   let quickContext=null,quickBusy=false,quickSavedId=null;
+  qp.value=localStorage.getItem('ricky_crm_portfolio_url')||'https://portfolio-ricky-mangini.vercel.app/';
+  radarModal.querySelector('.out-insert-link').addEventListener('click',()=>{
+    if(!qp.reportValidity()||!/^https:\/\//i.test(qp.value)){quickMessage('Informe uma URL completa começando com https://');return}
+    localStorage.setItem('ricky_crm_portfolio_url',qp.value);
+    const start=qb.selectionStart??qb.value.length,end=qb.selectionEnd??qb.value.length;
+    qb.setRangeText(qp.value,start,end,'end');qb.focus();quickSavedId=null;
+  });
   function quickMessage(text){radarModal.querySelector('.out-quick-status').textContent=text}
   function closeQuick(){if(quickBusy)return;radarModal.hidden=true;document.body.classList.remove('out-quick-open')}
   radarModal.querySelector('.out-quick-close').addEventListener('click',closeQuick);
@@ -240,6 +250,15 @@ window.RickyOutreach={
   qf.elements.queue.addEventListener('click',async()=>{
     const id=await saveQuick();if(id){closeQuick();location.hash='#outreach';setStatus('Abordagem na fila para revisão.')}
   });
+  qf.elements.schedule.addEventListener('click',async()=>{
+    if(!qw.value){quickMessage('Escolha uma data e hora para agendar.');qw.focus();return}
+    const at=new Date(qw.value);
+    if(!Number.isFinite(at.getTime())||at.getTime()<Date.now()+120000){quickMessage('Escolha um horário futuro, com pelo menos dois minutos de antecedência.');return}
+    if(!confirm('Autorizar o envio de UMA mensagem para '+qe.value+' no horário programado? O envio será executado na primeira verificação disponível, que pode ser posterior ao horário selecionado.'))return;
+    const id=await saveQuick();if(!id)return;
+    quickBusy=true;
+    try{await api('schedule',{id,approved:true,scheduledAt:at.toISOString()});await refresh();quickMessage('Envio agendado para a próxima verificação após '+at.toLocaleString('pt-BR')+'.');quickBusy=false;closeQuick();location.hash='#outreach';setStatus('Envio agendado. O horário exato depende da rotina de verificação.')}catch(e){quickMessage('Rascunho salvo, mas não agendado: '+e.message)}finally{quickBusy=false}
+  });
   qf.elements.send.addEventListener('click',async()=>{
     if(!qf.reportValidity())return;
     // Keep the lead and unsent draft even if Google has not authorized gmail.send.
@@ -271,7 +290,10 @@ window.RickyOutreach={
   }
   addEventListener('hashchange',navigate);
   window.RickyOutreach.refreshSummary=refresh;
-  setInterval(()=>{if(getKey()&&!document.hidden&&location.hash!=='#outreach')refresh()},90000);
+  setInterval(async()=>{
+    if(!getKey()||document.hidden||busy)return;
+    try{const completed=await api('send-due');if(completed.sent)await refresh();else if(location.hash!=='#outreach')await refresh()}catch{}
+  },90000);
   navigate();
   if(getKey())refresh();
  }
