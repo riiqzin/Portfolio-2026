@@ -136,7 +136,7 @@ window.RickyOutreach={
   async function stageProspect({name,domain,email,segment}){
    if(!getKey())throw Error('Entre no CRM antes de adicionar à fila.');
    const lead=await addRadarLead({name,domain,email});
-   const template=data.templates.find(t=>t.id==='initial')||DEFAULTS[0];
+   const template=data.templates.find(t=>t.id==='initial')||{subject:'Uma ideia para a {{empresa}}',body:'Oi! Tudo bem? Gostaria de conversar sobre uma ideia para a {{empresa}}.'};
    const v=templateValues(template,{name,segment:segment||'e-commerce'});
    const result=await api('queue-add',{company:name,email,leadId:lead?.id||'',subject:v.subject,text:v.text,type:'initial'});
    await refresh();location.hash='#outreach';setStatus('Loja adicionada à fila. Confira e aprove o envio.');
