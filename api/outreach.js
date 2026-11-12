@@ -150,7 +150,7 @@ export function createHandler({env=process.env,send=sendGmail}={}){
 export async function sendDue({env=process.env}={}){
  if(!ready(env))return {sent:0,skipped:0};
  const redis=redisClient(env),data=await load(redis,env);
- const due=data.queue.filter(x=>x.approvedAt&&x.scheduledAt&&Date.parse(x.scheduledAt)<=Date.now()).slice(0,10);
+ const due=data.queue.filter(x=>x.approvedAt&&x.scheduledAt&&Date.parse(x.scheduledAt)<=Date.now()).slice(0,3);
  let sent=0,skipped=0;
  for(const item of due){
   const request=new Request('https://portfolio-ricky-mangini.vercel.app/api/outreach',{
