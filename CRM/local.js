@@ -14,7 +14,7 @@ const daysSince=v=>v?Math.floor((Date.now()-Date.parse(v))/86400000):0;
 const formatStars=v=>Number.isFinite(Number(v))&&v!==null&&v!==''?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
 const placeholder=(title,description)=>'<div class="action-card"><div class="action-left"><div class="action-icon">✧</div><div class="action-copy"><strong>'+escapeHTML(title)+'</strong><p>'+escapeHTML(description)+'</p></div></div></div>';
 const prefsKey='ricky:local:archive-v1';
-const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0};
+const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0};
 const VERIFY=[
  ['whatsapp_confirmed','WhatsApp confirmado (conferi o perfil)'],
  ['instagram_found','Tem Instagram (confirmei)'],
@@ -86,7 +86,9 @@ function eligible(c){
 function priority(c){
  const v=c.verified||{};
  if(c.business_status==='CLOSED_PERMANENTLY')return {type:'baixa',why:'Cadastro indica fechamento permanente.'};
- if(v.possible_chain||c.chain_hint)return {type:'baixa',why:'Possível rede ou franquia; verificar antes de oferecer.'};
+ if(c.business_status==='CLOSED_TEMPORARILY')return {type:'investigar',why:'O Google informa fechamento temporário; confirme se voltou a funcionar.'};
+ if(v.possible_chain)return {type:'baixa',why:'Você marcou possível rede ou franquia; confirme quem decide as contratações.'};
+ if(c.chain_hint)return {type:'investigar',why:'Nome parecido com outro estabelecimento; confirme se é rede antes de abordar.'};
  if(v.site_mobile_ok)return {type:'baixa',why:'Você confirmou que o site já funciona bem no celular.'};
  const contact=!!normalizePhone(c.phone)||['social','whatsapp'].includes(c.link_type);
  if(!c.place_id&&!c.maps_url)return {type:'investigar',why:'Cadastro manual: confirme a presença digital e o canal antes da abordagem.'};
@@ -97,7 +99,7 @@ function priority(c){
 }
 function offerFor(c){
  const v=c.verified||{};
- if(v.possible_chain||v.site_mobile_ok||c.chain_hint)return {blocked:true,offer:'landing',angle:'A',why:'Revisão recomendada antes de preparar uma nova oferta.'};
+ if(v.possible_chain||v.site_mobile_ok)return {blocked:true,offer:'landing',angle:'A',why:'Revisão recomendada antes de preparar uma nova oferta.'};
  if(v.manual_booking||(v.whatsapp_confirmed&&v.no_online_booking))return {blocked:false,offer:'bot',angle:'B',why:'Atendimento manual verificado: bot pode reduzir perguntas repetitivas.'};
  if(['none','social','bio','whatsapp','booking'].includes(c.link_type))return {blocked:false,offer:'landing',angle:'A',why:'Presença própria não confirmada ou depende de página externa. Oferta de landing page adequada para investigar.'};
  return {blocked:false,offer:'landing',angle:'A',why:'Sem oportunidade confirmada. Verifique o negócio antes de enviar.'};
@@ -146,7 +148,7 @@ function setNav(){
  $$('.page').forEach(x=>x.hidden=x.id!=='page-'+page);
  $$('[data-nav]').forEach(a=>{a.classList.toggle('active',a.dataset.nav===page);if(a.dataset.nav===page)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
  $('#headerSection').textContent=({central:'Central',radar:'Radar Local',hoje:'Pra Hoje',clientes:'Clientes'})[page];
- if(page==='hoje')loadGmail(false);
+ if(page==='hoje')loadGmail(true);
 }
 async function refresh(){
  const list=await rpc('crm_local_list',{});
@@ -301,6 +303,22 @@ function fromFields(){
  const name=$('#verifiedPlatform');if(name)d.verified.platform_name=name.value.trim();
  d.priority=priority(d).type;
 }
+async function loadLeadHistory(id){
+ const target=$('#leadHistory');target.replaceChildren();
+ if(!id){target.append(dom('p','field-note','Salve este negócio para começar o histórico.'));return}
+ try{
+  const entries=await rpc('crm_local_history',{p_lead_id:id});
+  if(!Array.isArray(entries)||!entries.length){target.append(dom('p','field-note','Ainda não existe um contato registrado.'));return}
+  for(const x of entries.slice(0,35)){
+   const card=dom('div','history-entry');
+   const top=dom('div','history-entry-top');top.append(dom('strong','',STATUSES[x.event_type]||x.event_type||'Ação'),dom('span','',new Date(x.created_at).toLocaleString('pt-BR')));
+   card.append(top);
+   if(x.note)card.append(dom('p','',x.note));
+   if(x.channel)card.append(dom('small','',x.channel==='whatsapp'?'WhatsApp':x.channel==='email'?'E-mail':x.channel));
+   target.append(card);
+  }
+ }catch{target.append(dom('p','field-note','Histórico indisponível no momento.'))}
+}
 function populateLead(){
  const d=state.draft;if(!d)return;
  $('#leadDialogTitle').textContent=d.name||'Nova oportunidade';
@@ -322,6 +340,7 @@ function populateLead(){
  platform.append(platformText,platformInput);grid.append(platform);
  $('#leadMessage').value=d.last_message||(offerFor(d).blocked?'':templateMessage(d));
  $('#leadActionBar').hidden=true;
+ void loadLeadHistory(d.id);
  $('#openWhatsapp').hidden=d.channel==='email';
  $('#queueGmail').hidden=d.channel!=='email';
  updateRecommendation(false);
@@ -349,6 +368,7 @@ async function saveLead(showToast=true){
  try{
   const saved=await rpc('crm_local_save',{p_data:{...d,place_id:d.place_id||null}});
   state.draft=blankLead(saved);await refresh();
+  void loadLeadHistory(saved.id);
   if(showToast)toast('Negócio salvo na sua carteira.');
   return saved;
  }catch(e){toast('Não foi possível salvar: '+e.message);return null}
@@ -411,7 +431,7 @@ async function loadGmail(shouldSync=false){
   $('#gmailConnect').textContent=data.connected?'Reconectar Gmail':'Conectar Gmail';
   $('#gmailSync').disabled=!data.connected;
   renderGmail();
-  if(shouldSync&&data.connected)await syncGmail();
+  if(shouldSync&&data.connected&&Date.now()-state.lastGmailSync>120000&&state.leads.some(x=>x.email&&x.contacted_at&&x.channel==='email'))await syncGmail();
   await loadEmailQueue();
  }catch(e){$('#gmailState').textContent=e.message}
 }
@@ -421,6 +441,7 @@ async function syncGmail(){
  try{
   $('#gmailState').textContent='Sincronizando mensagens vinculadas…';
   const data=await backend('gmail','POST',{action:'sync',leads:list});
+  state.lastGmailSync=Date.now();
   state.gmail.items=data.items||[];
   renderGmail();
   $('#gmailState').textContent='Respostas sincronizadas. Revise os resultados antes de responder.';
@@ -506,10 +527,13 @@ function bind(){
  $('#leadWebsite').addEventListener('change',()=>{fromFields();updateRecommendation(true)});
  $('#gmailSync').onclick=syncGmail;
  $('#gmailConnect').onclick=gmailConnect;
- $('#gmailDetails').addEventListener('toggle',()=>{if($('#gmailDetails').open)loadGmail(false)});
+ $('#gmailDetails').addEventListener('toggle',()=>{if($('#gmailDetails').open)loadGmail(true)});
 }
 async function init(){
- templateLibrary();bind();setNav();render();
+ templateLibrary();bind();
+ const oauth=new URLSearchParams(location.search).get('gmail');
+ if(oauth){history.replaceState(null,'',location.pathname+'#hoje');$('#gmailDetails').open=true}
+ setNav();render();
  if(!state.key){showLogin();return}
  try{await refresh();$('#authOverlay').hidden=true;checkPlaces()}
  catch(e){localStorage.removeItem(KEY_NAME);sessionStorage.removeItem(KEY_NAME);state.key='';showLogin();$('#connectionState').classList.add('error')}
