@@ -418,9 +418,47 @@ function statusChooser(){
   const btn=dom('button','btn btn-outline compact',STATUSES[type]);btn.onclick=()=>action(type,'Resultado registrado manualmente');wrap.append(btn);
  }bar.append(wrap);
 }
+function loadTemplatePreferences(){
+ try{
+  const overrides=JSON.parse(localStorage.getItem('ricky:local:templates-v1')||'{}');
+  for(const template of TEMPLATES)if(typeof overrides[template[0]]==='string'&&overrides[template[0]].trim())template[1]=overrides[template[0]].slice(0,1800);
+ }catch{}
+}
 function templateLibrary(){
  const root=$('#templateLibrary');root.replaceChildren();
- for(const [name,body] of TEMPLATES){const card=dom('div','template');card.append(dom('h4','',name),dom('p','',body));root.append(card)}
+ const settings=dom('div','template-settings');
+ const header=dom('div','template-settings-top');
+ header.append(dom('strong','','Dados para respostas prontas'),dom('small','','Valores salvos neste navegador'));
+ settings.append(header);
+ const row=dom('div','template-settings-row');
+ const price=dom('input'),deadline=dom('input');
+ price.type='text';price.placeholder='Preço, ex.: R$ 700';price.maxLength=70;
+ deadline.type='text';deadline.placeholder='Prazo, ex.: 5 dias úteis';deadline.maxLength=70;
+ try{const x=JSON.parse(localStorage.getItem('ricky:local:pricing-v1')||'{}');price.value=x.price||'';deadline.value=x.deadline||''}catch{}
+ const saveValues=()=>{try{localStorage.setItem('ricky:local:pricing-v1',JSON.stringify({price:price.value.trim(),deadline:deadline.value.trim()}));toast('Valores salvos neste navegador.')}catch{toast('Não foi possível salvar neste navegador.')}};
+ const saveBtn=dom('button','btn btn-outline compact','Salvar valores');saveBtn.type='button';saveBtn.onclick=saveValues;
+ row.append(price,deadline,saveBtn);settings.append(row);root.append(settings);
+ for(const [i,template] of TEMPLATES.entries()){
+  const [name,body]=template;
+  const card=dom('div','template');card.append(dom('h4','',name));
+  const preview=dom('p','',body);card.append(preview);
+  const actions=dom('div','template-actions');
+  const copy=dom('button','btn btn-outline compact','Copiar'),edit=dom('button','btn btn-outline compact','Editar');
+  copy.type='button';edit.type='button';
+  copy.onclick=async()=>{
+   let text=template[1].replaceAll('{{preco}}',price.value.trim()||'[definir preço]').replaceAll('{{prazo}}',deadline.value.trim()||'[definir prazo]');
+   try{await navigator.clipboard.writeText(text);toast('Modelo copiado. Personalize os dados do negócio antes de enviar.')}catch{toast('Não foi possível copiar automaticamente.')}
+  };
+  const editor=dom('textarea','template-editor');editor.value=body;editor.rows=7;editor.maxLength=1800;editor.hidden=true;
+  edit.onclick=()=>{
+   if(editor.hidden){editor.hidden=false;edit.textContent='Salvar';editor.focus();return}
+   const value=editor.value.trim();if(!value){toast('O modelo não pode ficar vazio.');return}
+   template[1]=value;preview.textContent=value;editor.hidden=true;edit.textContent='Editar';
+   try{localStorage.setItem('ricky:local:templates-v1',JSON.stringify(Object.fromEntries(TEMPLATES.map(([k,v])=>[k,v]))))}catch{}
+   toast('Modelo atualizado neste navegador.');
+  };
+  actions.append(copy,edit);card.append(actions,editor);root.append(card);
+ }
 }
 async function loadGmail(shouldSync=false){
  if(!state.key)return;
@@ -530,7 +568,7 @@ function bind(){
  $('#gmailDetails').addEventListener('toggle',()=>{if($('#gmailDetails').open)loadGmail(true)});
 }
 async function init(){
- templateLibrary();bind();
+ loadTemplatePreferences();templateLibrary();bind();
  const oauth=new URLSearchParams(location.search).get('gmail');
  if(oauth){history.replaceState(null,'',location.pathname+'#hoje');$('#gmailDetails').open=true}
  setNav();render();
