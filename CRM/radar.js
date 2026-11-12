@@ -130,7 +130,7 @@ window.RickyRadar = {
     }
     async function findContact(row,button) {
       if(!getKey()) {message('Entre no CRM para buscar contatos.');return false}
-      if(row.contact?.status==='scanned')return true;
+      if(row.contact?.status==='scanned'&&row.contact.emails?.length)return true;
       const ticket=row.ticket||row.historyTicket;
       if(!ticket){row.contactError='Comprovante expirado; faça uma nova varredura.';render();return false}
       if(button){button.disabled=true;button.textContent='Consultando...'}
@@ -139,7 +139,7 @@ window.RickyRadar = {
       try {
         const response=await fetch('/api/radar-contact',{
           method:'POST',headers:{Authorization:'Bearer '+getKey(),'Content-Type':'application/json'},
-          body:JSON.stringify({domain:row.domain,ticket}),signal:AbortSignal.timeout(33000)
+          body:JSON.stringify({domain:row.domain,ticket,refresh:!!button}),signal:AbortSignal.timeout(33000)
         });
         const data=await response.json().catch(()=>({message:'Resposta inesperada ao procurar contato.'}));
         if(!response.ok)throw Error(data.message||'Consulta indisponível');
