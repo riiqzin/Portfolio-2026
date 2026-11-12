@@ -42,7 +42,9 @@ export function createAuditHandler({ env = process.env, fetcher = fetch, now = (
         const raw = await redis(['GET', `radar:v2:job:${id}`]);
         if (!raw) return json({ message: 'Auditoria expirada ou não encontrada (retenção: 24 horas).' }, 404);
         const job = JSON.parse(raw);
-        if (['queued', 'running'].includes(job.status) && now().getTime() - Date.parse(job.startedAt || job.createdAt) > 300000) {
+        const ageMs = now().getTime() - Date.parse(job.status === 'running' ? (job.startedAt || job.createdAt) : job.createdAt);
+        const timeoutMs = job.status === 'queued' ? 30 * 60 * 1000 : 5 * 60 * 1000;
+        if (['queued', 'running'].includes(job.status) && ageMs > timeoutMs) {
           job.status = 'interrupted'; job.message = 'Executor interrompido ou fila expirada. Sem repetição automática; reserva mantida.';
         }
         return json(job);
