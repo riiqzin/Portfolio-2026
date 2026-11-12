@@ -115,7 +115,7 @@ window.RickyRadar = {
         foot.append(node('span','Abrir sessão'),node('span','↗','radar-history-arrow'));
         open.append(heading,main,metrics,foot);
         open.addEventListener('click',()=>{
-          if(busy)return;
+          if(busy||collecting)return;
           ++revealEpoch;visibleCount=Infinity;animatedCards.clear();
           results=item.results.map(row=>({...row,ticket:row.historyTicket||null}));
           searchMeta={...item,removed:item.removed||{duplicates:0,platforms:0,other:0}};
@@ -221,11 +221,12 @@ window.RickyRadar = {
     async function collectAll() {
       if(collecting||!results.length)return;
       collecting=true;
+      $('#radarSearch').disabled=true;
       // Unverified historic results may be rechecked with a valid signed ticket.
       const candidates=results.filter(row=>!existing(row)&&(!row.contact||!row.contact.opportunity));
       const total=candidates.length;
       let completed=0,emails=0,scored=0;
-      if(total===0){collecting=false;message('Todas as lojas elegíveis desta varredura já foram verificadas.');return}
+      if(total===0){collecting=false;$('#radarSearch').disabled=false;message('Todas as lojas elegíveis desta varredura já foram verificadas.');return}
       message('Análise técnica: 0/'+total+' lojas · duas verificações em paralelo.');
       setSearchVisual('analyze','Verificando contatos e evidências reais',0,total);
       const worker=async()=>{
@@ -242,6 +243,8 @@ window.RickyRadar = {
       };
       await Promise.allSettled([worker(),worker()]);
       collecting=false;
+      $('#radarSearch').disabled=false;
+      render();
       message('Análise concluída: '+completed+' lojas consultadas, '+scored+' com score provisório e '+emails+' com e-mail. Os demais resultados estão sinalizados como incompletos.');
       setSearchVisual('complete','Análise concluída · '+scored+' oportunidades pontuadas',completed,total);
     }
@@ -358,7 +361,7 @@ window.RickyRadar = {
     });
     $('#radarNewSearch').addEventListener('click', () => $('#radarNiche').focus());
     $('#radarForm').addEventListener('submit', async event => {
-      event.preventDefault(); if (busy) return;
+      event.preventDefault(); if (busy || collecting) return;
       if (!getKey()) { message('Entre no CRM para usar o Radar.'); return; }
       ++revealEpoch;visibleCount=Infinity;
       busy = true; $('#radarSearch').disabled = true; $('#radarCheck').disabled = true;
@@ -387,7 +390,7 @@ window.RickyRadar = {
         $('#radarResults').replaceChildren(node('p', 'Busca não concluída. Verifique o status do motor e tente novamente.', 'radar-empty'));
       }
       finally {
-        busy = false; $('#radarSearch').disabled = false; $('#radarCheck').disabled = false;
+        busy = false; $('#radarSearch').disabled = collecting; $('#radarCheck').disabled = false;
         $('#radarSearch').textContent = '◎ Encontrar lojas';
         $('#radarPanel').classList.remove('is-searching');
         $('#radarResults').removeAttribute('aria-busy');
