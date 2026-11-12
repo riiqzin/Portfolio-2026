@@ -209,14 +209,17 @@ window.RickyRadar = {
       let duplicates=0;
       const sorted=[...results].sort((a,b)=>{
         const x=a.contact?.opportunity,y=b.contact?.opportunity;
-        const priority=v=>v?.technical?.length?1:0;
-        return priority(y)-priority(x)||(y?.score??-1)-(x?.score??-1);
+        const rank=row=>{
+          if(/Nuvemshop/i.test(row.contact?.platform||''))return -1;
+          return row.contact?.opportunity?.technical?.length?2:1;
+        };
+        return rank(b)-rank(a)||(y?.score??-1)-(x?.score??-1);
       });
       for(const row of sorted){
         if(existing(row)){duplicates++;continue}
         const card=node('article','','prospect-card radar-prospect-modern');
         const top=node('div','','radar-prospect-head');
-        top.append(node('span',row.contact?.emails?.length?'CONTATO ENCONTRADO':'CANDIDATO','prospect-label'),node('small',row.domain,'prospect-meta'));
+        top.append(node('span',/Nuvemshop/i.test(row.contact?.platform||'')?'PLATAFORMA A EVITAR':row.contact?.emails?.length?'CONTATO ENCONTRADO':'CANDIDATO','prospect-label'),node('small',row.domain,'prospect-meta'));
         card.append(top,node('h3',row.name),node('p',row.description||'Resultado público do mecanismo de busca.','prospect-description'));
         const op=row.contact?.opportunity;
         const ranking=node('section','','radar-opportunity');
