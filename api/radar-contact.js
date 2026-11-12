@@ -136,13 +136,13 @@ export function createHandler({env=process.env,fetcher=fetch,inspector=inspectCo
   const redis=redisClient(env,fetcher);
   const cacheKey='ricky:contact:v1:site:'+createHash('sha256').update(site.domain).digest('hex');
   try {
-   const cached=await redis(['GET',cacheKey]);if(cached)return json({...JSON.parse(cached),cached:true});
+   const cached=!body.refresh?await redis(['GET',cacheKey]):null;if(cached)return json({...JSON.parse(cached),cached:true});
    const date=new Date().toISOString().slice(0,10),count=await redis(['INCR',LIMITED+date]);
    if(count===1)await redis(['EXPIRE',LIMITED+date,172800]);
    if(count>30)return json({message:'Limite de 30 verificações diárias atingido. Evitamos consultas excessivas a lojas.'},429);
    const result=await inspector(site.url,fetcher);
    const data={...result,source:'Páginas públicas da própria loja'};
-   await redis(['SET',cacheKey,JSON.stringify(data),'EX',604800]);
+   await redis(['SET',cacheKey,JSON.stringify(data),'EX',data.status==='scanned'&&data.emails?.length?604800:3600]);
    return json(data);
   }catch{return json({message:'Não foi possível consultar este domínio agora.'},503)}
  };
