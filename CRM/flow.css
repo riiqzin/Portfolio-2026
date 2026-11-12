@@ -137,3 +137,8 @@ body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;bac
 @media(max-width:960px){.radar-history-rail{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}.radar-journey-core{gap:18px}}
 @media(max-width:600px){.radar-journey{padding:19px 15px;border-radius:18px}.radar-journey-head{font-size:8px}.radar-journey-core{gap:12px}.radar-journey-orb{width:55px;height:55px}.radar-journey-orb:before{inset:11px}.radar-journey-orb:after{inset:21px}.radar-journey-info h3{font-size:18px}.radar-journey-steps b{font-size:9px}.radar-journey-steps span{gap:3px;font-size:8px}.radar-history{padding:15px!important}.radar-history-rail{grid-template-columns:1fr}.radar-history-item{min-height:155px!important}.radar-history-head h2{font-size:20px!important}.radar-history-subtitle{max-width:200px}.prospect-card{padding:17px!important}.out-section{border-radius:17px!important}.out-quick-dialog{border-radius:19px 19px 0 0!important}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important;filter:none!important}}
+
+/* Entry animation happens once per discovered domain, not on every data refresh. */
+.radar-results>.prospect-card:not(.is-entering){animation:none!important}
+.radar-results>.prospect-card.is-entering{animation:flowCardArrive .58s var(--flow-ease) both!important}
+@media(prefers-reduced-motion:reduce){.radar-results>.prospect-card.is-entering{animation:none!important}}
