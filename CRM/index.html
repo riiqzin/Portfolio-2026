@@ -12,13 +12,14 @@
 <link rel="stylesheet" href="/CRM/pipeline-v4.css">
 <link rel="stylesheet" href="/CRM/gmail.css">
 <link rel="stylesheet" href="/CRM/outreach.css">
+<link rel="stylesheet" href="/CRM/studio.css">
 </head>
 <body>
 
 <a class="skip-link" href="#workspace">Ir para leads</a>
 <header class="sidebar" aria-label="Barra principal do Ricky Studio">
   <a class="product" href="#app" aria-label="Ricky Studio, central de operações"><span class="product-mark">r<span>.</span></span><span>ricky<small class="product-sub">/ STUDIO</small></span></a>
-  <div class="nav-label">OPERATIONS</div>
+  <div class="nav-label">SEU ESPAÇO DE TRABALHO</div>
   <nav aria-label="Etapas da prospecção">
     <a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">⌘</span> Central</a>
     <a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar</a>
@@ -117,15 +118,16 @@
   <div class="out-section-head"><div><span class="out-eyebrow">03 / ACOMPANHAR</span><h2>Seu dia comercial</h2></div></div>
   <div id="outTimeline" class="out-cards"></div>
  </section>
- <section class="out-section out-library" aria-label="Biblioteca de mensagens">
+ <details class="out-section out-library">
+  <summary class="library-toggle"><span><span class="out-eyebrow">SEUS MODELOS</span><strong>Biblioteca de mensagens</strong></span><span class="library-toggle-hint">Gerenciar modelos <span aria-hidden="true">＋</span></span></summary>
   <div class="out-section-head"><div><span class="out-eyebrow">04 / PADRONIZAR</span><h2>Biblioteca de mensagens</h2></div><button class="ghost" type="button" id="outNewTemplate">+ Novo modelo</button></div>
   <p class="out-muted">Edite seus modelos livremente. O CRM preenche as variáveis quando você prepara uma mensagem.</p>
   <div id="outTemplates" class="out-library-grid"></div>
- </section>
+ </details>
  <p class="out-muted out-foot">Envio manual, no máximo 10 mensagens ao dia. Sem campanhas em massa. Follow-ups são apenas sugeridos após 5 dias e dependem de aprovação individual.</p>
 </section>
 <div class="dashboard-layout">
-    <div class="operations-intro"><h1>Central</h1><div class="updated" id="updatedText">Carregando…</div></div>
+    <div class="operations-intro"><div><span class="studio-eyebrow">RICKY STUDIO / CENTRAL</span><h1>Boas conexões.<br><span>Novas possibilidades.</span></h1><p>Seu relacionamento com cada lead, do primeiro contato ao próximo passo.</p></div><div class="updated" id="updatedText">Carregando…</div></div>
     <section class="out-daily-card" aria-label="Seu dia comercial">
       <div><span class="out-eyebrow">SUA ROTINA COMERCIAL</span><h2>Próximas ações prontas</h2><p>Prepare, revise e aprove seus contatos sem abrir o Gmail.</p></div>
       <div class="out-daily-metrics"><span><b id="dashQueued">—</b> na fila</span><span><b id="dashFollowups">—</b> follow-ups</span><span><b id="dashSent">—</b> enviados</span></div>
@@ -1074,3 +1076,4 @@
 </script>
 </body>
 </html>
+
