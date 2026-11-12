@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { authorized,boundedText,json,redisClient } from '../lib/radar-control.js';
 import { ready,seal,unseal,access,STORE,RESULTS,ADDRESS } from '../lib/gmail.js';
-const DB='ricky:outreach:v1:data', DAY='ricky:outreach:v1:day:',LOCK='ricky:outreach:v1:lock:',LIMIT=10;
+const DB='ricky:outreach:local:v1:data', DAY='ricky:outreach:v1:day:',LOCK='ricky:outreach:v1:lock:',LIMIT=10;
 const DEFAULTS=[
 {id:'initial',name:'Primeiro contato · direto',subject:'Uma ideia para a {{empresa}}',body:'Oi! Tudo bem?\n\nEncontrei a {{empresa}} pesquisando lojas de {{segmento}}. Trabalho com criação e reformulação de sites para lojas virtuais e gostaria de conversar sobre uma possível melhoria na apresentação da marca e dos produtos.\n\nFaz sentido conversarmos rapidamente? Obrigado!'},
 {id:'visual',name:'Primeiro contato · reformulação',subject:'Reformulação para a {{empresa}}',body:'Olá! Tudo bem?\n\nConheci a {{empresa}} e gostei do segmento de {{segmento}}. Trabalho com modernização de lojas virtuais e gostaria de apresentar algumas ideias para a experiência de compra da marca, sem compromisso.\n\nPodemos conversar?'},
