@@ -167,11 +167,14 @@ window.RickyRadar = {
           const select=document.createElement('select');select.setAttribute('aria-label','E-mail da loja');
           for(const email of c.emails){const option=document.createElement('option');option.textContent=email;option.value=email;select.append(option)}
           const start=node('button','Preparar e-mail','primary');start.type='button';
-          start.addEventListener('click',()=>{
-            const businessName=row.name.replace(/\s+[|–—-]\s+.*$/,'').trim();
-            const body='Oi! Tudo bem? Encontrei a '+businessName+' pesquisando lojas do segmento e trabalho com reformulação e modernização de lojas virtuais. Gostaria de conversar sobre possíveis melhorias na apresentação dos produtos e experiência de compra. Faz sentido para vocês?';
-            const url='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(select.value)+'&su='+encodeURIComponent('Ideia para a '+businessName)+'&body='+encodeURIComponent(body);
-            window.open(url,'_blank','noopener');
+          start.textContent='Adicionar à fila do CRM';
+          start.addEventListener('click',async()=>{
+            start.disabled=true;
+            try{
+              if(!window.RickyOutreach?.stageProspect)throw Error('Abra a Central de prospecção e tente novamente.');
+              await window.RickyOutreach.stageProspect({name:row.name.replace(/\s+[|–—-]\s+.*$/,'').trim(),domain:row.domain,email:select.value,segment:$('#radarNiche').value});
+            }catch(err){message('Fila de abordagens: '+String(err.message||'Não foi possível preparar a mensagem.'))}
+            finally{start.disabled=false}
           });
           const use=node('button','Criar lead com contato','ghost');use.type='button';use.addEventListener('click',()=>{
             createLead({...row,contactEmail:select.value});
