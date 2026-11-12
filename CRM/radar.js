@@ -6,7 +6,7 @@ window.RickyRadar = {
     const domain = s => { try { return new URL(s).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
     let results = [], searchMeta = null, busy = false;
     const audits = window.RadarAudit.mount({ getKey, render });
-    // Local history keeps public search results only, never keys or expired audit tickets.
+    // Local history stores public search snippets and server-signed audit receipts; never API keys or dashboard credentials.
     // This first version is intentionally device-local, not a server-side shared archive.
     const HISTORY_KEY = 'ricky-radar-history-v1';
     const HISTORY_MAX = 30;
@@ -24,7 +24,8 @@ window.RickyRadar = {
     function saveHistory(niche, region, data) {
       const safeResults = (Array.isArray(data.results) ? data.results : []).slice(0, 20).map(row => ({
         name: String(row.name || '').slice(0, 160), domain: String(row.domain || '').slice(0, 255),
-        url: String(row.url || '').slice(0, 2048), description: String(row.description || '').slice(0, 600)
+        url: String(row.url || '').slice(0, 2048), description: String(row.description || '').slice(0, 600),
+        historyTicket: String(row.historyTicket || '').slice(0, 4096)
       }));
       const item = {
         id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8),
@@ -69,14 +70,14 @@ window.RickyRadar = {
             node('small', item.results.length + ' candidatos · abrir sem nova consulta'));
           open.addEventListener('click', () => {
             if (busy) return;
-            results = item.results.map(row => ({ ...row, ticket: null }));
+            results = item.results.map(row => ({ ...row, ticket: row.historyTicket || null }));
             searchMeta = { ...item, removed: item.removed || { duplicates: 0, platforms: 0, other: 0 } };
             loadedFromHistory = true;
             $('#radarNiche').value = item.niche;
             $('#radarRegion').value = item.region;
             render();
             engine('HISTÓRICO ABERTO');
-            message('Varredura salva · nenhuma consulta ao Brave realizada. Para auditar novos sites, faça uma nova busca.');
+            message(item.results.some(row => row.historyTicket) ? 'Varredura salva · sem nova consulta ao Brave. Você pode auditar os candidatos enquanto o executor estiver conectado.' : 'Histórico antigo sem autorização de auditoria. Para auditar, será necessária uma nova busca uma única vez.');
             revealResults();
           });
           entries.append(open);
