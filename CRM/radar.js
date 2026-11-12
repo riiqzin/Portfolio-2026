@@ -7,6 +7,41 @@ window.RickyRadar = {
     let results = [], searchMeta = null, busy = false;
     // Visual audits were retired; contact enrichment is the only post-search step.
     let collecting = false;
+    // Motion is presentation only. Analysis and contacts always come from real API responses.
+    let visibleCount=Infinity, revealEpoch=0;
+    let pulseState='idle';
+    const prefersReduced=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function setSearchVisual(stage,label,current=0,total=0) {
+      const box=$('#radarJourney');if(!box)return;
+      pulseState=stage;
+      box.dataset.stage=stage;box.hidden=stage==='idle';
+      $('#radarJourneyLabel').textContent=label;
+      const currentText=total?current+' / '+total:'AGUARDANDO RESULTADOS';
+      $('#radarJourneyCount').textContent=currentText;
+      const percent=total?Math.round(current/total*100):0;
+      $('#radarJourneyFill').style.width=percent+'%';
+      const steps=box.querySelectorAll('[data-journey-step]');
+      const active=stage==='search'?0:stage==='reveal'?1:stage==='analyze'?2:3;
+      steps.forEach((step,i)=>{step.classList.toggle('is-current',i===active);step.classList.toggle('is-done',i<active)});
+    }
+    function progressivelyReveal(){
+      const epoch=++revealEpoch;
+      visibleCount=prefersReduced()?Infinity:0;
+      render();
+      if(visibleCount===Infinity)return;
+      const total=results.filter(row=>!existing(row)).length;
+      let n=0;
+      const next=()=>{
+        if(epoch!==revealEpoch)return;
+        n++;
+        visibleCount=n;
+        render();
+        setSearchVisual('reveal','Candidatos localizados · apresentando resultados',Math.min(n,total),total);
+        if(n<total)window.setTimeout(next,130);
+        else if(!collecting)setSearchVisual('complete','Lojas encontradas · prontas para análise',total,total);
+      };
+      if(total)window.setTimeout(next,80);
+    }
     // Local history stores public search snippets and server-signed audit receipts; never API keys or dashboard credentials.
     // This first version is intentionally device-local, not a server-side shared archive.
     const HISTORY_KEY = 'ricky-radar-history-v1';
@@ -42,51 +77,57 @@ window.RickyRadar = {
       return item.id;
     }
     function renderHistory() {
-      let section = $('#radarHistory');
-      if (!section) {
-        section = node('section', '', 'radar-history');
-        section.id = 'radarHistory';
-        section.setAttribute('aria-label', 'Varreduras salvas neste navegador');
-        $('#radarOutput').parentElement.insertBefore(section, $('#radarOutput'));
+      let section=$('#radarHistory');
+      if(!section){
+        section=node('section','','radar-history');
+        section.id='radarHistory';
+        section.setAttribute('aria-label','Arquivo de varreduras anteriores');
+        $('#radarOutput').parentElement.insertBefore(section,$('#radarOutput'));
       }
       section.replaceChildren();
-      const header = node('div', '', 'radar-history-head');
-      header.append(node('h2', 'Varreduras salvas'), node('small', 'Neste navegador · até 30 buscas · 90 dias'));
+      const header=node('div','','radar-history-head');
+      const title=node('div','','radar-history-title');
+      title.append(node('span','ARQUIVO DE DESCOBERTAS','radar-history-kicker'),node('h2','Suas varreduras'),node('p','Retome qualquer sessão sem consumir outra busca.','radar-history-subtitle'));
+      header.append(title);
+      const history=getHistory();
+      header.append(node('span',history.length+' SESSÕES','radar-history-total'));
       section.append(header);
-      const history = getHistory();
-      if (!history.length) { section.append(node('p', 'As próximas buscas ficarão salvas aqui, por segmento.', 'radar-history-empty')); return; }
-      const groups = new Map();
-      history.forEach(item => {
-        const key = item.niche.trim().toLocaleLowerCase('pt-BR');
-        if (!groups.has(key)) groups.set(key, []);
-        groups.get(key).push(item);
-      });
-      groups.forEach(items => {
-        const group = node('div', '', 'radar-history-group');
-        group.append(node('h3', items[0].niche));
-        const entries = node('div', '', 'radar-history-entries');
-        items.forEach(item => {
-          const open = node('button', '', 'radar-history-item');
-          open.type = 'button';
-          open.append(node('strong', item.region), node('span', new Date(item.searchedAt).toLocaleString('pt-BR')),
-            node('small', item.results.length + ' candidatos · abrir sem nova consulta'));
-          open.addEventListener('click', () => {
-            if (busy) return;
-            results = item.results.map(row => ({ ...row, ticket: row.historyTicket || null }));
-            searchMeta = { ...item, removed: item.removed || { duplicates: 0, platforms: 0, other: 0 } };
-            loadedFromHistory = true;
-            $('#radarNiche').value = item.niche;
-            $('#radarRegion').value = item.region;
-            render();
-            engine('HISTÓRICO ABERTO');
-            message('Varredura salva aberta. Os resultados podem ser analisados enquanto o comprovante de consulta estiver válido.');
-            revealResults();
-          });
-          entries.append(open);
+      if(!history.length){
+        const empty=node('div','','radar-history-empty');
+        empty.append(node('span','◌','radar-history-empty-icon'),node('strong','O histórico começa com sua próxima busca'),node('p','As sessões ficarão organizadas aqui, prontas para revisitar.'));
+        section.append(empty);return;
+      }
+      const rail=node('div','','radar-history-rail');
+      history.forEach((item,i)=>{
+        const open=node('button','','radar-history-item');
+        open.type='button';
+        const heading=node('div','','radar-history-item-top');
+        heading.append(node('span',String(i+1).padStart(2,'0'),'radar-history-index'),node('span',new Date(item.searchedAt).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}),'radar-history-date'));
+        const main=node('div','','radar-history-item-main');
+        main.append(node('strong',item.niche),node('span',item.region,'radar-history-region'));
+        const metrics=node('div','','radar-history-item-meta');
+        const emailCount=item.results.filter(x=>x.contact?.emails?.length).length;
+        const analyzed=item.results.filter(x=>x.contact?.opportunity?.score!=null).length;
+        metrics.append(node('span',item.results.length+' lojas'),node('span',emailCount+' contatos'),node('span',analyzed+' análises'));
+        const foot=node('div','','radar-history-item-foot');
+        foot.append(node('span','Abrir sessão'),node('span','↗','radar-history-arrow'));
+        open.append(heading,main,metrics,foot);
+        open.addEventListener('click',()=>{
+          if(busy)return;
+          ++revealEpoch;visibleCount=Infinity;
+          results=item.results.map(row=>({...row,ticket:row.historyTicket||null}));
+          searchMeta={...item,removed:item.removed||{duplicates:0,platforms:0,other:0}};
+          loadedFromHistory=true;
+          $('#radarNiche').value=item.niche;$('#radarRegion').value=item.region;
+          setSearchVisual('complete','Sessão recuperada · dados salvos neste navegador',item.results.length,item.results.length);
+          render();
+          engine('HISTÓRICO ABERTO');
+          message('Sessão recuperada. Os contatos e scores salvos estão disponíveis; algumas autorizações podem ter expirado.');
+          revealResults();
         });
-        group.append(entries);
-        section.append(group);
+        rail.append(open);
       });
+      section.append(rail);
     }
 
     const message = value => { $('#radarStatus').textContent = value; };
@@ -183,6 +224,7 @@ window.RickyRadar = {
       let completed=0,emails=0,scored=0;
       if(total===0){collecting=false;message('Todas as lojas elegíveis desta varredura já foram verificadas.');return}
       message('Análise técnica: 0/'+total+' lojas · duas verificações em paralelo.');
+      setSearchVisual('analyze','Verificando contatos e evidências reais',0,total);
       const worker=async()=>{
         while(candidates.length){
           const row=candidates.shift();
@@ -192,11 +234,13 @@ window.RickyRadar = {
           if(row.contact?.opportunity?.score!==null&&row.contact?.opportunity?.score!==undefined)scored++;
           completed++;
           message('Análise técnica: '+completed+'/'+total+' · '+scored+' notas provisórias · '+emails+' lojas com e-mail');
+          setSearchVisual('analyze','Analisando oportunidades · '+scored+' scores disponíveis',completed,total);
         }
       };
       await Promise.allSettled([worker(),worker()]);
       collecting=false;
       message('Análise concluída: '+completed+' lojas consultadas, '+scored+' com score provisório e '+emails+' com e-mail. Os demais resultados estão sinalizados como incompletos.');
+      setSearchVisual('complete','Análise concluída · '+scored+' oportunidades pontuadas',completed,total);
     }
     const bulk=node('button','Analisar lojas ainda não verificadas','ghost');
     bulk.type='button';bulk.className='radar-collect-bulk';
@@ -205,6 +249,7 @@ window.RickyRadar = {
 
     function render() {
       const list=$('#radarResults');list.replaceChildren();
+      let rendered=0;
       bulk.hidden=!results.length||collecting;
       let duplicates=0;
       const sorted=[...results].sort((a,b)=>{
@@ -217,6 +262,7 @@ window.RickyRadar = {
       });
       for(const row of sorted){
         if(existing(row)){duplicates++;continue}
+        if(rendered++>=visibleCount)continue;
         const card=node('article','','prospect-card radar-prospect-modern');
         const top=node('div','','radar-prospect-head');
         top.append(node('span',/Nuvemshop/i.test(row.contact?.platform||'')?'PLATAFORMA A EVITAR':row.contact?.emails?.length?'CONTATO ENCONTRADO':'CANDIDATO','prospect-label'),node('small',row.domain,'prospect-meta'));
@@ -306,7 +352,9 @@ window.RickyRadar = {
     $('#radarForm').addEventListener('submit', async event => {
       event.preventDefault(); if (busy) return;
       if (!getKey()) { message('Entre no CRM para usar o Radar.'); return; }
+      ++revealEpoch;visibleCount=Infinity;
       busy = true; $('#radarSearch').disabled = true; $('#radarCheck').disabled = true;
+      setSearchVisual('search','Consultando o Brave Search · busca em andamento');
       $('#radarSearch').textContent = '◎ Buscando…';
       engine('BUSCANDO', true);
       $('#radarOutput').classList.remove('is-revealed');
@@ -315,7 +363,8 @@ window.RickyRadar = {
       message('Etapa 1/2 · Encontrando lojas e filtrando duplicatas…');
       try {
         const data = await api('POST', { niche: $('#radarNiche').value.trim(), region: $('#radarRegion').value.trim() });
-        results = data.results; searchMeta = data; loadedFromHistory = false; render();
+        results = data.results; searchMeta = data; loadedFromHistory = false;
+        progressivelyReveal();
         searchMeta.id=saveHistory($('#radarNiche').value.trim(), $('#radarRegion').value.trim(), data);
         engine('BUSCA CONCLUÍDA');
         $('#radarResults').removeAttribute('aria-busy');
@@ -326,6 +375,7 @@ window.RickyRadar = {
 
       } catch (error) {
         engine('BUSCA INTERROMPIDA'); message(error.message);
+        setSearchVisual('error','Busca interrompida · confira a mensagem abaixo');
         $('#radarResults').replaceChildren(node('p', 'Busca não concluída. Verifique o status do motor e tente novamente.', 'radar-empty'));
       }
       finally {
