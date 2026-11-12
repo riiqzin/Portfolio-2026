@@ -47,7 +47,7 @@ function extractEmails(html,domain){
 }
 function rank(email,domain){
  const [local,host]=email.split('@');
- return (host===domain||host.endsWith('.'+domain)?35:0)+(/^(contato|comercial|vendas|atendimento|hello|oi|info|sales|contact|marketing|parcerias)$/i.test(local)?50:0)+(/^(sac|suporte|support)$/i.test(local)?10:0));
+ return (host===domain||host.endsWith('.'+domain)?35:0)+(/^(contato|comercial|vendas|atendimento|hello|oi|info|sales|contact|marketing|parcerias)$/i.test(local)?50:0)+(/^(sac|suporte|support)$/i.test(local)?10:0);
 }
 function platform(html){
  const text=html.toLowerCase().slice(0,250000);
