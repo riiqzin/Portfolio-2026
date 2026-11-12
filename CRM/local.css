@@ -48,3 +48,9 @@
 .setup-help div{border:1px solid var(--edge);border-radius:11px;margin-top:12px;padding:13px;background:rgba(7,22,27,.55)}
 .setup-help p{font-size:11px;line-height:1.7;color:#a3bdb3;margin:3px 0 9px}
 .setup-help code{background:#b5e7c41a;padding:2px 5px;border-radius:5px;color:#c9f5de;overflow-wrap:anywhere}
+
+.logout{background:none;border:0;padding:0;text-align:left;font-size:11px;color:#829f9d;cursor:pointer;transition:color .25s}
+.logout:hover{color:#d5f8e4}
+.mobile-logout{display:none}
+@media(max-width:840px){.mobile-logout{display:inline-flex}}
+@media(max-width:600px){.mobile-logout{padding:8px 10px!important}.top-actions{gap:7px}.topbar{gap:10px}}
