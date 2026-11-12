@@ -982,7 +982,20 @@
     }
   });
 
-  window.RickyGmail.mount({getKey:()=>state.key,getLeads:()=>state.leads});
+  window.RickyGmail.mount({
+    getKey:()=>state.key,
+    getLeads:()=>state.leads,
+    markReplied:async items=>{
+      const pending=items.filter(item=>{
+        const lead=state.leads.find(l=>l.id===item.leadId);
+        const sent=lead?.email_sent_at||lead?.email_sent_date;
+        return lead && !lead.responded_at && sent && Date.parse(item.receivedAt)>Date.parse(sent);
+      }).slice(0,12);
+      if(!pending.length)return;
+      const settled=await Promise.allSettled(pending.map(item=>rpc('crm_update_lead',{p_key:state.key,p_lead_id:item.leadId,p_patch:{responded_at:item.receivedAt}})));
+      if(settled.some(result=>result.status==='fulfilled'))await loadDashboard({quiet:true});
+    }
+  });
 
   if (!state.key) $('#loginOverlay').classList.remove('hidden');
   else loadDashboard();
