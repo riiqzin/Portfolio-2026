@@ -55,7 +55,7 @@ test('ranking refuses incomplete, non-commerce, excluded and blocked captures', 
   for (const patch of [{ platform: 'nuvemshop' }, { commerceEvidence: false }, { network: { blocked: 1 } }, { views: [{ textLength: 0 }] }]) assert.equal(ranking({ ...evidence, ...patch }, { ...diagnosis, status: 'completed' }).score, null);
 });
 test('worker preserves evidence on AI failure and skips AI for excluded platforms', async () => {
-  const job = { url: 'https://store.com', reserveCents: 100, createdAt: new Date().toISOString() }, env = { RADAR_AUDIT_RESERVE_CENTS: '100' };
+  const job = { url: 'https://store.com', reserveCents: 100, createdAt: new Date().toISOString(), queueAgeMs: 0 }, env = { RADAR_AUDIT_RESERVE_CENTS: '100' };
   const result = await processJob(job, { env, captureSite: async () => evidence, diagnose: async () => { throw new Error('secret'); } });
   assert.equal(result.visual.status, 'failed'); assert.equal(result.evidence, evidence); assert.equal(result.priority.score, null);
   let calls = 0;
