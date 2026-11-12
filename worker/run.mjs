@@ -48,7 +48,15 @@ async function main() {
       if (!raw) { await new Promise(r => setTimeout(r, 10000)); continue; }
       const job = JSON.parse(raw); let result;
       try { result = await processJob(job, { browser, env }); }
-      catch { result = { ...job, status: 'failed', message: 'Captura bloqueada, expirada ou indisponível. Verifique HTTPS, robots.txt, redirecionamento e acesso público. Sem repetição automática.', completedAt: new Date().toISOString() }; }
+      catch (error) {
+        // Only publish allowlisted diagnostics: never expose arbitrary network errors,
+        // site content, environment variables, or private credentials to CRM clients.
+        const known = new Set(['reservation_mismatch', 'queue_expired', 'robots_disallowed', 'robots_unavailable', 'robots_crawl_delay', 'unsafe_url', 'unsafe_dns', 'dns_timeout', 'network_timeout', 'response_too_large', 'encoded_response', 'blocked_resource', 'request_limit', 'capture_timeout', 'byte_limit', 'redirect_blocked', 'site_http_error', 'not_html', 'document_fetch_failed', 'capture_failed', 'screenshot_too_large']);
+        const raw = error instanceof Error ? error.message : '';
+        const code = known.has(raw) ? raw : error?.name === 'TimeoutError' ? 'playwright_timeout' : 'playwright_navigation_failed';
+        result = { ...job, status: 'failed', errorCode: code, message: 'Auditoria não concluída (' + code + '). Sem repetição automática. Informe este código para diagnóstico.', completedAt: new Date().toISOString() };
+        console.error('Auditoria falhou. Código:', code);
+      }
       await redis(['SET', `radar:v2:job:${job.id}`, JSON.stringify(result), 'EX', 86400]);
       console.log(`Auditoria ${result.status}.`);
     }
