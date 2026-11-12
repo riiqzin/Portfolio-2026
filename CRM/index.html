@@ -87,6 +87,7 @@
     <div class="gmail-actions">
       <button id="gmailConnect" type="button" class="primary">Conectar Gmail</button>
       <button id="gmailSync" type="button" class="primary" hidden>Sincronizar agora</button>
+      <button id="gmailReconnect" type="button" class="ghost" hidden>Autorizar envio pelo Gmail</button>
       <button id="gmailDisconnect" type="button" class="ghost" hidden>Desconectar</button>
     </div>
     <p class="gmail-note">Somente mensagens de remetentes associados aos leads cadastrados são analisadas. O CRM não envia e-mails automaticamente. A sincronização ocorre enquanto o painel estiver aberto; o monitoramento em segundo plano será configurado separadamente.</p>
@@ -127,6 +128,11 @@
 </section>
 <div class="dashboard-layout">
     <div class="operations-intro"><h1>Central</h1><div class="updated" id="updatedText">Carregando…</div></div>
+    <section class="out-daily-card" aria-label="Seu dia comercial">
+      <div><span class="out-eyebrow">SUA ROTINA COMERCIAL</span><h2>Próximas ações prontas</h2><p>Prepare, revise e aprove seus contatos sem abrir o Gmail.</p></div>
+      <div class="out-daily-metrics"><span><b id="dashQueued">—</b> na fila</span><span><b id="dashFollowups">—</b> follow-ups</span><span><b id="dashSent">—</b> enviados</span></div>
+      <a class="primary out-daily-link" href="#outreach">Abrir Prospecção ↗</a>
+    </section>
     <section class="pipeline-pulse" aria-label="Resumo de atividades">
       <div class="pulse-top"><span class="ops-eyebrow">Atividade</span><span>ATUALIZAÇÃO A CADA 30 SEGUNDOS</span></div>
       <div class="metrics">
