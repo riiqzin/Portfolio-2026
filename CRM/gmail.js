@@ -2,7 +2,7 @@
 window.RickyGmail = {
  mount({getKey,getLeads,markReplied}) {
   const $=s=>document.querySelector(s);
-  const panel=$('#gmailPanel'),status=$('#gmailStatus'),list=$('#gmailResults'),connect=$('#gmailConnect'),sync=$('#gmailSync'),disconnect=$('#gmailDisconnect'),state=$('#gmailConnection');
+  const panel=$('#gmailPanel'),status=$('#gmailStatus'),list=$('#gmailResults'),connect=$('#gmailConnect'),sync=$('#gmailSync'),disconnect=$('#gmailDisconnect'),reconnect=$('#gmailReconnect'),state=$('#gmailConnection');
   let connected=false,busy=false,lastSync=0;
   const node=(tag,text,cls)=>{const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el};
   async function api(method,body){
@@ -35,8 +35,8 @@ window.RickyGmail = {
     try{
       const data=await api('GET');connected=!!data.connected;
       state.textContent=connected?'Conta conectada: '+data.email:'Gmail ainda não conectado';
-      connect.hidden=connected;sync.hidden=!connected;disconnect.hidden=!connected;
-      status.textContent=connected?(data.aiActive?'Classificação OpenAI ativa.':'Classificação por regras ativa; OpenAI ainda não configurada.'):'Conecte sua conta de prospecção para acompanhar os leads.';
+      connect.hidden=connected;sync.hidden=!connected;disconnect.hidden=!connected;reconnect.hidden=!connected||!!data.canSend;
+      status.textContent=connected?((data.aiActive?'Classificação OpenAI ativa.':'Classificação por regras ativa.')+(data.canSend?' Envio aprovado pelo Google.':' Para enviar pelo CRM, clique em Autorizar envio pelo Gmail.')):'Conecte sua conta de prospecção para acompanhar os leads.';
       show(data.items||[]);
     }catch(e){status.textContent=e.message;}
     finally{busy=false}
@@ -49,11 +49,13 @@ window.RickyGmail = {
     catch(e){status.textContent=e.message;}
     finally{busy=false;sync.disabled=false}
   }
-  connect.addEventListener('click',async()=>{
+  const startAuth=async()=>{
     if(busy||!getKey())return;busy=true;connect.disabled=true;
     try{const data=await api('POST',{action:'connect'});if(!/^https:\/\/accounts\.google\.com\//.test(data.url))throw Error('URL de autorização inválida.');location.href=data.url;}
-    catch(e){status.textContent=e.message;busy=false;connect.disabled=false}
-  });
+    catch(e){status.textContent=e.message;busy=false;connect.disabled=false;reconnect.disabled=false}
+  };
+  connect.addEventListener('click',startAuth);
+  reconnect.addEventListener('click',startAuth);
   disconnect.addEventListener('click',async()=>{
     if(!confirm('Desconectar o Gmail deste CRM? Isso apaga o token de acesso e os resumos sincronizados, mas não altera seus e-mails.'))return;
     try{await api('POST',{action:'disconnect'});connected=false;lastSync=0;await refresh();}catch(e){status.textContent=e.message;}
