@@ -196,7 +196,7 @@ window.RickyOutreach={
   const qf=radarModal.querySelector('form'),qc=qf.elements.company,qe=qf.elements.email,qt=qf.elements.template,qs=qf.elements.subject,qb=qf.elements.message;
   const qp=qf.elements.portfolio,qw=qf.elements.when;
   qf.addEventListener('submit',event=>event.preventDefault());
-  let quickContext=null,quickBusy=false,quickSavedId=null;
+  let quickContext=null,quickBusy=false,quickSavedId=null,quickReturnFocus=null;
   qp.value=localStorage.getItem('ricky_crm_portfolio_url')||'https://portfolio-ricky-mangini.vercel.app/';
   radarModal.querySelector('.out-insert-link').addEventListener('click',()=>{
     if(!qp.reportValidity()||!/^https:\/\//i.test(qp.value)){quickMessage('Informe uma URL completa começando com https://');return}
@@ -205,10 +205,18 @@ window.RickyOutreach={
     qb.setRangeText(qp.value,start,end,'end');qb.focus();
   });
   function quickMessage(text){radarModal.querySelector('.out-quick-status').textContent=text}
-  function closeQuick(){if(quickBusy)return;radarModal.hidden=true;document.body.classList.remove('out-quick-open')}
+  function closeQuick(){if(quickBusy)return;radarModal.hidden=true;document.body.classList.remove('out-quick-open');if(quickReturnFocus?.isConnected)quickReturnFocus.focus()}
   radarModal.querySelector('.out-quick-close').addEventListener('click',closeQuick);
   radarModal.addEventListener('click',e=>{if(e.target===radarModal)closeQuick()});
   addEventListener('keydown',e=>{if(e.key==='Escape'&&!radarModal.hidden)closeQuick()});
+  radarModal.addEventListener('keydown',event=>{
+    if(event.key!=='Tab')return;
+    const focusable=[...radarModal.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled)')].filter(el=>el.getClientRects().length);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}
+    else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}
+  });
   function quickTemplate(){
     const selected=data.templates.find(t=>t.id===qt.value)||data.templates[0];
     if(!selected)return;
@@ -220,6 +228,7 @@ window.RickyOutreach={
     if(!getKey())throw Error('Entre no CRM para preparar o contato.');
     if(quickBusy)return;
     await refresh();
+    quickReturnFocus=document.activeElement;
     quickContext=prospect;quickSavedId=null;
     qc.value=String(prospect.name||'').replace(/\s+[|–—-]\s+.*$/,'').trim().slice(0,130);
     qe.value=String(prospect.email||'').trim();
