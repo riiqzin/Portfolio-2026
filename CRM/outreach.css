@@ -1,0 +1,37 @@
+/* Ricky CRM — private outreach workbench */
+.outreach-panel{display:none;padding:22px 0 40px;max-width:1500px;margin:auto}
+.outreach-panel[hidden]{display:none!important}body.outreach-active .outreach-panel:not([hidden]){display:block}
+body.outreach-active .dashboard-layout,body.outreach-active .footer-note{display:none!important}
+.out-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:20px}
+.out-head h1{font-size:clamp(25px,3vw,34px);line-height:1.15;margin:8px 0;font-weight:800;letter-spacing:-.03em}
+.out-head p,.out-muted{color:#96a8a3;font-size:12px;line-height:1.6}
+.out-head p{margin:0}.out-eyebrow{color:#a5d7bb;font-size:10px;font-weight:700;letter-spacing:.1em}
+.out-connection{display:flex;gap:12px;align-items:center;background:#13211b;border:1px solid #305342;border-radius:12px;padding:13px 16px;margin:12px 0;font-size:12px;flex-wrap:wrap}
+.out-connection strong{color:#d6f6e6}.out-connection>span:last-child{margin-left:auto;color:#a3c5b2}
+.out-dot{width:8px;height:8px;background:#a4dfbd;border-radius:50%;flex:none;box-shadow:0 0 0 4px #a4dfbd18}
+.out-warning{color:#f1d6a4;background:#332a1c;border:1px solid #715a34;border-radius:10px;padding:12px 15px;font-size:12px;line-height:1.55}
+.out-warning[hidden]{display:none!important}.out-warning a{color:#ffe3a4;text-decoration:underline}
+.out-status{color:#a7c9ba;font-size:12px;margin:12px 0 19px;min-height:18px}
+.out-layout{display:grid;grid-template-columns:minmax(300px,.85fr) minmax(420px,1.15fr);gap:18px;align-items:start}
+.out-section{padding:21px;background:#161e21;border:1px solid #304039;border-radius:16px;margin-bottom:18px;min-width:0}
+.out-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.out-section-head h2{font-size:18px;margin:5px 0 0;font-weight:750;letter-spacing:-.025em}
+.out-section label{display:block;font-size:12px;color:#bfcdc6;margin:13px 0 7px;font-weight:650}
+.out-section select,.out-section input,.out-section textarea{display:block;width:100%;min-width:0;box-sizing:border-box;background:#0c1416;border:1px solid #3a5146;border-radius:9px;padding:11px 12px;color:#e6f3e9;font-size:13px;font-family:inherit;line-height:1.5}
+.out-section textarea{resize:vertical}.out-section input:focus-visible,.out-section textarea:focus-visible,.out-section select:focus-visible{outline:2px solid #9ad8b6;outline-offset:1px}
+.out-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.out-actions button{min-height:37px;padding:9px 13px;font-size:12px;border-radius:9px}
+.out-actions button:disabled{opacity:.45;cursor:not-allowed}
+.out-card{background:#111a1b;border:1px solid #33463d;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;min-width:0;overflow-wrap:anywhere}
+.out-card-title{display:flex;flex-direction:column;gap:3px}
+.out-card-title strong{font-size:14px;line-height:1.35}.out-card-title small{color:#a8b8b2;font-size:11px}
+.out-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.out-stat{padding:16px;background:#101b19;border:1px solid #335042;border-radius:12px;display:flex;flex-direction:column;gap:4px}
+.out-stat strong{font-size:27px;color:#d4f5e4;font-variant-numeric:tabular-nums}.out-stat span{font-size:11px;color:#a5b8ae}
+.out-timeline h3{font-size:14px;margin:10px 0 15px}.out-timeline details{font-size:12px;color:#b8d2c5}
+.out-timeline summary{cursor:pointer;padding:12px 0}.out-followup{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:18px}
+.out-library-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.out-template{background:#111a1b;border:1px solid #31483b;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.out-template input,.out-template textarea{font-size:12px}.out-foot{margin:8px 0 18px}
+@media(max-width:960px){.out-layout{grid-template-columns:1fr}.out-followup{flex-direction:column;align-items:stretch}}
+@media(max-width:600px){.out-section{padding:15px}.out-head{flex-direction:column;gap:10px}.out-stats{gap:7px}.out-stat{padding:11px}.out-stat strong{font-size:22px}.out-stat span{font-size:10px}}
