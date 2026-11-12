@@ -40,7 +40,7 @@
 </section>
 <section class="page" id="page-radar" hidden>
  <div class="page-intro inline-intro"><div><span class="eyebrow">DESCOBERTA / FONTES PÚBLICAS</span><h1>Encontre quem<br><em>vale abordar.</em></h1><p>Dados reais, hipóteses honestas e sua verificação final.</p></div><span class="intro-tag">◎ RADAR 2.0</span></div>
- <div class="radar-switch"><button type="button" class="switch active" id="switchLocal">⌖ Negócios locais</button><a href="/CRM/legacy.html#radar" class="switch" title="Abrir Radar antigo de e-commerce">▣ E-commerce ↗</a></div>
+ <div class="radar-switch"><button type="button" class="switch active" id="switchLocal">⌖ Negócios locais</button><a href="/CRM/legacy.html#radar" target="_blank" rel="noopener noreferrer" class="switch" title="Radar antigo de e-commerce; leads desse modo não entram automaticamente na nova carteira">▣ E-commerce antigo ↗</a></div>
  <div class="scanner glass"><div class="scanner-art"><span class="scanner-overline">RICKY DISCOVERY ENGINE</span><div class="scanner-circle"><i></i><i></i><b>r<span>RADAR</span></b></div><span class="scanner-art-foot">LOCAL BUSINESS / BRASIL</span></div>
  <form id="localForm" class="scanner-form">
   <span class="eyebrow">NOVA VARREDURA</span><h2>Onde vamos procurar?</h2>
@@ -50,6 +50,7 @@
   <div class="radar-filter-row"><label>Nota mínima<select id="minRating"><option value="0">Qualquer nota</option><option value="4">4,0+</option><option value="4.5" selected>4,5+</option><option value="4.7">4,7+</option></select></label><label>Avaliações mínimas<select id="minReviews"><option value="0">Sem mínimo</option><option value="10">10+</option><option value="30" selected>30+</option><option value="50">50+</option></select></label></div>
   <button type="submit" class="btn btn-primary big" id="runLocal">◎ Iniciar varredura</button>
   <p id="placesNotice" class="field-note" role="status">Verificando conexão com o Google Places…</p>
+  <details class="setup-help"><summary>Como habilitar a busca pelo Google Maps?</summary><div><p>É necessário ativar <strong>Places API (New)</strong> no Google Cloud, com faturamento e limites de consumo configurados. Depois, adicione a chave secreta <code>GOOGLE_PLACES_API_KEY</code> no ambiente Production da Vercel e publique novamente.</p><p>O Ricky limita inicialmente a cinco varreduras por dia e 100 por mês. Até lá, você pode cadastrar os negócios manualmente, sem perder o fluxo de abordagens.</p></div></details>
  </form></div>
  <div id="radarProgress" class="progress-card glass" hidden><div class="progress-head"><span class="eyebrow"><i class="live-dot"></i> ANÁLISE EM ANDAMENTO</span><span id="scanProgressCount">0 / 0</span></div><h3 id="scanProgressText">Consultando estabelecimentos…</h3><div class="progress-track"><span id="scanProgressBar"></span></div><div class="progress-stages"><span>01 Localizar</span><span>02 Classificar</span><span>03 Apresentar</span></div></div>
  <div class="section-title"><div><span class="eyebrow">RESULTADOS</span><h2>Oportunidades encontradas</h2></div><div class="result-filters"><button type="button" class="chip active" id="filterEligible">Dentro do filtro</button><button type="button" class="chip" id="filterOutside">Fora do filtro</button></div></div>
