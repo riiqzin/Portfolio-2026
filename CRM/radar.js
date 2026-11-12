@@ -272,7 +272,7 @@ window.RickyRadar = {
       $('#radarOutput').classList.remove('is-revealed');
       $('#radarResults').setAttribute('aria-busy', 'true');
       results = []; searchMeta = null; loadedFromHistory = false; $('#radarResults').replaceChildren(); $('#radarSummary').textContent = ''; $('#radarSource').textContent = '';
-      message('Buscando fontes públicas e filtrando resultados…');
+      message('Etapa 1/2 · Encontrando lojas e filtrando duplicatas…');
       try {
         const data = await api('POST', { niche: $('#radarNiche').value.trim(), region: $('#radarRegion').value.trim() });
         results = data.results; searchMeta = data; loadedFromHistory = false; render();
@@ -288,7 +288,7 @@ window.RickyRadar = {
       }
       finally {
         busy = false; $('#radarSearch').disabled = false; $('#radarCheck').disabled = false;
-        $('#radarSearch').textContent = '◎ Iniciar varredura';
+        $('#radarSearch').textContent = '◎ Encontrar lojas';
         $('#radarPanel').classList.remove('is-searching');
         $('#radarResults').removeAttribute('aria-busy');
       }
