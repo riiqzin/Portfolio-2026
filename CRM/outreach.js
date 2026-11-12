@@ -195,13 +195,14 @@ window.RickyOutreach={
   document.body.append(radarModal);
   const qf=radarModal.querySelector('form'),qc=qf.elements.company,qe=qf.elements.email,qt=qf.elements.template,qs=qf.elements.subject,qb=qf.elements.message;
   const qp=qf.elements.portfolio,qw=qf.elements.when;
+  qf.addEventListener('submit',event=>event.preventDefault());
   let quickContext=null,quickBusy=false,quickSavedId=null;
   qp.value=localStorage.getItem('ricky_crm_portfolio_url')||'https://portfolio-ricky-mangini.vercel.app/';
   radarModal.querySelector('.out-insert-link').addEventListener('click',()=>{
     if(!qp.reportValidity()||!/^https:\/\//i.test(qp.value)){quickMessage('Informe uma URL completa começando com https://');return}
     localStorage.setItem('ricky_crm_portfolio_url',qp.value);
     const start=qb.selectionStart??qb.value.length,end=qb.selectionEnd??qb.value.length;
-    qb.setRangeText(qp.value,start,end,'end');qb.focus();quickSavedId=null;
+    qb.setRangeText(qp.value,start,end,'end');qb.focus();
   });
   function quickMessage(text){radarModal.querySelector('.out-quick-status').textContent=text}
   function closeQuick(){if(quickBusy)return;radarModal.hidden=true;document.body.classList.remove('out-quick-open')}
@@ -213,7 +214,6 @@ window.RickyOutreach={
     if(!selected)return;
     const v=templateValues(selected,{name:qc.value,segment:quickContext?.segment||'lojas virtuais'});
     qs.value=v.subject;qb.value=v.text;localStorage.setItem('ricky_crm_template_default',selected.id);
-    quickSavedId=null;
   }
   qt.addEventListener('change',quickTemplate);
   async function openRadarComposer(prospect){
@@ -241,7 +241,7 @@ window.RickyOutreach={
       const payload={company:qc.value,email:qe.value,leadId:lead?.id||'',subject:qs.value,text:qb.value,type:'initial'};
       if(!quickSavedId){
         const result=await api('queue-add',payload);quickSavedId=result.item.id;
-      }else await api('queue-update',{id:quickSavedId,subject:qs.value,text:qb.value});
+      }else await api('queue-update',{id:quickSavedId,subject:qs.value,text:qb.value,email:qe.value,company:qc.value});
       quickMessage('Mensagem salva na fila. Você pode enviar agora ou voltar depois.');
       await refresh();return quickSavedId;
     }catch(error){quickMessage(error.message||'Erro ao preparar abordagem.');return null}
@@ -283,9 +283,12 @@ window.RickyOutreach={
   function navigate(){
    const active=location.hash==='#outreach';
    document.body.classList.toggle('outreach-active',active);panel.hidden=!active;
+   const navigation=document.querySelectorAll('.sidebar .nav-item');
    if(active){
-    document.querySelectorAll('.sidebar .nav-item').forEach(a=>{a.classList.toggle('selected',a.hash==='#outreach');if(a.hash==='#outreach')a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+    navigation.forEach(a=>{a.classList.toggle('selected',a.hash==='#outreach');if(a.hash==='#outreach')a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
     refresh();
+   }else{
+    const link=[...navigation].find(a=>a.hash==='#outreach');if(link){link.classList.remove('selected');link.removeAttribute('aria-current')}
    }
   }
   addEventListener('hashchange',navigate);
