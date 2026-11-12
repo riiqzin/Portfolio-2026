@@ -624,11 +624,13 @@
         }
       }
 
+      const firstCRMload = !state.firstLoadDone;
       state.firstLoadDone = true;
       $('#loginOverlay').classList.add('hidden');
       $('#loginError').classList.add('hidden');
       $('#syncText').textContent = 'online';
       render();
+      if (firstCRMload) window.RickyOutreach?.refreshSummary?.();
 
       if (state.selectedId) renderDrawer();
     }catch(err){
