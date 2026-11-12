@@ -124,12 +124,12 @@ function templateMessage(c){
  const angle=c.angle||'A';
  if(c.followup_count>=2&&c.status==='abordado')return TEMPLATES[4][1].replaceAll('{{empresa}}',c.name);
  if(c.followup_count===1&&c.status==='abordado')return TEMPLATES[3][1].replaceAll('{{empresa}}',c.name);
- if(angle==='B'||c.offer==='bot'){
-  return 'Oi, aqui é o Henrique! Pergunta rápida: vocês gastam muito tempo respondendo preços e horários no WhatsApp?\nMonto assistentes que ajudam com essas perguntas e facilitam o atendimento.\nPosso te mostrar uma ideia para a '+c.name+'?';
- }
  if(angle==='C'){
   if(!c.verified?.top||!c.verified?.demo_ready)return '';
   return 'Oi! Aqui é o Henrique. '+praise(c)+'\nPreparei um rascunho de como poderia ser a página de vocês.\nPosso te mostrar?';
+ }
+ if(angle==='B'||c.offer==='bot'){
+  return 'Oi, aqui é o Henrique! Pergunta rápida: vocês gastam muito tempo respondendo preços e horários no WhatsApp?\nMonto assistentes que ajudam com essas perguntas e facilitam o atendimento.\nPosso te mostrar uma ideia para a '+c.name+'?';
  }
  return 'Oi, tudo bem? '+praise(c)+'\n'+evidencePhrase(c)+'\nSou o Henrique, faço páginas para negócios locais. Posso te mostrar uma ideia para vocês?';
 }
@@ -187,7 +187,7 @@ function actionCard(item){
  return article;
 }
 function renderCentral(){
- const todos=getTodos(),contacted=state.leads.filter(c=>c.contacted_at).length,replies=state.leads.filter(c=>['respondeu','interessado','proposta','fechou'].includes(c.status)).length,wins=state.leads.filter(c=>c.status==='fechou').length;
+ const todos=getTodos(),contacted=state.leads.filter(c=>c.contacted_at).length,replies=state.leads.filter(c=>c.ever_responded||['respondeu','interessado','proposta','fechou','sem_interesse'].includes(c.status)).length,wins=state.leads.filter(c=>c.status==='fechou').length;
  $('#statLeads').textContent=state.leads.length;$('#statToday').textContent=todos.length;$('#statReplies').textContent=replies;$('#statWon').textContent=wins;
  $('#navTodayCount').textContent=todos.length;$('#navTodayCount').hidden=!todos.length;
  const area=$('#centralActions');area.replaceChildren();
