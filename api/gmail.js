@@ -1,7 +1,7 @@
 import { ready,authorized,json,redisClient,STORE,LEADS,RESULTS,ADDRESS,nonce,authUrl,seal,unseal,tidyLeads,syncInbox } from '../lib/gmail.js';
 import { boundedText } from '../lib/radar-control.js';
 
-export default async function handler(request) {
+export async function handler(request) {
  const env=process.env;
  if(!['GET','POST'].includes(request.method))return json({message:'Método não permitido.'},405);
  if(!authorized(request,env))return json({message:'Entre no CRM com a chave do painel.'},401);
@@ -45,3 +45,5 @@ export default async function handler(request) {
   return json({message},503);
  }
 }
+
+export default { fetch: handler };
