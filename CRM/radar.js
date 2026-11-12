@@ -79,7 +79,7 @@ window.RickyRadar = {
             $('#radarRegion').value = item.region;
             render();
             engine('HISTÓRICO ABERTO');
-            message(item.results.some(row => row.historyTicket) ? 'Varredura salva · sem nova consulta ao Brave. Você pode auditar os candidatos enquanto o executor estiver conectado.' : 'Histórico antigo sem autorização de auditoria. Para auditar, será necessária uma nova busca uma única vez.');
+            message('Varredura salva aberta. Os resultados podem ser analisados enquanto o comprovante de consulta estiver válido.');
             revealResults();
           });
           entries.append(open);
@@ -130,7 +130,7 @@ window.RickyRadar = {
     }
     async function findContact(row,button) {
       if(!getKey()) {message('Entre no CRM para buscar contatos.');return false}
-      if(row.contact?.status==='scanned'&&row.contact.emails?.length)return true;
+      if(row.contact?.opportunity&&row.contact.status==='scanned')return true;
       const ticket=row.ticket||row.historyTicket;
       if(!ticket){row.contactError='Comprovante expirado; faça uma nova varredura.';render();return false}
       if(button){button.disabled=true;button.textContent='Consultando...'}
@@ -139,7 +139,7 @@ window.RickyRadar = {
       try {
         const response=await fetch('/api/radar-contact',{
           method:'POST',headers:{Authorization:'Bearer '+getKey(),'Content-Type':'application/json'},
-          body:JSON.stringify({domain:row.domain,ticket,refresh:!!button}),signal:AbortSignal.timeout(33000)
+          body:JSON.stringify({domain:row.domain,ticket,refresh:!!button}),signal:AbortSignal.timeout(45000)
         });
         const data=await response.json().catch(()=>({message:'Resposta inesperada ao procurar contato.'}));
         if(!response.ok)throw Error(data.message||'Consulta indisponível');
@@ -174,40 +174,76 @@ window.RickyRadar = {
       if(row.contactLoading){const loader=node('div','','radar-contact-loading');loader.setAttribute('role','progressbar');loader.setAttribute('aria-label','Procurando e-mail comercial');area.append(loader)}
       card.append(area);
     }
-    async function collectFive() {
+    async function collectAll() {
       if(collecting||!results.length)return;
       collecting=true;
-      const candidates=results.filter(row=>!existing(row)&&!row.contact).slice(0,5);
-      let processed=0,located=0;
-      const scan=async()=>{
+      // Unverified historic results may be rechecked with a valid signed ticket.
+      const candidates=results.filter(row=>!existing(row)&&(!row.contact||!row.contact.opportunity));
+      const total=candidates.length;
+      let completed=0,emails=0,scored=0;
+      if(total===0){collecting=false;message('Todas as lojas elegíveis desta varredura já foram verificadas.');return}
+      message('Análise técnica: 0/'+total+' lojas · duas verificações em paralelo.');
+      const worker=async()=>{
         while(candidates.length){
           const row=candidates.shift();
           if(!row)break;
-          if(await findContact(row,null))located++;
-          processed++;
-          message('Contatos: '+processed+' verificados · '+located+' sites consultados');
+          const ok=await findContact(row,null);
+          if(ok&&row.contact?.emails?.length)emails++;
+          if(row.contact?.opportunity?.score!==null&&row.contact?.opportunity?.score!==undefined)scored++;
+          completed++;
+          message('Análise técnica: '+completed+'/'+total+' · '+scored+' notas provisórias · '+emails+' lojas com e-mail');
         }
       };
-      await Promise.allSettled([scan(),scan()]);
+      await Promise.allSettled([worker(),worker()]);
       collecting=false;
-      message('Varredura pronta. Confira os candidatos e clique em Preparar abordagem.');
+      message('Análise concluída: '+completed+' lojas consultadas, '+scored+' com score provisório e '+emails+' com e-mail. Os demais resultados estão sinalizados como incompletos.');
     }
-    const bulk=node('button','Atualizar contatos dos primeiros candidatos','ghost');
+    const bulk=node('button','Analisar lojas ainda não verificadas','ghost');
     bulk.type='button';bulk.className='radar-collect-bulk';
-    bulk.addEventListener('click',collectFive);
+    bulk.addEventListener('click',collectAll);
     $('#radarOutput').insertBefore(bulk,$('#radarResults'));
 
     function render() {
       const list=$('#radarResults');list.replaceChildren();
-      bulk.hidden=!results.length;
+      bulk.hidden=!results.length||collecting;
       let duplicates=0;
-      const sorted=[...results].sort((a,b)=>(b.contact?.emails?.length?1:0)-(a.contact?.emails?.length?1:0));
+      const sorted=[...results].sort((a,b)=>{
+        const x=a.contact?.opportunity?.score,y=b.contact?.opportunity?.score;
+        return (y??-1)-(x??-1);
+      });
       for(const row of sorted){
         if(existing(row)){duplicates++;continue}
         const card=node('article','','prospect-card radar-prospect-modern');
         const top=node('div','','radar-prospect-head');
         top.append(node('span',row.contact?.emails?.length?'CONTATO ENCONTRADO':'CANDIDATO','prospect-label'),node('small',row.domain,'prospect-meta'));
         card.append(top,node('h3',row.name),node('p',row.description||'Resultado público do mecanismo de busca.','prospect-description'));
+        const op=row.contact?.opportunity;
+        const ranking=node('section','','radar-opportunity');
+        ranking.setAttribute('aria-label','Score de oportunidade');
+        const scoreline=node('div','','radar-opportunity-scoreline');
+        scoreline.append(node('strong',op?.score===null||op?.score===undefined?'— / 100':op.score+' / 100','radar-opportunity-number'),
+          node('span',row.contactLoading?'Analisando…':op?.score===null||!op?'Análise incompleta':'Score provisório · confiança '+op.confidence,'radar-opportunity-state'));
+        ranking.append(scoreline);
+        if(op?.score!==null&&op?.score!==undefined){
+          const bar=node('div','','radar-opportunity-bar');
+          const fill=node('span','','radar-opportunity-fill');fill.style.width=Math.max(0,Math.min(100,op.score))+'%';
+          bar.append(fill);ranking.append(bar);
+        }
+        if(op?.criteria){
+          const detail=document.createElement('details');detail.className='radar-score-details';
+          const summary=node('summary','Ver critérios e evidências ('+op.coverage+'/100 pontos cobertos)','');
+          detail.append(summary);
+          const names={compatibility:'Compatibilidade · 30',improvement:'Melhorias verificáveis · 25',contact:'Contato comercial · 20',activity:'Sinais de loja ativa · 15',approach:'Facilidade de abordagem · 10'};
+          for(const [key,criterion] of Object.entries(op.criteria)){
+            const line=node('div','','radar-score-criterion');
+            line.append(node('strong',names[key]||key),node('span',criterion.verified?criterion.earned+'/'+criterion.max:'Não verificado'));
+            const why=node('small',(criterion.details||[]).join(' · '),'radar-contact-note');
+            detail.append(line,why);
+          }
+          detail.append(node('small',op.note||'Pontuação provisória baseada em evidências públicas.','radar-contact-note'));
+          ranking.append(detail);
+        }
+        card.append(ranking);
         contactPanel(row,card);
         const actions=node('div','','prospect-actions radar-modern-actions');
         const link=node('a','Ver site ↗','ghost');
@@ -281,6 +317,8 @@ window.RickyRadar = {
         $('#radarResults').removeAttribute('aria-busy');
         message(`Busca concluída. Uso: ${data.usage.daily}/${data.usage.limits.daily} no dia e ${data.usage.monthly}/${data.usage.limits.monthly} no mês (UTC).`);
         revealResults();
+        // Every candidate is analyzed progressively, without a second Brave search.
+        void collectAll();
 
       } catch (error) {
         engine('BUSCA INTERROMPIDA'); message(error.message);
