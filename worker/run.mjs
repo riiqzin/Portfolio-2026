@@ -4,21 +4,26 @@ import { capture } from './capture.mjs';
 import { visualDiagnosis, technicalFindings, ranking } from './diagnose.mjs';
 
 export const CLAIM = `
-local ids = redis.call('ZRANGE', KEYS[1], 0, 0)
-if #ids == 0 then return nil end
-redis.call('ZREM', KEYS[1], ids[1])
-local key = 'radar:v2:job:' .. ids[1]
+local items = redis.call('ZRANGE', KEYS[1], 0, 0, 'WITHSCORES')
+if #items == 0 then return nil end
+redis.call('ZREM', KEYS[1], items[1])
+local key = 'radar:v2:job:' .. items[1]
 local raw = redis.call('GET', key)
 if not raw then return nil end
 local job = cjson.decode(raw)
 if job.status ~= 'queued' then return nil end
+local clock = redis.call('TIME')
+local serverNowMs = tonumber(clock[1]) * 1000 + math.floor(tonumber(clock[2]) / 1000)
+job.queueAgeMs = math.max(0, serverNowMs - tonumber(items[2]))
 job.status = 'running'; job.startedAt = ARGV[1]
 redis.call('SET', key, cjson.encode(job), 'EX', 86400)
 return cjson.encode(job)`;
 
 export async function processJob(job, { browser, env, captureSite = capture, diagnose = visualDiagnosis }) {
   if (!Number.isSafeInteger(job.reserveCents) || job.reserveCents < Number(env.RADAR_AUDIT_RESERVE_CENTS)) throw new Error('reservation_mismatch');
-  if (Date.now() - Date.parse(job.createdAt) > 300000) throw new Error('queue_expired');
+  // Compare server-side Redis timestamps, not the Windows clock.
+  // Keep a bounded queue lifetime while allowing a temporarily busy worker.
+  if (!Number.isFinite(job.queueAgeMs) || job.queueAgeMs > 30 * 60 * 1000) throw new Error('queue_expired');
   const evidence = await captureSite(job.url, browser);
   let visual;
   if (evidence.platform || !evidence.commerceEvidence) visual = { status: 'skipped', message: 'IA não chamada: plataforma excluída ou loja não confirmada.' };
