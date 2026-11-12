@@ -410,7 +410,7 @@
     const scheduled = dt(lead.email_scheduled_at);
     const sent = dt(lead.email_sent_at);
     if (sent || lead.email_sent_date || (scheduled && scheduled <= new Date())) {
-      return {key:'waiting',label:'Aguardando abertura',cls:'s-waiting'};
+      return {key:'waiting',label:lead.project_url ? 'Aguardando abertura' : 'Aguardando resposta',cls:'s-waiting'};
     }
     if (scheduled && scheduled > new Date()) return {key:'scheduled',label:'Agendado',cls:'s-scheduled'};
     return {key:'draft',label:'Não enviado',cls:'s-draft'};
