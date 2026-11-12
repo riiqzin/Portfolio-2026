@@ -208,8 +208,9 @@ window.RickyRadar = {
       bulk.hidden=!results.length||collecting;
       let duplicates=0;
       const sorted=[...results].sort((a,b)=>{
-        const x=a.contact?.opportunity?.score,y=b.contact?.opportunity?.score;
-        return (y??-1)-(x??-1);
+        const x=a.contact?.opportunity,y=b.contact?.opportunity;
+        const priority=v=>v?.technical?.length?1:0;
+        return priority(y)-priority(x)||(y?.score??-1)-(x?.score??-1);
       });
       for(const row of sorted){
         if(existing(row)){duplicates++;continue}
@@ -222,7 +223,7 @@ window.RickyRadar = {
         ranking.setAttribute('aria-label','Score de oportunidade');
         const scoreline=node('div','','radar-opportunity-scoreline');
         scoreline.append(node('strong',op?.score===null||op?.score===undefined?'— / 100':op.score+' / 100','radar-opportunity-number'),
-          node('span',row.contactLoading?'Analisando…':op?.score===null||!op?'Análise incompleta':'Score provisório · confiança '+op.confidence,'radar-opportunity-state'));
+          node('span',row.contactLoading?'Analisando…':op?.score===null||!op?'Análise incompleta':(op.technical?.length?'Melhoria técnica identificada':'Melhoria não comprovada')+' · confiança '+op.confidence,'radar-opportunity-state'));
         ranking.append(scoreline);
         if(op?.score!==null&&op?.score!==undefined){
           const bar=node('div','','radar-opportunity-bar');
