@@ -26,7 +26,8 @@ const VERIFY=[
  ['no_online_booking','Confirmei que não oferece agendamento online'],
  ['active_confirmed','Negócio parece ativo (conferi)'],
  ['possible_chain','Possível rede ou franquia'],
- ['top','Cliente prioritário — preparei uma demonstração']
+ ['top','Cliente prioritário'],
+ ['demo_ready','Já preparei e conferi a demonstração']
 ];
 const STATUSES={novo:'Novo',abordado:'Abordado',respondeu:'Respondeu',interessado:'Interessado',proposta:'Proposta enviada',fechou:'Fechou',sem_interesse:'Sem interesse'};
 const TEMPLATES=[
@@ -126,7 +127,10 @@ function templateMessage(c){
  if(angle==='B'||c.offer==='bot'){
   return 'Oi, aqui é o Henrique! Pergunta rápida: vocês gastam muito tempo respondendo preços e horários no WhatsApp?\nMonto assistentes que ajudam com essas perguntas e facilitam o atendimento.\nPosso te mostrar uma ideia para a '+c.name+'?';
  }
- if(angle==='C')return 'Oi! Aqui é o Henrique. '+praise(c)+'\nPreparei um rascunho de como poderia ser a página de vocês.\nPosso te mostrar?';
+ if(angle==='C'){
+  if(!c.verified?.top||!c.verified?.demo_ready)return '';
+  return 'Oi! Aqui é o Henrique. '+praise(c)+'\nPreparei um rascunho de como poderia ser a página de vocês.\nPosso te mostrar?';
+ }
  return 'Oi, tudo bem? '+praise(c)+'\n'+evidencePhrase(c)+'\nSou o Henrique, faço páginas para negócios locais. Posso te mostrar uma ideia para vocês?';
 }
 function dueFor(c){
@@ -349,7 +353,7 @@ function updateRecommendation(replaceText){
  const d=state.draft;if(!d)return;
  const recommendation=offerFor(d),container=$('#leadRecommendation');container.replaceChildren();
  container.append(dom('strong','',recommendation.blocked?'Atenção · revisar antes de abordar':('Prioridade '+({alta:'alta',investigar:'vale investigar',baixa:'baixa'})[priority(d).type]+' · '+(d.offer==='bot'?'Oferta: bot':'Oferta: landing'))),dom('p','',priority(d).why+' '+recommendation.why));
- $('#leadWarning').textContent=recommendation.blocked?'O Radar não recomenda gerar landing automaticamente para este caso. Confira antes de prosseguir.':d.link_type==='none'?'Sem link no Google não significa que o negócio não tenha site. Confirme antes de afirmar isso.':'Todo dado não verificado deve permanecer como hipótese.';
+ $('#leadWarning').textContent=d.angle==='C'&&(!d.verified.top||!d.verified.demo_ready)?'Ângulo C só pode ser usado depois que você marcar este cliente como prioritário e confirmar que preparou a demonstração.':recommendation.blocked?'O Radar não recomenda gerar landing automaticamente para este caso. Confira antes de prosseguir.':d.link_type==='none'?'Sem link no Google não significa que o negócio não tenha site. Confirme antes de afirmar isso.':'Todo dado não verificado deve permanecer como hipótese.';
  if(replaceText){d.offer=recommendation.offer;d.angle=recommendation.angle;$('#leadOffer').value=d.offer;$('#leadAngle').value=d.angle;$('#leadMessage').value=recommendation.blocked?'':templateMessage(d);d.last_message=$('#leadMessage').value}
 }
 function openLead(candidate){
@@ -385,6 +389,7 @@ function openWhatsApp(){
  fromFields();
  const d=state.draft,number=normalizePhone(d?.phone);
  if(d&&['sem_interesse','fechou'].includes(d.status)){toast('Contato encerrado. Não vamos sugerir novas mensagens.');return}
+ if(d?.angle==='C'&&(!d.verified.top||!d.verified.demo_ready)){toast('Antes do ângulo C, confirme que a demonstração está pronta.');return}
  if(d?.status==='abordado'&&!dueFor(d)){toast('Follow-up ainda não está previsto. Confira a data na Central.');return}
  if(!number){toast('Informe um telefone com DDD antes de abrir o WhatsApp.');return}
  const msg=($('#leadMessage').value||'').trim();
@@ -399,12 +404,15 @@ function openWhatsApp(){
 }
 async function prepareEmail(){
  fromFields();const d=state.draft;
+ if(['sem_interesse','fechou'].includes(d.status)){toast('Não abordaremos contatos encerrados.');return}
+ if(d.status==='abordado'&&!dueFor(d)){toast('Ainda não é momento de follow-up. Confira a data na Central.');return}
+ if(d.angle==='C'&&(!d.verified.top||!d.verified.demo_ready)){toast('Confirme que a demonstração está pronta antes do ângulo C.');return}
  if(!d.email){toast('Cadastre o e-mail comercial primeiro.');return}
  const saved=await saveLead(false);if(!saved)return;
  const msg=$('#leadMessage').value.trim();
  if(!msg){toast('Prepare uma mensagem primeiro.');return}
  try{
-  const reply=await backend('outreach','POST',{action:'queue-add',company:saved.name,email:saved.email,subject:'Uma ideia para a '+saved.name,text:msg,leadId:saved.id,type:saved.followup_count>0?'followup':'initial'});
+  const reply=await backend('outreach','POST',{action:'queue-add',company:saved.name,email:saved.email,subject:'Uma ideia para a '+saved.name,text:msg,leadId:saved.id,type:saved.status==='abordado'?'followup':'initial'});
   toast('E-mail adicionado à fila de aprovação em Pra Hoje.');
   closeLead();location.hash='#hoje';$('#gmailDetails').open=true;await loadEmailQueue();
  }catch(e){toast('Fila Gmail: '+e.message)}
@@ -511,6 +519,10 @@ async function loadEmailQueue(){
    if(!state.leads.some(c=>c.id===q.leadId))continue;
    const row=dom('div','reply queued-email');row.append(dom('strong','','Na fila de aprovação: '+q.company),dom('p','',q.subject+' · '+q.email),dom('p','',q.text));
    const action=dom('button','btn btn-primary compact','Aprovar e enviar');
+   const contact=state.leads.find(c=>c.id===q.leadId);
+   if(contact&&(['fechou','sem_interesse'].includes(contact.status)||(contact.status==='abordado'&&!dueFor(contact)))){
+     action.disabled=true;action.textContent='Envio bloqueado por status';
+   }
    action.onclick=async()=>{
     if(!confirm('Confirma o envio deste e-mail para '+q.email+'?'))return;
     action.disabled=true;
