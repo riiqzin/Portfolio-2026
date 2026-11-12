@@ -71,14 +71,21 @@ window.RickyOutreach={
   }
   function renderTimeline(){
    timeline.replaceChildren();
-   const today=Date.now();
+   const now=Date.now();
+   const oldFollowups=getLeads().filter(lead=>{
+     const date=lead.email_sent_at||lead.email_sent_date;
+     const email=String(lead.prospect_email||'').toLowerCase().split(/[,;\\s]+/)[0];
+     return lead.active&&email&&date&&now-Date.parse(date)>5*86400000&&!lead.responded_at
+       &&!data.sent.some(sent=>sent.email===email)&&!data.queue.some(item=>item.email===email);
+   }).slice(0,15);
+   const totalFollowups=data.followups.length+oldFollowups.length;
    const summary=make('div',undefined,'out-stats');
-   for(const [num,label] of [[data.queue.length,'Na fila'],[data.followups.length,'Follow-ups'],[data.sent.length,'Enviados (histórico)']]){
+   for(const [num,label] of [[data.queue.length,'Na fila'],[totalFollowups,'Follow-ups'],[data.sent.length,'Enviados (histórico)']]){
     const metric=make('div',undefined,'out-stat');metric.append(make('strong',String(num)),make('span',label));summary.append(metric);
    }
    timeline.append(summary);
    const heading=make('h3','Acompanhamentos para revisar');timeline.append(heading);
-   if(!data.followups.length)timeline.append(make('p','Nenhum follow-up vencido entre os e-mails enviados pelo CRM.','out-muted'));
+   if(!totalFollowups)timeline.append(make('p','Nenhum follow-up vencido registrado no CRM.','out-muted'));
    for(const sent of data.followups){
     const row=make('article',undefined,'out-card out-followup');row.append(cardTitle(sent.company,'Primeiro envio: '+new Date(sent.sentAt).toLocaleDateString('pt-BR')+' · '+sent.email));
     const actions=make('div',undefined,'out-actions'),draft=make('button','Preparar follow-up','primary'),dismiss=make('button','Dispensar','ghost');actions.append(draft,dismiss);
@@ -90,6 +97,18 @@ window.RickyOutreach={
     });
     dismiss.addEventListener('click',()=>invoke('followup-dismiss',{id:sent.id},'Sugestão dispensada.'));
     row.append(actions);timeline.append(row);
+   }
+   for(const lead of oldFollowups){
+    const email=String(lead.prospect_email).toLowerCase().split(/[,;\\s]+/)[0];
+    const row=make('article',undefined,'out-card out-followup');
+    row.append(cardTitle(lead.name,email+' · Envio registrado anteriormente no CRM, sem resposta marcada'));
+    const draft=make('button','Preparar retorno','ghost');draft.type='button';
+    draft.addEventListener('click',async()=>{
+      const template=data.templates.find(t=>t.id==='followup')||data.templates[0];
+      const v=templateValues(template,{name:lead.name,segment:'e-commerce'});
+      await invoke('queue-add',{company:lead.name,email,leadId:lead.id,type:'followup',subject:v.subject,text:v.text},'Follow-up anterior preparado para sua revisão.');
+    });
+    row.append(draft);timeline.append(row);
    }
    const history=make('details');history.append(make('summary','Histórico de envios ('+data.sent.length+')'));
    for(const sent of data.sent.slice(0,60)){
@@ -116,6 +135,9 @@ window.RickyOutreach={
    $('#outMailbox').textContent=data.connected?(data.canSend?'Gmail conectado · leitura e envio autorizados':'Gmail conectado · falta autorizar o envio'):'Gmail não conectado';
    $('#outSendHelp').hidden=data.canSend;
    $('#outCount').textContent=data.queue.length+' para revisar';
+   for(const [selector,value] of [['#dashQueued',data.queue.length],['#dashFollowups',data.followups.length+getLeads().filter(l=>l.active&&l.prospect_email&&!l.responded_at&&(l.email_sent_at||l.email_sent_date)&&Date.now()-Date.parse(l.email_sent_at||l.email_sent_date)>5*86400000&&!data.sent.some(s=>s.email===String(l.prospect_email).toLowerCase().split(/[,;\\s]+/)[0])).length],['#dashSent',data.sent.length]]){
+     const el=$(selector);if(el)el.textContent=String(value);
+   }
   }
   async function refresh(){
    if(!getKey())return;
@@ -153,6 +175,9 @@ window.RickyOutreach={
    }
   }
   addEventListener('hashchange',navigate);
+  window.RickyOutreach.refreshSummary=refresh;
+  setInterval(()=>{if(getKey()&&!document.hidden&&location.hash!=='#outreach')refresh()},90000);
   navigate();
+  if(getKey())refresh();
  }
 };
