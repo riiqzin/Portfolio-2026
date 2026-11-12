@@ -153,20 +153,20 @@
     <div class="modal-head"><b>NOVO LEAD</b><button type="button" class="x" id="modalClose" aria-label="Fechar novo lead">×</button></div>
     <div class="modal-body">
       <div class="field" style="margin-top:0"><label for="leadName">Nome</label><input id="leadName" required placeholder="Ex: Batcaverna"></div>
-      <div class="field"><label for="leadEmail">E-mail do prospect</label><input id="leadEmail" type="text" placeholder="contato@empresa.com"><div class="hint">Opcional. É o que permite detectar respostas automaticamente. Pode colocar mais de um separado por vírgula.</div></div>
-      <div class="field"><label for="leadUrl">URL do projeto</label><input id="leadUrl" required placeholder="https://portfolio.../Projeto"></div>
+      <div class="field"><label for="leadEmail">E-mail do prospect</label><input id="leadEmail" type="text" placeholder="contato@empresa.com"><div class="hint">Opcional. Use para acompanhar respostas quando a sincronização de e-mail estiver ativa. Separe vários endereços por vírgula.</div></div>
+      <div class="field"><label for="leadUrl">URL do projeto (opcional)</label><input id="leadUrl" type="url" placeholder="https://portfolio.../Projeto"><div class="hint">Adicione depois, caso o prospect aceite receber um protótipo.</div></div>
       <div class="two">
         <div class="field"><label for="leadSlug">Slug</label><input id="leadSlug" placeholder="batcaverna"><div class="hint">É preenchido automaticamente.</div></div>
         <div class="field"><label for="leadSchedule">Envio agendado</label><input id="leadSchedule" type="datetime-local"><div class="hint">Opcional.</div></div>
       </div>
       <div class="success-box hidden" id="leadSuccess">
-        <b>Lead criado. Link rastreável pronto:</b>
+        <b>Lead criado:</b>
         <div class="success-link" id="createdLink"></div>
       </div>
     </div>
     <div class="modal-foot">
       <button type="button" class="ghost" id="cancelLead">CANCELAR</button>
-      <button type="submit" class="primary" id="saveLead">CRIAR E COPIAR LINK</button>
+      <button type="submit" class="primary" id="saveLead">CRIAR LEAD</button>
     </div>
   </form>
 </div>
@@ -275,6 +275,7 @@
   }
 
   function trackedUrl(lead){
+    if (!lead.project_url) return null;
     return `${lead.project_url}${lead.project_url.includes('?') ? '&' : '?'}r=${lead.tracking_token}`;
   }
 
@@ -511,7 +512,7 @@
           </div>
           <div class="lead-main">
             <div class="lead-name">${news?'<span class="new-dot"></span>':''}<b>${esc(lead.name)}</b>${news?`<span class="new-badge">${unread.length} NOVA(S)</span>`:''}</div>
-            <div class="lead-url">${esc(lead.project_url)}</div>
+            <div class="lead-url">${esc(lead.project_url || lead.prospect_email || 'Sem projeto — primeiro contato')}</div>
             ${lead.notes ? `<div class="lead-note" title="${esc(lead.notes)}">✳ ${esc(lead.notes)}</div>` : ''}
           </div>
           <div class="lead-signal">
@@ -652,7 +653,7 @@
       <div class="drawer-title">
         <span class="status ${status.cls}">${esc(status.label)}</span>
         <h2>${esc(lead.name)}</h2>
-        <p>${esc(lead.project_url)}</p>
+        <p>${esc(lead.project_url || lead.prospect_email || 'Sem projeto cadastrado')}</p>
       </div>
 
       <div class="field" style="margin-top:18px">
@@ -685,7 +686,7 @@
         <div class="detail"><small>Agendado</small><b>${esc(schedule)}</b></div>
         <div class="detail"><small>Enviado</small><b>${esc(sent)}</b></div>
         <div class="detail"><small>Resposta</small><b>${esc(response)}</b></div>
-        <div class="detail"><small>Detecção de resposta</small><b>${lead.prospect_email ? 'Automática' : 'Sem e-mail'}</b></div>
+        <div class="detail"><small>Detecção de resposta</small><b>${lead.prospect_email ? 'Verificar sincronização' : 'Sem e-mail'}</b></div>
         <div class="detail"><small>Última atividade</small><b>${esc(relative(lead.last_activity))}</b></div>
       </div>
 
@@ -757,8 +758,40 @@
       };
     }
 
-    $('#drawerProject').onclick = () => window.open(lead.project_url,'_blank','noopener');
-    $('#drawerCopy').onclick = () => copy(trackedUrl(lead));
+    // A tracking link is only relevant once the prospect accepts a sample.
+    const attach = document.createElement('div');
+    attach.className = 'field drawer-project-attach';
+    const projectLabel = document.createElement('label');
+    projectLabel.htmlFor = 'drawerProjectUrl';
+    projectLabel.textContent = lead.project_url ? 'Atualizar URL do protótipo' : 'Adicionar URL do protótipo depois';
+    const projectRow = document.createElement('div');
+    projectRow.className = 'drawer-project-row';
+    const projectInput = document.createElement('input');
+    projectInput.id = 'drawerProjectUrl';
+    projectInput.type = 'url';
+    projectInput.placeholder = 'https://portfolio.../Projeto';
+    projectInput.value = lead.project_url || '';
+    const projectSave = document.createElement('button');
+    projectSave.type = 'button';
+    projectSave.className = 'ghost';
+    projectSave.textContent = 'SALVAR';
+    projectSave.addEventListener('click', async () => {
+      const url = projectInput.value.trim().replace(/[?&]r=[^&]+/, '');
+      if (!/^https?:\/\/[^\s]+$/i.test(url)) { toast('Informe uma URL http(s) válida'); return; }
+      projectSave.disabled = true;
+      try {
+        await rpc('crm_update_lead', {p_key:state.key,p_lead_id:lead.id,p_patch:{project_url:url}});
+        toast('Link do protótipo salvo');
+        await loadDashboard({quiet:true});
+      } catch { toast('Não foi possível salvar o link'); projectSave.disabled = false; }
+    });
+    projectRow.append(projectInput, projectSave);
+    attach.append(projectLabel, projectRow);
+    $('#drawerBody').querySelector('.drawer-title').insertAdjacentElement('afterend', attach);
+    $('#drawerProject').disabled = !lead.project_url;
+    $('#drawerCopy').disabled = !lead.project_url;
+    $('#drawerProject').onclick = () => { if (lead.project_url) window.open(lead.project_url,'_blank','noopener'); };
+    $('#drawerCopy').onclick = () => { const url = trackedUrl(lead); if (url) copy(url); };
   }
 
   async function updateLead(action, lead){
@@ -785,7 +818,7 @@
     $('#leadSuccess').classList.add('hidden');
     $('#createdLink').textContent = '';
     $('#saveLead').disabled = false;
-    $('#saveLead').textContent = 'CRIAR E COPIAR LINK';
+    $('#saveLead').textContent = 'CRIAR LEAD';
   }
 
   function openLeadModal(){
@@ -818,8 +851,10 @@
         p_scheduled_at:scheduledAt,
         p_email:$('#leadEmail').value.trim() || null
       });
-      await copy(created.tracked_url,false);
-      toast('Lead criado e link copiado');
+      if (created.tracked_url) {
+        await copy(created.tracked_url,false);
+        toast('Lead criado e link copiado');
+      } else toast('Lead criado — pronto para primeira abordagem');
       await loadDashboard({quiet:true});
 
       // Já deixa o formulário limpo e pronto para criar outro lead.
