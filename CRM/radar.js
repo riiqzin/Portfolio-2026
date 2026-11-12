@@ -5,7 +5,7 @@ window.RickyRadar = {
     const normalize = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const domain = s => { try { return new URL(s).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } };
     let results = [], searchMeta = null, busy = false;
-    const audits = window.RadarAudit.mount({ getKey, render });
+    // Visual audits were retired; contact enrichment is the only post-search step.
     let collecting = false;
     // Local history stores public search snippets and server-signed audit receipts; never API keys or dashboard credentials.
     // This first version is intentionally device-local, not a server-side shared archive.
@@ -129,128 +129,110 @@ window.RickyRadar = {
       }catch{}
     }
     async function findContact(row,button) {
-      if(!getKey()) {message('Entre no CRM para buscar contatos.');return}
-      if(row.contact && row.contact.status==='scanned')return;
+      if(!getKey()) {message('Entre no CRM para buscar contatos.');return false}
+      if(row.contact?.status==='scanned')return true;
       const ticket=row.ticket||row.historyTicket;
-      if(!ticket){message('Comprovante da busca expirado. Faça uma nova varredura.');return}
-      button.disabled=true;
-      button.textContent='Buscando contato…';
+      if(!ticket){row.contactError='Comprovante expirado; faça uma nova varredura.';render();return false}
+      if(button){button.disabled=true;button.textContent='Consultando...'}
+      row.contactLoading=true;row.contactError='';
+      render();
       try {
         const response=await fetch('/api/radar-contact',{
           method:'POST',headers:{Authorization:'Bearer '+getKey(),'Content-Type':'application/json'},
-          body:JSON.stringify({domain:row.domain,ticket}),signal:AbortSignal.timeout(35000)
+          body:JSON.stringify({domain:row.domain,ticket}),signal:AbortSignal.timeout(33000)
         });
-        const data=await response.json();
+        const data=await response.json().catch(()=>({message:'Resposta inesperada ao procurar contato.'}));
         if(!response.ok)throw Error(data.message||'Consulta indisponível');
         row.contact=data;
         saveContactToHistory(row);
-        render();
+        return true;
       }catch(error){
-        button.disabled=false;
-        button.textContent='Encontrar contato';
-        message('Contato de '+row.name+': '+String(error.message||'falhou'));
+        row.contactError=String(error.message||'Não foi possível consultar o site agora.');
+        return false;
+      }finally{
+        row.contactLoading=false;render();
       }
     }
     function contactPanel(row,card,actions) {
-      if(!row.contact){
-        const button=node('button','Encontrar contato','ghost');button.type='button';
-        button.addEventListener('click',()=>findContact(row,button));actions.append(button);return;
-      }
-      const c=row.contact;
       const area=node('div','','radar-contact');
-      if(c.status!=='scanned'){
-        area.append(node('small','Não foi possível verificar este site automaticamente. Confira o contato manualmente.','radar-contact-note'));
-      }else{
-        area.append(node('strong',c.priority==='Evitar'?'Plataforma a evitar':c.emails?.length?'Contato comercial encontrado':'Nenhum e-mail público localizado'));
-        area.append(node('small',(c.platform||'Plataforma não verificada')+' · '+(c.cached?'Verificação em cache':'Site consultado')+' · Pontuação preliminar '+(c.score||0)+'/100','radar-contact-note'));
-        if(c.emails?.length){
-          const select=document.createElement('select');select.setAttribute('aria-label','E-mail da loja');
-          for(const email of c.emails){const option=document.createElement('option');option.textContent=email;option.value=email;select.append(option)}
-          const start=node('button','Preparar e-mail','primary');start.type='button';
-          start.textContent='Adicionar à fila do CRM';
-          start.addEventListener('click',async()=>{
-            start.disabled=true;
-            try{
-              if(!window.RickyOutreach?.stageProspect)throw Error('Abra a Central de prospecção e tente novamente.');
-              await window.RickyOutreach.stageProspect({name:row.name.replace(/\s+[|–—-]\s+.*$/,'').trim(),domain:row.domain,email:select.value,segment:$('#radarNiche').value});
-            }catch(err){message('Fila de abordagens: '+String(err.message||'Não foi possível preparar a mensagem.'))}
-            finally{start.disabled=false}
-          });
-          const use=node('button','Criar lead com contato','ghost');use.type='button';use.addEventListener('click',()=>{
-            createLead({...row,contactEmail:select.value});
-          });
-          area.append(select,start,use);
-        }
+      const c=row.contact;
+      const label=row.contactLoading?'Localizando contato comercial...':row.contactError||(!c?'Contato ainda não verificado':c.status!=='scanned'?'Contato não localizado automaticamente':c.emails?.length?'E-mail comercial encontrado':'Nenhum e-mail público encontrado');
+      area.append(node('strong',label));
+      if(c?.emails?.length){
+        area.append(node('small',c.emails[0]+' · '+c.emails.length+' endereço(s) público(s)','radar-contact-note'));
+      }else if(c?.status==='scanned'){
+        area.append(node('small','O site foi consultado, mas não publicou um e-mail identificável.','radar-contact-note'));
+      }else if(c?.reason){
+        area.append(node('small',c.reason,'radar-contact-note'));
       }
+      if(c?.platform&&c.platform!=='Não identificada')area.append(node('small','Plataforma: '+c.platform,'radar-contact-note'));
+      if(!row.contactLoading&&(!c||c.status!=='scanned'||!c.emails?.length)){
+        const retry=node('button',c?'Tentar localizar novamente':'Localizar e-mail','ghost');retry.type='button';
+        retry.addEventListener('click',()=>findContact(row,retry));
+        area.append(retry);
+      }
+      if(row.contactLoading){const loader=node('div','','radar-contact-loading');loader.setAttribute('role','progressbar');loader.setAttribute('aria-label','Procurando e-mail comercial');area.append(loader)}
       card.append(area);
-      if(c.pagesChecked?.length){
-        const proof=node('small','Fontes verificadas: '+c.pagesChecked.length+' páginas públicas. Confirme antes de enviar.','radar-contact-note');
-        card.append(proof);
-      }
     }
     async function collectFive() {
-      if(collecting||busy||!results.length)return;
+      if(collecting||!results.length)return;
       collecting=true;
       const candidates=results.filter(row=>!existing(row)&&!row.contact).slice(0,5);
-      message('Buscando contatos públicos dos primeiros '+candidates.length+' candidatos...');
-      for(let i=0;i<candidates.length;i++){
-        const row=candidates[i];
-        const button=[...document.querySelectorAll('#radarResults button')].find(btn=>btn.textContent==='Encontrar contato'&&btn.closest('.prospect-card')?.querySelector('.prospect-meta')?.textContent===row.domain);
-        if(button)await findContact(row,button);
-      }
+      let processed=0,located=0;
+      const scan=async()=>{
+        while(candidates.length){
+          const row=candidates.shift();
+          if(!row)break;
+          if(await findContact(row,null))located++;
+          processed++;
+          message('Contatos: '+processed+' verificados · '+located+' sites consultados');
+        }
+      };
+      await Promise.allSettled([scan(),scan()]);
       collecting=false;
-      message('Coleta concluída. Revise os contatos identificados e prepare suas abordagens.');
+      message('Varredura pronta. Confira os candidatos e clique em Preparar abordagem.');
     }
-    const bulk=node('button','Encontrar contatos dos 5 primeiros','ghost');
+    const bulk=node('button','Atualizar contatos dos primeiros candidatos','ghost');
     bulk.type='button';bulk.className='radar-collect-bulk';
     bulk.addEventListener('click',collectFive);
     $('#radarOutput').insertBefore(bulk,$('#radarResults'));
 
     function render() {
-      const list = $('#radarResults'); list.replaceChildren();
-      bulk.hidden = !results.length;
-      let duplicates = 0;
-      [...results].sort((a, b) => (b.audit?.priority?.score ?? -1) - (a.audit?.priority?.score ?? -1)).forEach(row => {
-        if (existing(row)) { duplicates++; return; }
-        const card = node('article', '', 'prospect-card');
-        card.append(node('span', 'REVISÃO MANUAL', 'prospect-label'), node('h3', row.name));
-        card.append(node('small', row.domain, 'prospect-meta'));
-        const description = node('p', row.description || 'Sem descrição pública retornada pelo provedor.', 'prospect-description');
-        description.title = row.description || '';
-        card.append(description);
-        const actions = node('div', '', 'prospect-actions');
-        const link = node('a', 'Consultar fonte ↗', 'ghost');
-        // Defense in depth: only web URLs, even if an upstream response is malformed.
-        try { const url = new URL(row.url); if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) return; link.href = url.href; } catch { return; }
-        link.target = '_blank'; link.rel = 'noopener noreferrer';
-        const add = node('button', 'Preparar lead', 'primary'); add.type = 'button';
-        add.addEventListener('click', () => createLead(row));
-        // Draft only: never claim an audit was performed or that a problem was verified.
-        const draft = node('button', 'Copiar abordagem', 'ghost');
-        draft.type = 'button';
-        draft.title = 'Modelo inicial sem diagnósticos inventados';
-        draft.addEventListener('click', async () => {
-          const businessName = row.name.replace(/\s+[|–—-]\s+.*$/, '').trim();
-          const message = 'Oi! Tudo bem? Encontrei a ' + businessName + ' pesquisando lojas online do segmento. Trabalho com criação e modernização de sites e tenho algumas ideias de como poderia apresentar melhor os produtos e a identidade da marca. Se fizer sentido para vocês, posso preparar uma prévia visual gratuita de uma possível reformulação, sem compromisso. Teriam interesse?';
-          try {
-            await navigator.clipboard.writeText(message);
-            const previous = draft.textContent;
-            draft.textContent = '✓ Copiado';
-            setTimeout(() => { if (draft.isConnected) draft.textContent = previous; }, 1800);
-          } catch { window.prompt('Copie sua mensagem:', message); }
+      const list=$('#radarResults');list.replaceChildren();
+      bulk.hidden=!results.length;
+      let duplicates=0;
+      const sorted=[...results].sort((a,b)=>(b.contact?.emails?.length?1:0)-(a.contact?.emails?.length?1:0));
+      for(const row of sorted){
+        if(existing(row)){duplicates++;continue}
+        const card=node('article','','prospect-card radar-prospect-modern');
+        const top=node('div','','radar-prospect-head');
+        top.append(node('span',row.contact?.emails?.length?'CONTATO ENCONTRADO':'CANDIDATO','prospect-label'),node('small',row.domain,'prospect-meta'));
+        card.append(top,node('h3',row.name),node('p',row.description||'Resultado público do mecanismo de busca.','prospect-description'));
+        contactPanel(row,card);
+        const actions=node('div','','prospect-actions radar-modern-actions');
+        const link=node('a','Ver site ↗','ghost');
+        try{const u=new URL(row.url);if(!['https:','http:'].includes(u.protocol)||u.username||u.password)continue;link.href=u.href}catch{continue}
+        link.target='_blank';link.rel='noopener noreferrer';
+        const add=node('button','Preparar abordagem','primary');add.type='button';
+        add.addEventListener('click',async()=>{
+          add.disabled=true;
+          try{
+            const name=row.name.replace(/\s+[|–—-]\s+.*$/,'').trim();
+            await window.RickyOutreach.openRadarComposer({name,domain:row.domain,email:row.contact?.emails?.[0]||'',segment:$('#radarNiche').value});
+          }catch(err){message('Não foi possível preparar: '+String(err.message||'Erro desconhecido'))}
+          finally{add.disabled=false}
         });
-        actions.append(link, add, draft); audits.append(row, card, actions); card.append(actions); contactPanel(row,card,actions); list.append(card);
-      });
-      if (searchMeta) {
-        const removed = searchMeta.removed || { duplicates: 0, platforms: 0, other: 0 };
-        $('#radarSummary').textContent = `${list.children.length} candidatos · ${removed.duplicates + duplicates} duplicados · ${removed.platforms} com indícios de plataforma · ${removed.other} outros descartados`;
-        $('#radarSource').textContent = `${loadedFromHistory ? 'HISTÓRICO SALVO · sem nova consulta' : 'Brave Search'} · ${new Date(searchMeta.searchedAt).toLocaleString('pt-BR')} · Consulta: ${searchMeta.query}`;
-        if (!list.children.length) list.append(node('p', 'Nenhum candidato novo após os filtros. Experimente outro nicho ou região.', 'radar-empty'));
+        actions.append(link,add);card.append(actions);list.append(card);
+      }
+      if(searchMeta){
+        const removed=searchMeta.removed||{duplicates:0,platforms:0,other:0};
+        $('#radarSummary').textContent=list.children.length+' candidatos · '+(removed.duplicates+duplicates)+' duplicatas · '+removed.platforms+' plataformas filtradas';
+        $('#radarSource').textContent=(loadedFromHistory?'HISTÓRICO SALVO':'Brave Search')+' · '+new Date(searchMeta.searchedAt).toLocaleString('pt-BR')+' · '+searchMeta.query;
+        if(!list.children.length)list.append(node('p','Nenhuma oportunidade nova após os filtros. Tente outro segmento.','radar-empty'));
       }
     }
     async function status() {
       if (!getKey()) { message('Entre no CRM para usar o Radar.'); return; }
-      audits.status();
       message('Consultando o servidor. Nenhuma busca será cobrada nesta verificação…');
       try { const data = await api('GET'); if (busy) return; engine('MOTOR PRONTO'); message(`Motor pronto · até ${data.limits.daily} consultas/dia e ${data.limits.monthly}/mês (UTC). Cada busca usa uma consulta.`); }
       catch (error) { if (!busy) { engine('INDISPONÍVEL'); message(error.message); } }
@@ -299,10 +281,7 @@ window.RickyRadar = {
         $('#radarResults').removeAttribute('aria-busy');
         message(`Busca concluída. Uso: ${data.usage.daily}/${data.usage.limits.daily} no dia e ${data.usage.monthly}/${data.usage.limits.monthly} no mês (UTC).`);
         revealResults();
-        if ($('#radarAutoAudit').checked) {
-          $('#radarSearch').textContent = 'Enfileirando auditorias…';
-          for (const row of results.filter(row => !existing(row)).slice(0, 3)) await audits.start(row);
-        }
+
       } catch (error) {
         engine('BUSCA INTERROMPIDA'); message(error.message);
         $('#radarResults').replaceChildren(node('p', 'Busca não concluída. Verifique o status do motor e tente novamente.', 'radar-empty'));
