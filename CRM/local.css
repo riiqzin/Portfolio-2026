@@ -40,3 +40,11 @@
 .template-actions{display:flex;gap:7px;margin-top:12px}
 .template-editor{margin-top:12px;width:100%;resize:vertical;line-height:1.6}
 @media(max-width:640px){.template-settings-row{grid-template-columns:1fr}.template-settings-row .btn{width:100%}}
+
+.setup-help{border-top:1px solid rgba(167,214,196,.12);margin-top:2px;padding-top:10px;color:#93b4ab}
+.setup-help summary{cursor:pointer;font-size:11px;color:#b5e0cf;font-weight:600;list-style:none;display:flex;align-items:center;gap:9px}
+.setup-help summary:before{content:"ⓘ";font-size:13px;color:#8eddb8}
+.setup-help summary::-webkit-details-marker{display:none}
+.setup-help div{border:1px solid var(--edge);border-radius:11px;margin-top:12px;padding:13px;background:rgba(7,22,27,.55)}
+.setup-help p{font-size:11px;line-height:1.7;color:#a3bdb3;margin:3px 0 9px}
+.setup-help code{background:#b5e7c41a;padding:2px 5px;border-radius:5px;color:#c9f5de;overflow-wrap:anywhere}
