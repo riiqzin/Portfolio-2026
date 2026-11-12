@@ -74,6 +74,7 @@ export function createHandler({env=process.env,send=sendGmail}={}){
    }
    let body;try{body=JSON.parse(await boundedText(request,12000))}catch{return json({message:'Dados inválidos.'},400)}
    const data=await load(redis,env),action=body.action;
+   if(action==='send-due')return json({ok:true,...await sendDue({env})});
    if(action==='template-save'){
     const name=trim(body.name,70),subject=trim(body.subject,180),text=trim(body.text,5000);
     if(!name||!subject||!text||/[\r\n]/.test(subject))return json({message:'Preencha modelo, assunto e texto válidos.'},400);
