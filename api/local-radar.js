@@ -37,12 +37,12 @@ export function normalizePlace(place){
   maps_url:String(place.googleMapsUri||'').slice(0,1000)
  };
 }
-const REFILL=\`local d=tonumber(redis.call('GET',KEYS[1]) or '0')
+const REFILL=`local d=tonumber(redis.call('GET',KEYS[1]) or '0')
 local m=tonumber(redis.call('GET',KEYS[2]) or '0')
 if d>=tonumber(ARGV[1]) or m>=tonumber(ARGV[2]) then return {0,d,m} end
 redis.call('INCR',KEYS[1]); redis.call('EXPIRE',KEYS[1],172800)
 redis.call('INCR',KEYS[2]); redis.call('EXPIRE',KEYS[2],5356800)
-return {1,d+1,m+1}\`;
+return {1,d+1,m+1}`;
 export function createHandler({env=process.env,fetcher=fetch}={}){
  return async request=>{
   if(!['GET','POST'].includes(request.method))return json({message:'Método não permitido.'},405);
