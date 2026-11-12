@@ -94,9 +94,12 @@ export function createHandler({env=process.env,send=sendGmail}={}){
    }
    if(action==='queue-update'){
     const item=data.queue.find(x=>x.id===body.id);if(!item)return json({message:'Mensagem não encontrada.'},404);
-    const fresh=draftOf({...item,subject:body.subject,text:body.text});if(!fresh)return json({message:'Assunto ou texto inválido.'},400);
-    if(item.subject!==fresh.subject||item.text!==fresh.text){item.approvedAt=null;item.scheduledAt=null;}
-    item.subject=fresh.subject;item.text=fresh.text;await save(redis,env,data);return json({ok:true});
+    const fresh=draftOf({...item,company:body.company??item.company,email:body.email??item.email,subject:body.subject,text:body.text});if(!fresh)return json({message:'Confira o nome, e-mail, assunto ou texto.'},400);
+    if(data.queue.some(x=>x.id!==item.id&&x.email===fresh.email))return json({message:'Este e-mail já está na fila.'},409);
+    if(item.email!==fresh.email&&data.sent.some(x=>x.email===fresh.email))return json({message:'Este destinatário já foi abordado. Confira o histórico.'},409);
+    if(item.subject!==fresh.subject||item.text!==fresh.text||item.email!==fresh.email){item.approvedAt=null;item.scheduledAt=null;}
+    item.company=fresh.company;item.email=fresh.email;item.subject=fresh.subject;item.text=fresh.text;
+    await save(redis,env,data);return json({ok:true});
    }
    if(action==='schedule'){
      if(body.approved!==true)return json({message:'Agendamento exige confirmação explícita.'},400);
