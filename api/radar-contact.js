@@ -3,6 +3,7 @@ import { isIP } from 'node:net';
 import { createHash } from 'node:crypto';
 import { authorized, boundedText, configured, json, readTicket, redisClient } from '../lib/radar-control.js';
 import { publicUrl } from './radar.js';
+import { evaluateOpportunity } from '../lib/opportunity-score.js';
 
 const LIMITED='ricky:contact:v1:day:';
 const blocked=/^(localhost|.*\.localhost|.*\.local|.*\.internal)$/i;
@@ -82,14 +83,15 @@ async function fetchPage(url,host,fetcher=fetch,depth=0){
    return fetchPage(next,host,fetcher,depth+1);
  }
  if(!response.ok||!String(response.headers.get('content-type')||'').toLowerCase().includes('text/html'))return null;
- if(Number(response.headers.get('content-length'))>260000)return null;
+ // Large e-commerce pages are common: collect a bounded prefix rather than rejecting them.
+ if(Number(response.headers.get('content-length'))>5000000)return null;
  if(!response.body)return null;
  const reader=response.body.getReader();const chunks=[];let bytes=0;
  try {
    while(true){
      const {value,done}=await reader.read();if(done)break;
      bytes+=value.byteLength;
-     if(bytes>260000){await reader.cancel();return null}
+     if(bytes>900000){await reader.cancel();break}
      chunks.push(Buffer.from(value));
    }
  } finally{reader.releaseLock()}
@@ -103,12 +105,15 @@ export async function inspectContact(site,fetcher=fetch) {
  let html;
  try{html=await fetchPage(base+'/',host,fetcher)}catch{}
  if(!html){try{html=await fetchPage('https://www.'+host+'/',host,fetcher)}catch{}}
- if(!html)return {status:'unavailable',emails:[],score:0,reason:'Acesso automatizado bloqueado ou site indisponível. Você pode informar o e-mail manualmente.'};
- const result={status:'scanned',domain:host,emails:[],platform:platform(html),pagesChecked:[base+'/'],score:0,signals:[]};
+ if(!html)return {status:'unavailable',emails:[],score:null,opportunity:evaluateOpportunity({domain:host}),reason:'Acesso automatizado bloqueado ou site indisponível. Você pode informar o e-mail manualmente.'};
+ const result={status:'scanned',domain:host,emails:[],platform:platform(html),pagesChecked:[base+'/'],signals:[]};
  const emailSet=new Set(extractEmails(html,host));
- const paths=[...new Set([...contactLinks(html,base,host),'/contato','/contact'])].slice(0,2);
- for(const p of paths){
-   try{const page=await fetchPage(base+p,host,fetcher);if(page){result.pagesChecked.push(base+p);for(const email of extractEmails(page,host))emailSet.add(email)}}catch{}
+ const paths=[...new Set([...contactLinks(html,base,host),'/atendimento','/contato','/fale-conosco','/contact','/faq'])].slice(0,4);
+ const pageResults=await Promise.allSettled(paths.map(async path=>({path,html:await fetchPage(base+path,host,fetcher)})));
+ const pages=[];
+ for(const outcome of pageResults){
+   const record=outcome.status==='fulfilled'&&outcome.value;
+   if(record?.html){pages.push(record.html);result.pagesChecked.push(base+record.path);for(const email of extractEmails(record.html,host))emailSet.add(email)}
  }
  result.emails=[...emailSet].sort((a,b)=>rank(b,host)-rank(a,host)).slice(0,6);
  const own=result.emails.some(email=>email.split('@')[1]===host);
@@ -117,8 +122,9 @@ export async function inspectContact(site,fetcher=fetch) {
  if(result.emails.length)result.signals.push('Contato público encontrado');
  if(own)result.signals.push('E-mail do domínio');
  if(platformBlocked)result.signals.push('Plataforma a evitar: Nuvemshop');
- result.score=Math.max(0,Math.min(100,(platformBlocked?0:25)+(result.emails.length?25:0)+(own?15:0)+15+(result.platform==='Não identificada'?0:5)));
- result.priority=platformBlocked?'Evitar':result.emails.length?'Contato disponível':'Contato não localizado';
+ result.opportunity=evaluateOpportunity({domain:host,html,pages,emails:result.emails,platform:result.platform});
+ result.score=result.opportunity.score;
+ result.priority=platformBlocked?'Evitar':result.opportunity.score===null?'Não avaliado':result.opportunity.score>=65?'Alta oportunidade':result.opportunity.score>=40?'Oportunidade moderada':'Oportunidade limitada';
  result.checkedAt=new Date().toISOString();
  return result;
 }
@@ -139,10 +145,10 @@ export function createHandler({env=process.env,fetcher=fetch,inspector=inspectCo
    const cached=!body.refresh?await redis(['GET',cacheKey]):null;if(cached)return json({...JSON.parse(cached),cached:true});
    const date=new Date().toISOString().slice(0,10),count=await redis(['INCR',LIMITED+date]);
    if(count===1)await redis(['EXPIRE',LIMITED+date,172800]);
-   if(count>30)return json({message:'Limite de 30 verificações diárias atingido. Evitamos consultas excessivas a lojas.'},429);
+   if(count>100)return json({message:'Limite de 100 verificações diárias atingido. Evitamos consultas excessivas a lojas.'},429);
    const result=await inspector(site.url,fetcher);
    const data={...result,source:'Páginas públicas da própria loja'};
-   await redis(['SET',cacheKey,JSON.stringify(data),'EX',data.status==='scanned'&&data.emails?.length?604800:3600]);
+   await redis(['SET',cacheKey,JSON.stringify(data),'EX',data.status==='scanned'&&data.emails?.length?172800:3600]);
    return json(data);
   }catch{return json({message:'Não foi possível consultar este domínio agora.'},503)}
  };
