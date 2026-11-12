@@ -161,9 +161,22 @@ window.RickyOutreach={
      const el=$(selector);if(el)el.textContent=String(value);
    }
   }
+  const reconciledSent=new Set();
+  async function reconcileServerSent(){
+    if(!markSent)return;
+    const missing=data.sent.filter(sent=>{
+      if(!sent.leadId||reconciledSent.has(sent.googleId||sent.id))return false;
+      const lead=getLeads().find(x=>x.id===sent.leadId);
+      return lead&&(!lead.email_sent_at||Date.parse(lead.email_sent_at)<Date.parse(sent.sentAt)-60000);
+    }).slice(0,5);
+    for(const sent of missing){
+      reconciledSent.add(sent.googleId||sent.id);
+      try{await markSent(sent)}catch{}
+    }
+  }
   async function refresh(){
    if(!getKey())return;
-   try{data=await api('GET');render()}catch(e){setStatus(e.message)}
+   try{data=await api('GET');render();void reconcileServerSent()}catch(e){setStatus(e.message)}
   }
   $('#outStage').addEventListener('click',async()=>{
    const lead=getLeads().find(l=>l.id===leadSel.value);
