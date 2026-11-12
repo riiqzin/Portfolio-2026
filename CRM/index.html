@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/CRM/radar.css">
 <link rel="stylesheet" href="/CRM/pipeline-v4.css">
 <link rel="stylesheet" href="/CRM/gmail.css">
+<link rel="stylesheet" href="/CRM/outreach.css">
 </head>
 <body>
 
@@ -22,6 +23,7 @@
     <a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">⌘</span> Central</a>
     <a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar</a>
     <a class="nav-item" href="#inbox"><span aria-hidden="true">✉</span> Respostas</a>
+    <a class="nav-item" href="#outreach"><span aria-hidden="true">✦</span> Prospecção</a>
   </nav>
   <div class="header-links"><span class="private-label"><i></i> AMBIENTE PRIVADO</span><a class="portfolio-link" href="../" target="_blank" rel="noopener">Meu portfólio <span aria-hidden="true">↗</span></a></div>
 </header>
@@ -91,6 +93,37 @@
   </div>
   <div class="gmail-head"><div><h2>Oportunidades recebidas</h2><p id="gmailCount" class="gmail-muted">Nenhuma resposta carregada</p></div></div>
   <div class="gmail-grid" id="gmailResults"></div>
+</section>
+<section class="outreach-panel" id="outreachPanel" hidden aria-labelledby="outTitle">
+ <div class="out-head"><div><span class="out-eyebrow">RICKY / OPERAÇÕES COMERCIAIS</span><h1 id="outTitle">Central de prospecção</h1><p>Seus contatos, mensagens prontas e acompanhamentos em um só lugar.</p></div><button class="ghost" id="outReload" type="button">Atualizar ↻</button></div>
+ <div class="out-connection"><span class="out-dot"></span><strong id="outMailbox">Consultando Gmail...</strong><span id="outCount">0 para revisar</span></div>
+ <p id="outSendHelp" class="out-warning">Para habilitar o envio, autorize a permissão adicional do Gmail. <a href="#inbox">Ir para Respostas e reconectar Gmail</a>. Nenhuma mensagem será enviada sem sua aprovação.</p>
+ <p id="outStatus" role="status" class="out-status">Escolha um modelo ou revise a fila de abordagens.</p>
+ <div class="out-layout">
+  <section class="out-section out-compose" aria-label="Preparar uma mensagem">
+   <div class="out-section-head"><div><span class="out-eyebrow">01 / PREPARAR</span><h2>Nova abordagem</h2></div></div>
+   <label for="outLead">Lead com e-mail</label><select id="outLead"><option value="">Carregando leads...</option></select>
+   <label for="outTemplate">Modelo de mensagem</label><select id="outTemplate"></select>
+   <label for="outSubject">Assunto</label><input id="outSubject" maxlength="180" placeholder="Assunto do e-mail">
+   <label for="outBody">Mensagem</label><textarea id="outBody" maxlength="5500" rows="8" placeholder="Mensagem para o cliente"></textarea>
+   <div class="out-actions"><button class="primary" id="outStage" type="button">Adicionar à fila de aprovação</button></div>
+   <p class="out-muted">Substituições automáticas: {{empresa}}, {{segmento}}. Não inventamos problemas no site. O envio exige revisão humana.</p>
+  </section>
+  <section class="out-section out-queue" aria-label="Fila de aprovação">
+   <div class="out-section-head"><div><span class="out-eyebrow">02 / REVISAR</span><h2>Mensagens na fila</h2></div></div>
+   <div id="outQueue" class="out-cards"></div>
+  </section>
+ </div>
+ <section class="out-section out-timeline" aria-label="Acompanhamentos">
+  <div class="out-section-head"><div><span class="out-eyebrow">03 / ACOMPANHAR</span><h2>Seu dia comercial</h2></div></div>
+  <div id="outTimeline" class="out-cards"></div>
+ </section>
+ <section class="out-section out-library" aria-label="Biblioteca de mensagens">
+  <div class="out-section-head"><div><span class="out-eyebrow">04 / PADRONIZAR</span><h2>Biblioteca de mensagens</h2></div><button class="ghost" type="button" id="outNewTemplate">+ Novo modelo</button></div>
+  <p class="out-muted">Edite seus modelos livremente. O CRM preenche as variáveis quando você prepara uma mensagem.</p>
+  <div id="outTemplates" class="out-library-grid"></div>
+ </section>
+ <p class="out-muted out-foot">Envio manual, no máximo 10 mensagens ao dia. Sem campanhas em massa. Follow-ups são apenas sugeridos após 5 dias e dependem de aprovação individual.</p>
 </section>
 <div class="dashboard-layout">
     <div class="operations-intro"><h1>Central</h1><div class="updated" id="updatedText">Carregando…</div></div>
@@ -193,6 +226,7 @@
 <script src="/CRM/radar-audit.js"></script>
 <script src="/CRM/radar.js"></script>
 <script src="/CRM/gmail.js"></script>
+<script src="/CRM/outreach.js"></script>
 <script>
 (() => {
   const SUPABASE_URL = 'https://crjnawbtlwtruwwzbkzk.supabase.co';
@@ -995,6 +1029,35 @@
       if(!pending.length)return;
       const settled=await Promise.allSettled(pending.map(item=>rpc('crm_update_lead',{p_key:state.key,p_lead_id:item.leadId,p_patch:{responded_at:item.receivedAt}})));
       if(settled.some(result=>result.status==='fulfilled'))await loadDashboard({quiet:true});
+    }
+  });
+
+  window.RickyOutreach.mount({
+    getKey:()=>state.key,
+    getLeads:()=>state.leads,
+    refreshLeads:()=>loadDashboard({quiet:true}),
+    addRadarLead:async prospect=>{
+      const email=String(prospect.email||'').toLowerCase();
+      let found=state.leads.find(l=>String(l.prospect_email||'').toLowerCase().split(/[,;\s]+/).includes(email));
+      if(found)return found;
+      const name=String(prospect.name||prospect.domain||'Loja').slice(0,130);
+      try{
+        await rpc('crm_create_lead',{
+          p_key:state.key,p_name:name,p_project_url:null,
+          p_slug:slugify(name).slice(0,60),p_scheduled_at:null,p_email:email
+        });
+        await loadDashboard({quiet:true});
+        found=state.leads.find(l=>String(l.prospect_email||'').toLowerCase().split(/[,;\s]+/).includes(email));
+        return found||null;
+      }catch(err){throw Error('Não consegui cadastrar a loja como lead para acompanhar respostas. Cadastre-a no CRM antes de enviar.')}
+    },
+    markSent:async sent=>{
+      const lead=state.leads.find(l=>l.id===sent.leadId);
+      if(!lead)return;
+      try{
+        await rpc('crm_update_lead',{p_key:state.key,p_lead_id:sent.leadId,p_patch:{email_sent_at:sent.sentAt}});
+        await loadDashboard({quiet:true});
+      }catch(err){toast('E-mail enviado, mas o status do lead precisa ser atualizado manualmente.')}
     }
   });
 
