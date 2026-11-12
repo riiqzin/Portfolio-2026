@@ -8,6 +8,7 @@ export async function capture(url, browser, { get = safeGet, policy = crawlPolic
   // never let a page make unrestricted browser-side network connections.
   if (typeof context.routeWebSocket === 'function') await context.routeWebSocket('**/*', socket => socket.close());
   const cache = new Map(), policies = new Map([[target.origin, Promise.resolve(rules)]]), chains = new Map();
+  const blockedDetails = [], allowedFailures = new Set(['blocked_resource', 'robots_disallowed', 'robots_unavailable', 'robots_crawl_delay', 'unsafe_url', 'unsafe_dns', 'dns_timeout', 'network_timeout', 'response_too_large', 'encoded_response', 'request_limit', 'capture_timeout', 'byte_limit', 'redirect_blocked', 'site_http_error', 'not_html']);
   let count = 0, blocked = 0, blockedVisual = 0, bytes = 0, mainHtml = '', mainStatus = 0, mainFailure = '';
   const deadline = Date.now() + 110000;
   const timer = setTimeout(() => context.close().catch(() => {}), 110000);
@@ -52,6 +53,12 @@ export async function capture(url, browser, { get = safeGet, policy = crawlPolic
           const allowed = new Set(['blocked_resource', 'request_limit', 'capture_timeout', 'byte_limit', 'redirect_blocked', 'site_http_error', 'not_html', 'unsafe_url', 'unsafe_dns', 'dns_timeout', 'network_timeout', 'response_too_large', 'encoded_response']);
           mainFailure = allowed.has(error?.message) ? error.message : 'document_fetch_failed';
         }
+        if (blockedDetails.length < 40) {
+          let host = 'invalid-host';
+          try { const candidate = safeUrl(req.url()); host = candidate.hostname.slice(0, 128); } catch {}
+          const reason = allowedFailures.has(error?.message) ? error.message : 'fetch_failed';
+          blockedDetails.push({ host, type: req.resourceType(), reason });
+        }
         if (['document', 'stylesheet', 'image', 'font', 'script'].includes(req.resourceType())) blockedVisual++;
         blocked++; await route.abort().catch(() => {});
       }
@@ -80,6 +87,6 @@ export async function capture(url, browser, { get = safeGet, policy = crawlPolic
     }
     const platform = /nuvemshop|tiendanube|lojavirtualnuvem|myshopify|cdn\.shopify|wixstatic|lojaintegrada|vtexassets|woocommerce|traycdn/i.exec(mainHtml)?.[0] || null;
     const commerce = /adicionar.{0,30}carrinho|comprar|add.to.cart|"@type"\s*:\s*"Product"/i.test(mainHtml);
-    return { url: target.href, capturedAt: new Date().toISOString(), statusCode: mainStatus, screenshots, views, platform, commerceEvidence: commerce, network: { requests: count, blocked, blockedVisual, bytes }, limitations: ['Captura renderizada com JavaScript em navegador isolado; scripts, APIs e recursos de terceiros podem estar incompletos por segurança.', 'Somente a primeira tela da página informada. Checkout, conversão e vendas não foram medidos.', ...(blockedVisual ? ['Recursos visuais bloqueados ou indisponíveis: não atribuir falhas de renderização ao site sem revisão humana.'] : [])] };
+    return { url: target.href, capturedAt: new Date().toISOString(), statusCode: mainStatus, screenshots, views, platform, commerceEvidence: commerce, network: { requests: count, blocked, blockedVisual, bytes, blockedDetails }, limitations: ['Captura renderizada com JavaScript em navegador isolado; scripts, APIs e recursos de terceiros podem estar incompletos por segurança.', 'Somente a primeira tela da página informada. Checkout, conversão e vendas não foram medidos.', ...(blockedVisual ? ['Recursos visuais bloqueados ou indisponíveis: não atribuir falhas de renderização ao site sem revisão humana.'] : [])] };
   } finally { clearTimeout(timer); await context.close().catch(() => {}); }
 }
