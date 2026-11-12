@@ -124,7 +124,7 @@ export async function inspectContact(site,fetcher=fetch) {
  if(platformBlocked)result.signals.push('Plataforma a evitar: Nuvemshop');
  result.opportunity=evaluateOpportunity({domain:host,html,pages,emails:result.emails,platform:result.platform});
  result.score=result.opportunity.score;
- result.priority=platformBlocked?'Evitar':result.opportunity.score===null?'Não avaliado':result.opportunity.score>=65?'Alta oportunidade':result.opportunity.score>=40?'Oportunidade moderada':'Oportunidade limitada';
+ result.priority=platformBlocked?'Evitar':result.opportunity.score===null?'Não avaliado':result.opportunity.technical?.length&&result.opportunity.score>=65?'Alta oportunidade':result.opportunity.technical?.length?'Melhoria técnica confirmada':'Sem melhoria técnica confirmada';
  result.checkedAt=new Date().toISOString();
  return result;
 }
@@ -140,7 +140,7 @@ export function createHandler({env=process.env,fetcher=fetch,inspector=inspectCo
   const site=original&&publicUrl(original);
   if(!site||!body?.domain||body.domain!==site.domain)return json({message:'Resultado sem comprovante de busca válido. Refaça a busca no Radar.'},400);
   const redis=redisClient(env,fetcher);
-  const cacheKey='ricky:contact:v1:site:'+createHash('sha256').update(site.domain).digest('hex');
+  const cacheKey='ricky:contact:v2:site:'+createHash('sha256').update(site.domain).digest('hex');
   try {
    const cached=!body.refresh?await redis(['GET',cacheKey]):null;if(cached)return json({...JSON.parse(cached),cached:true});
    const date=new Date().toISOString().slice(0,10),count=await redis(['INCR',LIMITED+date]);
