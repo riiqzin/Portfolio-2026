@@ -15,7 +15,7 @@ export async function handler(request){
    if(!token.access_token||!token.refresh_token)return go('missing-refresh-token');
    const profile=await gmail('profile',token.access_token);
    if(String(profile.emailAddress||'').toLowerCase()!==ADDRESS)return go('wrong-account');
-   await redis(['SET',STORE,seal({email:ADDRESS,refresh:token.refresh_token,connectedAt:new Date().toISOString()},env)]);
+   await redis(['SET',STORE,seal({email:ADDRESS,refresh:token.refresh_token,scopes:token.scope||'',connectedAt:new Date().toISOString()},env)]);
    return go('connected');
  }catch{return go('failed')}
 }
