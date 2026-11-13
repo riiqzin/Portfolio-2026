@@ -14,7 +14,7 @@ const daysSince=v=>v?Math.floor((Date.now()-Date.parse(v))/86400000):0;
 const formatStars=v=>Number.isFinite(Number(v))&&v!==null&&v!==''?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
 const placeholder=(title,description)=>'<div class="action-card"><div class="action-left"><div class="action-icon">✧</div><div class="action-copy"><strong>'+escapeHTML(title)+'</strong><p>'+escapeHTML(description)+'</p></div></div></div>';
 const prefsKey='ricky:local:archive-v1';
-const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
+const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,offerFilter:'all',todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
 const VERIFY=[
  ['whatsapp_confirmed','WhatsApp confirmado (conferi o perfil)'],
  ['instagram_found','Tem Instagram (confirmei)'],
@@ -49,7 +49,7 @@ async function rpc(fn,data){
  return json;
 }
 async function backend(path,method='GET',body){
- const response=await fetch('/api/'+path,{method,headers:{Authorization:'Bearer '+key(),'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store',signal:AbortSignal.timeout(32000)});
+ const response=await fetch('/api/'+path,{method,headers:{Authorization:'Bearer '+key(),'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store',signal:AbortSignal.timeout(path==='local-radar'&&method==='POST'?57000:32000)});
  const data=await response.json().catch(()=>({message:'Resposta inesperada do servidor'}));
  if(!response.ok)throw Error(data.message||'Serviço indisponível.');
  return data;
@@ -236,11 +236,15 @@ function resultCard(c,i){
  art.append(head,dom('h3','',c.name),dom('p','prospect-sub',c.city||'Endereço não informado'));
  const metrics=dom('div','prospect-metrics');
  metrics.append(dom('span','','★ '+formatStars(c.rating)+' · '+(c.reviews??'—')+' avaliações'),dom('span','',siteLabel(c.link_type)),dom('span','',c.mobile_probable?'Celular provável':c.phone?'Telefone público':'Sem telefone'));
+ const offer=dom('span','prospect-offer',c.match_type==='landing'?'LANDING · INDÍCIO':c.match_type==='bot_investigate'?'BOT · A VERIFICAR':'SEM CANAL CONFIRMADO');
+ offer.classList.add(c.match_type==='landing'?'landing':c.match_type==='bot_investigate'?'bot':'research');
+ art.append(offer);
  art.append(metrics);
  const insight=dom('div','prospect-insight');insight.append(dom('strong','',c.business_status==='CLOSED_PERMANENTLY'?'Fechado permanentemente':'Por que investigar?'),dom('p','',resultsReason(c)));
  art.append(insight);
  const actions=dom('div','prospect-actions');
- const open=dom('button','btn btn-primary compact','Salvar / verificar'),site=dom('a','btn btn-outline compact','Ver link ↗');
+ const saved=state.leads.some(lead=>lead.place_id&&lead.place_id===c.place_id);
+ const open=dom('button','btn btn-primary compact',saved?'Abrir na carteira':'Salvar / verificar'),site=dom('a','btn btn-outline compact','Ver link ↗');
  open.type='button';open.addEventListener('click',()=>openLead(c));
  if(c.website||c.maps_url){site.href=safeUrl(c.website)||safeUrl(c.maps_url)||'#';site.target='_blank';site.rel='noopener noreferrer'}else{site.href='#';site.addEventListener('click',ev=>ev.preventDefault());site.setAttribute('aria-disabled','true')}
  actions.append(open,site);art.append(actions);
@@ -249,16 +253,21 @@ function resultCard(c,i){
 function safeUrl(v){try{const u=new URL(String(v||''));return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:null}catch{return null}}
 function renderRadar(){
  const area=$('#radarResults');area.replaceChildren();
- const filtered=state.results.filter(c=>eligible(c)!==state.filterOutside);
- if(!state.results.length){area.innerHTML=placeholder('Pronto para encontrar oportunidades','Escolha um segmento, uma localidade e inicie a busca.');return}
- if(!filtered.length){area.innerHTML=placeholder('Nenhum resultado neste filtro','Altere os valores de nota e avaliações ou consulte os candidatos fora do filtro.');return}
- filtered.sort((a,b)=>{const weights={alta:2,investigar:1,baixa:0};return weights[priority(b).type]-weights[priority(a).type]||Number(b.reviews||0)-Number(a.reviews||0)});
+ const filtered=state.results.filter(c=>eligible(c)!==state.filterOutside)
+  .filter(c=>state.filterOutside||c.candidate!==false)
+  .filter(c=>state.offerFilter==='all'||(state.offerFilter==='landing'?c.match_type==='landing':c.match_type==='bot_investigate'));
+ if(!state.results.length){area.innerHTML=placeholder('Pronto para encontrar oportunidades','Pesquise sua região. O Radar vai ampliar a busca, identificar links e organizar candidatos sem inventar oportunidades.');return}
+ if(!filtered.length){area.innerHTML=placeholder('Nenhum candidato nesta seleção','Você pode alternar as ofertas, diminuir os filtros de nota e avaliações ou consultar quem ficou fora do filtro.');return}
+ filtered.sort((a,b)=>{
+  const weights={alta:2,investigar:1,baixa:0};
+  return weights[priority(b).type]-weights[priority(a).type]||Number(b.reviews||0)-Number(a.reviews||0);
+ });
  filtered.forEach((c,i)=>area.append(resultCard(c,i)));
 }
 function render(){renderCentral();renderToday();renderClients();renderArchive();renderRadar();}
 async function checkPlaces(){
  try{const x=await backend('local-radar');state.placesReady=!!x.ready;
- $('#placesNotice').textContent=x.ready?'Google Places conectado · limite '+x.dailyLimit+' varreduras/dia.':'Google Places ainda não configurado. Cadastro manual liberado; buscas ficam desabilitadas até adicionar GOOGLE_PLACES_API_KEY na Vercel.';
+ $('#placesNotice').textContent=x.ready?'Google Places conectado · '+x.dailyLimit+' varreduras/dia · até '+x.maxCallsPerScan+' chamadas por busca · '+x.monthlyCallLimit+' chamadas/mês.':'Google Places ainda não configurado. Cadastro manual liberado; buscas ficam desabilitadas até configurar a chave na Vercel.';
  $('#placesNotice').classList.toggle('bad',!x.ready);$('#runLocal').disabled=!x.ready;
  }catch(e){$('#placesNotice').textContent=e.message;$('#placesNotice').classList.add('bad');$('#runLocal').disabled=true}
 }
@@ -274,10 +283,12 @@ async function scan(ev){
  state.results=[];renderRadar();
  try{
   const niche=$('#localNiche').value.trim(),city=$('#localCity').value.trim();
-  const data=await backend('local-radar','POST',{niche,city});
+  const neighborhoods=$('#localAreas').value.split(',').map(x=>x.trim()).filter(Boolean).slice(0,5);
+  const data=await backend('local-radar','POST',{niche,city,neighborhoods,goal:'both'});
   state.niche=niche;state.city=city;
   $('#radarProgress').classList.remove('busy');
-  const all=data.results||[];
+  const all=(data.results||[]).filter(c=>!state.leads.some(lead=>lead.place_id&&lead.place_id===c.place_id));
+  const alreadySaved=(data.results||[]).length-all.length;
   $('#scanProgressText').textContent='Resultados recebidos · classificando os links e contatos';
   for(let i=0;i<all.length;i++){
    state.results.push(all[i]);
@@ -286,8 +297,12 @@ async function scan(ev){
    renderRadar();
    if(!matchMedia('(prefers-reduced-motion: reduce)').matches)await wait(85);
   }
-  $('#scanProgressText').textContent='Varredura concluída · confira os candidatos';
-  $('#radarExplain').textContent=all.length+' estabelecimentos encontrados · '+all.filter(eligible).length+' dentro dos filtros. Sites e agendamentos ainda podem exigir sua verificação.';
+  $('#scanProgressText').textContent='Busca ampliada concluída · '+data.calls+' consultas utilizadas';
+  const landing=all.filter(x=>x.match_type==='landing').length,bot=all.filter(x=>x.match_type==='bot_investigate').length;
+  const inside=all.filter(x=>eligible(x)&&x.candidate!==false).length;
+  $('#radarExplain').textContent=data.unique+' negócios únicos encontrados · '+data.matched+' candidatos compatíveis ('+landing+' landing, '+bot+' bot a investigar) · '+inside+' dentro dos seus filtros · '+alreadySaved+' já na carteira excluídos. Meta: 40 (não garantida).';
+  const reasons={target_reached:'Meta de 40 atingida',scan_limit:'Teto de chamadas da varredura',quota_limit:'Limite diário ou mensal de custo',time_limit:'Limite de tempo',exhausted:'Resultados disponíveis esgotados',provider_error:'A consulta foi interrompida pelo Google',quota_unavailable:'Controle de custos indisponível'};
+  $('#radarUsage').textContent=(reasons[data.stopReason]||'Busca concluída')+' · '+(data.calls||0)+' chamadas ao Google · '+(data.usage?.daily??'—')+'/'+(data.usage?.dailyLimit??15)+' hoje · '+(data.usage?.monthly??'—')+'/'+(data.usage?.monthlyLimit??200)+' no mês. Candidatos de bot são hipóteses, não atendimento manual comprovado.';
   archiveSearch({niche,city,count:all.length});renderArchive();
   if(!all.length)toast('Nenhum estabelecimento retornado para esta busca.');
  }catch(e){$('#radarProgress').classList.remove('busy');$('#scanProgressText').textContent='Não foi possível concluir a busca';$('#radarExplain').textContent=e.message;toast(e.message)}
@@ -631,6 +646,7 @@ function bind(){
  $('#minRating').addEventListener('change',renderRadar);$('#minReviews').addEventListener('change',renderRadar);
  $('#filterEligible').onclick=()=>{state.filterOutside=false;$('#filterEligible').classList.add('active');$('#filterOutside').classList.remove('active');renderRadar()};
  $('#filterOutside').onclick=()=>{state.filterOutside=true;$('#filterOutside').classList.add('active');$('#filterEligible').classList.remove('active');renderRadar()};
+ $('[data-offer]').forEach(b=>b.addEventListener('click',()=>{state.offerFilter=b.dataset.offer;$('[data-offer]').forEach(x=>x.classList.toggle('active',x===b));renderRadar()}));
  $$('[data-today]').forEach(b=>b.addEventListener('click',()=>{state.todayFilter=b.dataset.today;$$('[data-today]').forEach(x=>x.classList.toggle('active',x===b));renderToday()}));
  $('#clientStatus').addEventListener('change',renderClients);$('#clientSearch').addEventListener('input',renderClients);
  $('#manualAdd').onclick=()=>openLead({});$('#addClient').onclick=()=>openLead({});
