@@ -266,15 +266,30 @@ function resultCard(c,i){
 function safeUrl(v){try{const u=new URL(String(v||''));return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:null}catch{return null}}
 function renderRadar(){
  const area=$('#radarResults');area.replaceChildren();
+ const search=$('#radarSearch').value.trim().toLocaleLowerCase('pt-BR');
+ const link=$('#radarLink').value, contact=$('#radarContact').value, reviews=$('#radarReviews').value, sort=$('#radarSort').value;
  const filtered=state.results.filter(c=>eligible(c)!==state.filterOutside)
   .filter(c=>state.filterOutside||c.candidate!==false)
-  .filter(c=>state.offerFilter==='all'||(state.offerFilter==='landing'?c.match_type==='landing':c.match_type==='bot_investigate'));
- if(!state.results.length){area.innerHTML=placeholder('Pronto para encontrar oportunidades','Pesquise sua região. O Radar vai ampliar a busca, identificar links e organizar candidatos sem inventar oportunidades.');return}
- if(!filtered.length){area.innerHTML=placeholder('Nenhum candidato nesta seleção','Você pode alternar as ofertas, diminuir os filtros de nota e avaliações ou consultar quem ficou fora do filtro.');return}
+  .filter(c=>state.offerFilter==='all'||(state.offerFilter==='landing'?c.match_type==='landing':c.match_type==='bot_investigate'))
+  .filter(c=>!search||[c.name,c.city,c.address,c.website].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(search)))
+  .filter(c=>link==='all'||(link==='other'?!['none','social','whatsapp','bio','booking','own'].includes(c.link_type):c.link_type===link))
+  .filter(c=>contact==='all'||(contact==='phone'?!!normalizePhone(c.phone):contact==='email'?!!c.email:contact==='website'?!!c.website:!normalizePhone(c.phone)&&!c.email))
+  .filter(c=>{const n=Number(c.reviews);if(reviews==='all')return true;if(!Number.isFinite(n)||c.reviews==null)return false;return reviews==='lt10'?n<10:reviews==='lt30'?n<30:reviews==='lt100'?n<100:n>=100});
+ const rating=c=>c.rating==null||!Number.isFinite(Number(c.rating))?null:Number(c.rating);
+ const count=c=>c.reviews==null||!Number.isFinite(Number(c.reviews))?null:Number(c.reviews);
+ const compareNullable=(x,y,direction)=>x==null&&y==null?0:x==null?1:y==null?-1:direction*(x-y);
  filtered.sort((a,b)=>{
+  if(sort==='rating_asc')return compareNullable(rating(a),rating(b),1);
+  if(sort==='rating_desc')return compareNullable(rating(a),rating(b),-1);
+  if(sort==='reviews_asc')return compareNullable(count(a),count(b),1);
+  if(sort==='reviews_desc')return compareNullable(count(a),count(b),-1);
+  if(sort==='name')return String(a.name||'').localeCompare(String(b.name||''),'pt-BR');
   const weights={alta:2,investigar:1,baixa:0};
   return weights[priority(b).type]-weights[priority(a).type]||Number(b.reviews||0)-Number(a.reviews||0);
  });
+ $('#radarMatchCount').textContent=filtered.length+' de '+state.results.length+' candidatos exibidos · filtros locais, sem novas chamadas';
+ if(!state.results.length){area.innerHTML=placeholder('Pronto para encontrar oportunidades','Pesquise sua região. O Radar vai organizar candidatos sem inventar oportunidades.');return}
+ if(!filtered.length){area.innerHTML=placeholder('Nenhum candidato com esses filtros','Altere os filtros, a nota mínima ou use Limpar filtros para ampliar a lista.');return}
  filtered.forEach((c,i)=>area.append(resultCard(c,i)));
 }
 function render(){renderCentral();renderToday();renderClients();renderArchive();renderRadar();}
@@ -716,6 +731,8 @@ function bind(){
   $$('[data-niche]').forEach(x=>x.classList.toggle('active',x===b));
   $('#localNiche').value=b.dataset.niche;
  }));
+ for(const id of ['radarSearch','radarSort','radarLink','radarContact','radarReviews'])$('#'+id).addEventListener(id==='radarSearch'?'input':'change',renderRadar);
+ $('#resetRadarFilters').onclick=()=>{for(const id of ['radarSearch','radarSort','radarLink','radarContact','radarReviews'])$('#'+id).value=id==='radarSort'?'priority':id==='radarSearch'?'':'all';renderRadar();};
  $('#minRating').addEventListener('change',renderRadar);$('#minReviews').addEventListener('change',renderRadar);
  $('#filterEligible').onclick=()=>{state.filterOutside=false;$('#filterEligible').classList.add('active');$('#filterOutside').classList.remove('active');renderRadar()};
  $('#filterOutside').onclick=()=>{state.filterOutside=true;$('#filterOutside').classList.add('active');$('#filterEligible').classList.remove('active');renderRadar()};
