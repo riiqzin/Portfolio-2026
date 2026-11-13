@@ -223,8 +223,19 @@ function renderArchive(){
  if(!state.archive.length){box.innerHTML=placeholder('Nenhuma varredura salva','Salvamos data, segmento e cidade — não copiamos os dados do Google Maps para o histórico.');return}
  for(const a of state.archive){
   const b=dom('button','archive-item');b.type='button';
-  b.append(dom('small','',formatDate(a.date)+' · GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' candidatos · repetir pesquisa ↗'));
-  b.addEventListener('click',()=>{$('#localNiche').value=a.niche;$('#localCity').value=a.city;window.scrollTo({top:0,behavior:'smooth'});toast('Busca carregada. Inicie outra varredura para consultar dados atuais; uma nova chamada pode ser cobrada.')});
+  b.append(dom('small','',formatDate(a.date)+' · GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' candidatos na busca original · repetir consulta ↗'));
+  b.title='O histórico conserva apenas os parâmetros e a quantidade, não os candidatos antigos. Repetir consome sua cota de API.';
+  b.addEventListener('click',async()=>{
+   if(state.scanning){toast('Aguarde a varredura atual terminar.');return}
+   $('#localNiche').value=a.niche;$('#localCity').value=a.city;
+   // Os bairros não eram salvos nas entradas antigas; não reutilizar bairros de outra pesquisa.
+   $('#localAreas').value='';
+   if(!state.placesReady){$('#localForm').scrollIntoView({behavior:'smooth',block:'start'});toast('Busca preenchida. Conecte o Google Places para executar.');return}
+   if(!confirm('Esta sessão antiga guarda apenas a pesquisa e o total de candidatos; a lista original não foi salva.\\n\\nDeseja executar uma NOVA varredura de '+a.niche+' em '+a.city+'? Os resultados podem mudar e a consulta consumirá sua cota do Google Places.'))return;
+   $('#radarProgress').scrollIntoView({behavior:'smooth',block:'center'});
+   await scan({preventDefault(){}});
+   $('#radarResults').scrollIntoView({behavior:'smooth',block:'start'});
+  });
   box.append(b);
  }
 }
