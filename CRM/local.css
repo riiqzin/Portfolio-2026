@@ -74,3 +74,15 @@
 .ai-insights .ai-stats{color:#c5f2d8;font-weight:600}
 .ai-insights .ai-next{border-top:1px solid var(--edge);padding-top:12px}
 @media(max-width:600px){.ai-reply-panel{padding:0 16px 18px}.ai-insight-control{align-items:stretch;flex-direction:column}.ai-insight-control .btn{width:100%}}
+
+/* Radar Local 2.1: dual commercial targets and explicit hypothesis labels */
+.radar-target{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:12px;background:rgba(112,200,158,.09);border:1px solid rgba(141,229,185,.22)}
+.radar-target strong{font-size:12px;color:#d4f9e2;font-weight:650}
+.radar-target span{font-size:11px;color:#a6c9bb;line-height:1.55}
+.muted-inline{font-weight:400;color:#7c9b9a}
+.radar-offer-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+#radarUsage{margin:10px 0 17px;color:#96b8ac;line-height:1.7}
+.prospect-offer{display:inline-flex;align-self:flex-start;font:650 9px ui-monospace,monospace;letter-spacing:.065em;border:1px solid rgba(150,209,196,.24);border-radius:100px;padding:7px 10px;color:#b0d9c9}
+.prospect-offer.landing{background:rgba(120,216,163,.12);color:#c6f2da;border-color:rgba(142,231,176,.35)}
+.prospect-offer.bot{background:rgba(110,163,216,.1);color:#bad7ec;border-color:rgba(139,193,225,.3)}
+.prospect-offer.research{opacity:.7}
