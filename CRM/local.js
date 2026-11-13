@@ -14,7 +14,7 @@ const daysSince=v=>v?Math.floor((Date.now()-Date.parse(v))/86400000):0;
 const formatStars=v=>Number.isFinite(Number(v))&&v!==null&&v!==''?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
 const placeholder=(title,description)=>'<div class="action-card"><div class="action-left"><div class="action-icon">✧</div><div class="action-copy"><strong>'+escapeHTML(title)+'</strong><p>'+escapeHTML(description)+'</p></div></div></div>';
 const prefsKey='ricky:local:archive-v1';
-const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0};
+const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
 const VERIFY=[
  ['whatsapp_confirmed','WhatsApp confirmado (conferi o perfil)'],
  ['instagram_found','Tem Instagram (confirmei)'],
@@ -357,13 +357,15 @@ function updateRecommendation(replaceText){
  if(replaceText){d.offer=recommendation.offer;d.angle=recommendation.angle;$('#leadOffer').value=d.offer;$('#leadAngle').value=d.angle;$('#leadMessage').value=recommendation.blocked?'':templateMessage(d);d.last_message=$('#leadMessage').value}
 }
 function openLead(candidate){
+ state.aiDraftEpoch++;
+ $('#draftAIStatus').textContent='A IA só recebe os fatos disponíveis e suas verificações marcadas.';
  const stored=candidate.id?state.leads.find(x=>x.id===candidate.id):state.leads.find(x=>candidate.place_id&&x.place_id===candidate.place_id);
  state.draft=blankLead(stored||candidate);
  populateLead();
  $('#leadOverlay').hidden=false;document.body.style.overflow='hidden';
  $('#closeLead').focus();
 }
-function closeLead(){state.draft=null;$('#leadOverlay').hidden=true;document.body.style.overflow=''}
+function closeLead(){state.aiDraftEpoch++;state.draft=null;$('#leadOverlay').hidden=true;document.body.style.overflow=''}
 async function saveLead(showToast=true){
  fromFields();
  const d=state.draft;
@@ -548,6 +550,73 @@ async function loadEmailQueue(){
 async function gmailConnect(){
  try{const data=await backend('gmail','POST',{action:'connect'});if(!/^https:\/\/accounts\.google\.com\//.test(data.url))throw Error('Autorização inválida');location.href=data.url}catch(e){toast(e.message)}
 }
+
+async function improveMessageAI(){
+ if(state.aiBusy){toast('Já existe uma análise em andamento.');return}
+ fromFields();const lead=state.draft;
+ if(!lead?.name){toast('Preencha o nome do negócio primeiro.');return}
+ if(lead.verified.possible_chain||lead.verified.site_mobile_ok){toast('O cadastro requer uma revisão antes de sugerir abordagem.');return}
+ if(lead.angle==='C'&&(!lead.verified.top||!lead.verified.demo_ready)){toast('Confirme primeiro que o rascunho do ângulo C está pronto.');return}
+ const epoch=state.aiDraftEpoch;
+ const btn=$('#improveMessageAI'),status=$('#draftAIStatus');
+ btn.disabled=true;status.textContent='✦ Preparando uma versão revisada…';
+ state.aiBusy=true;
+ try{
+  const data=await backend('local-ai','POST',{task:'approach',lead:{
+   name:lead.name,city:lead.city,rating:lead.rating,reviews:lead.reviews,link_type:lead.link_type,
+   verified:lead.verified,offer:lead.offer,angle:lead.angle
+  }});
+  if(epoch!==state.aiDraftEpoch||!state.draft||$('#leadOverlay').hidden)return;
+  if(typeof data.text==='string'&&data.text.trim()){
+   $('#leadMessage').value=data.text.trim();
+   state.draft.last_message=$('#leadMessage').value;
+   status.textContent=data.source==='openai'?'✓ Texto ajustado. Revise antes de enviar.':'Modelo seguro mantido: '+(data.message||'revise antes de enviar.');
+  }else{status.textContent='Não foi gerada uma sugestão utilizável.'}
+ }catch(e){if(epoch===state.aiDraftEpoch){status.textContent='Não foi possível ajustar. Seu texto foi mantido.';toast('Ricky AI: '+e.message)}}
+ finally{state.aiBusy=false;btn.disabled=false}
+}
+async function analyzeWhatsAppReply(){
+ const incoming=$('#aiIncoming').value.trim(),btn=$('#analyzeReply');
+ if(incoming.length<3){toast('Cole uma resposta recebida do cliente.');return}
+ if(state.aiBusy){toast('Aguarde a análise atual.');return}
+ btn.disabled=true;btn.textContent='✦ Analisando…';state.aiBusy=true;
+ $('#replyAIStatus').textContent='A IA vai interpretar somente o texto colado.';
+ try{
+  const data=await backend('local-ai','POST',{task:'reply',incoming});
+  const labels={interessado:'Possível interesse — confirme na conversa',pergunta:'Cliente fez uma pergunta',sem_interesse:'Sem interesse — não insistir',neutro:'Resposta a verificar'};
+  $('#replyAIClassification').textContent=labels[data.classification]||labels.neutro;
+  $('#replyAISummary').textContent=data.summary||'Leia a mensagem antes de decidir.';
+  $('#replyAISuggestion').value=data.suggestion||'';
+  $('#replyAIResult').hidden=false;
+  $('#replyAIStatus').textContent='Sugestão pronta. Revise, copie e registre o resultado no card do cliente.';
+ }catch(e){$('#replyAIStatus').textContent='Erro na análise: '+e.message;toast(e.message)}
+ finally{btn.disabled=false;btn.textContent='✦ Sugerir resposta';state.aiBusy=false}
+}
+async function analyzeExperiment(){
+ if(state.aiBusy){toast('Já existe uma análise em andamento.');return}
+ const rows=state.leads.slice(0,100).map(c=>({
+  status:c.status,link_type:c.link_type,contacted:!!c.contacted_at,
+  ever_responded:!!c.ever_responded,ever_interested:!!c.ever_interested
+ }));
+ if(!rows.some(c=>c.contacted)){toast('Registre uma abordagem antes de analisar os resultados.');return}
+ const btn=$('#analyzeResults');btn.disabled=true;state.aiBusy=true;
+ $('#insightsStatus').textContent='✦ Procurando padrões nos contatos registrados…';
+ try{
+  const data=await backend('local-ai','POST',{task:'insights',rows});
+  const root=$('#insightsOutput');root.replaceChildren();
+  root.append(dom('strong','','Leitura comercial da Ricky AI'),dom('p','',data.summary||'Resultados ainda iniciais.'));
+  const stats=data.stats||{},totals=dom('p','ai-stats',String(stats.approached||0)+' abordados · '+String(stats.replied||0)+' respostas · '+String(stats.interested||0)+' interessados · '+String(stats.won||0)+' fechamentos');
+  root.append(totals);
+  if(Array.isArray(data.insights)){
+   const ul=dom('ul');data.insights.forEach(item=>ul.append(dom('li','',item)));root.append(ul);
+  }
+  if(data.next_step)root.append(dom('p','ai-next','Próximo teste: '+data.next_step));
+  root.append(dom('p','field-note','Análise exploratória de dados agregados. Não demonstra causa ou previsão de fechamento.'));
+  root.hidden=false;$('#insightsStatus').textContent='Análise concluída · sem alterações nos leads.';
+ }catch(e){$('#insightsStatus').textContent='Não foi possível analisar: '+e.message;toast(e.message)}
+ finally{state.aiBusy=false;btn.disabled=false}
+}
+
 function bind(){
  window.addEventListener('hashchange',setNav);
  $('#loginForm').addEventListener('submit',e=>{e.preventDefault();signIn()});
@@ -569,6 +638,10 @@ function bind(){
  $('#leadOverlay').addEventListener('click',e=>{if(e.target===$('#leadOverlay'))closeLead()});
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#leadOverlay').hidden)closeLead()});
  $('#saveLead').onclick=()=>saveLead();
+ $('#improveMessageAI').onclick=improveMessageAI;
+ $('#analyzeReply').onclick=analyzeWhatsAppReply;
+ $('#analyzeResults').onclick=analyzeExperiment;
+ $('#copyReplyAI').onclick=async()=>{const msg=$('#replyAISuggestion').value.trim();if(!msg){toast('Não há resposta para copiar.');return}try{await navigator.clipboard.writeText(msg);toast('Resposta copiada. Envie manualmente no WhatsApp.')}catch{toast('Selecione o texto para copiar manualmente.')}};
  $('#markResponse').onclick=statusChooser;
  $('#openWhatsapp').onclick=openWhatsApp;
  $('#confirmSent').onclick=async()=>{if(!confirm('Você realmente enviou a mensagem pelo WhatsApp?'))return;fromFields();const d=state.draft;if(!d)return;const kind=d.status==='novo'?'abordado':d.status==='abordado'?'followup':'mensagem';await action(kind,d.last_message)};
