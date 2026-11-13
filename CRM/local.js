@@ -373,6 +373,10 @@ function populateLead(){
  source.append(dom('span','',d.rating!=null?'★ '+formatStars(d.rating)+' · '+(d.reviews??'—')+' avaliações':'Sem nota verificada'),dom('span','',siteLabel(d.link_type)));
  const u=safeUrl(d.maps_url);
  if(u){const a=dom('a','','Abrir no Maps ↗');a.href=u;a.target='_blank';a.rel='noopener noreferrer';source.append(a)}
+ const siteUrl=safeUrl(d.website);
+ if(siteUrl){const a=dom('a','','Ver site / perfil ↗');a.href=siteUrl;a.target='_blank';a.rel='noopener noreferrer';source.append(a)}
+ const phone=normalizePhone(d.phone);
+ if(phone){const a=dom('a','','Conferir WhatsApp ↗');a.href='https://wa.me/'+phone;a.target='_blank';a.rel='noopener noreferrer';source.append(a)}
  for(const [id,key] of [['leadName','name'],['leadCity','city'],['leadPhone','phone'],['leadWebsite','website'],['leadEmail','email'],['leadChannel','channel'],['leadOffer','offer'],['leadAngle','angle'],['leadNotes','notes']])$('#'+id).value=d[key]??'';
  const grid=$('#verificationGrid');grid.replaceChildren();
  for(const [key,label] of VERIFY){
