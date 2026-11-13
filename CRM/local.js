@@ -173,6 +173,7 @@ async function signIn(){
   $('#authOverlay').hidden=true;
   $('#loginError').textContent='';
   checkPlaces();
+  if(location.hash==='#custos')void loadCosts();
  }catch(e){state.key='';$('#loginError').textContent='Não foi possível entrar. Verifique a chave.';}
 }
 function showLogin(){
@@ -737,7 +738,7 @@ async function init(){
  if(oauth){history.replaceState(null,'',location.pathname+'#hoje');$('#gmailDetails').open=true}
  setNav();render();
  if(!state.key){showLogin();return}
- try{await refresh();$('#authOverlay').hidden=true;checkPlaces()}
+ try{await refresh();$('#authOverlay').hidden=true;checkPlaces();if(location.hash==='#custos')void loadCosts()}
  catch(e){localStorage.removeItem(KEY_NAME);sessionStorage.removeItem(KEY_NAME);state.key='';showLogin();$('#connectionState').classList.add('error')}
 }
 init();
