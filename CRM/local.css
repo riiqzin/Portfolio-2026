@@ -86,3 +86,40 @@
 .prospect-offer.landing{background:rgba(120,216,163,.12);color:#c6f2da;border-color:rgba(142,231,176,.35)}
 .prospect-offer.bot{background:rgba(110,163,216,.1);color:#bad7ec;border-color:rgba(139,193,225,.3)}
 .prospect-offer.research{opacity:.7}
+
+/* Costs & APIs — explicit internal quota telemetry */
+.costs-note{border:1px solid rgba(174,220,196,.22);background:rgba(19,46,40,.55);border-radius:16px;padding:19px 22px;margin-bottom:18px}
+.costs-note strong{font-size:13px;color:#c7f2d9}.costs-note strong span{margin-right:9px}
+.costs-note p{font-size:12px;color:#9eb9ae;line-height:1.7;max-width:960px;margin:10px 0 0}
+.costs-note p b{color:#dcf4e8}
+.costs-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.costs-stat{border:1px solid var(--edge);border-radius:17px;padding:20px 22px;background:linear-gradient(145deg,rgba(25,42,47,.86),rgba(13,25,34,.86));min-height:139px;display:flex;flex-direction:column;gap:8px}
+.costs-stat small{font-size:11px;color:#9bbab1}.costs-stat strong{font-size:25px;line-height:1.25;letter-spacing:-.055em;font-weight:580;color:#ddf1e6;overflow-wrap:anywhere}
+.costs-stat span{font-size:11px;color:#779c99;line-height:1.5}
+.costs-services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.costs-service{border:1px solid var(--edge);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:17px;background:linear-gradient(142deg,rgba(28,43,49,.85),rgba(12,24,33,.89));min-width:0}
+.costs-service-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}
+.costs-service-name{display:flex;align-items:center;gap:13px;min-width:0}
+.costs-provider-icon{display:grid;place-items:center;width:43px;height:43px;border:1px solid rgba(150,220,190,.22);border-radius:13px;background:rgba(152,218,189,.11);color:#b5e7ce;flex:none;font-size:23px}
+.costs-service-name strong{display:block;color:#e5f7ed;font-size:14px;line-height:1.4}
+.costs-service-name small{display:block;color:#84a6a5;font-size:10px;margin-top:4px;line-height:1.5}
+.costs-state{white-space:nowrap;font-size:10px;border:1px solid var(--edge);padding:6px 9px;border-radius:99px;color:#8ea5a7}
+.costs-state.connected{color:#b8edd1;background:rgba(114,205,156,.1);border-color:rgba(146,228,180,.3)}
+.costs-meter{display:flex;flex-direction:column;gap:8px}
+.costs-meter-line{display:flex;align-items:baseline;justify-content:space-between;gap:13px}
+.costs-meter-line span{font-size:11px;color:#b0c8c1}.costs-meter-line strong{font-size:12px;color:#d9f3e7;font-weight:620;text-align:right}
+.costs-meter-track{width:100%;height:7px;border-radius:10px;background:#a5d9c011;overflow:hidden}
+.costs-meter-track span{display:block;background:linear-gradient(90deg,#65b89e,#b4efd0);height:100%;border-radius:inherit;min-width:0;transition:width .5s var(--curve)}
+.costs-meter-track span.warning{background:linear-gradient(90deg,#c2a46d,#e5cc8a)}
+.costs-meter-track span.danger{background:linear-gradient(90deg,#d28379,#eca398)}
+.costs-meter-caption{font-size:10px;color:#789e9b;line-height:1.45}
+.costs-provider-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--edge);padding-top:15px;margin-top:auto}
+.costs-provider-footer span{font-size:10px;color:#80a3a1}.costs-provider-footer a{font-size:11px;color:#b5e9cc;font-weight:600;white-space:nowrap}
+.costs-provider-footer a:hover{text-decoration:underline}
+.costs-bottom{border-radius:18px;padding:24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:32px}
+.costs-bottom strong{font-size:13px;color:#e4f4e9}.costs-bottom p{font-size:11px;color:#98b7ad;line-height:1.8;margin:9px 0 0}
+.costs-links{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 10px}
+.costs-links a{border:1px solid var(--edge);background:rgba(145,201,173,.04);border-radius:10px;padding:11px 13px;color:#b4d9c8;font-size:11px;transition:background .25s,border-color .25s}
+.costs-links a span{margin-left:8px}.costs-links a:hover{background:rgba(154,221,185,.1);border-color:var(--edge2)}
+@media(max-width:950px){.costs-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.costs-stat:first-child{grid-column:1/-1}.costs-services{grid-template-columns:1fr}}
+@media(max-width:600px){.costs-overview{grid-template-columns:1fr}.costs-stat:first-child{grid-column:auto}.costs-bottom{grid-template-columns:1fr;gap:16px;padding:19px}.costs-service{padding:17px}.costs-service-head{flex-wrap:wrap}.costs-provider-footer{flex-direction:column;align-items:flex-start}.page-intro.inline-intro:has(+ .costs-note){flex-direction:column;align-items:stretch}}
