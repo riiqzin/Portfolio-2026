@@ -56,6 +56,8 @@ function validateApproach(value,lead,original){
  const questions=(value.match(/\?/g)||[]);if(questions.length>2||!value.trim().endsWith('?'))return false;
  if(lead.rating!==null&&!value.includes(lead.rating.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})))return false;
  if(lead.reviews!==null&&lead.reviews>=30&&!value.includes(String(Math.trunc(lead.reviews))))return false;
+ // Preserve the verified website-link category when the approach is about a landing.
+ if(lead.offer==='landing'&&lead.angle==='A'&&['social','bio','booking','whatsapp','none'].includes(lead.link_type)&&!/(?:link|site)\s+(?:cadastrado|informado)|(?:n[aã]o\s+encontrei\s+(?:um\s+)?link)/i.test(value))return false;
  return true;
 }
 function sampleInsights(raw){
