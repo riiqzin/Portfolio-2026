@@ -100,7 +100,7 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
       if(!p.place_id||!p.name||ids.has(p.place_id))continue;
       ids.add(p.place_id);all.push(assessCandidate(p));
      }
-     if(all.filter(p=>p.candidate).length>=TARGET){stopReason='target_reached';break outer}
+     if(all.filter(p=>p.candidate).length>=TARGET&&all.filter(p=>p.match_type==='landing').length>=10){stopReason='target_reached';break outer}
      page++;
      pageToken=qi===0&&page<3&&typeof data.nextPageToken==='string'?data.nextPageToken:'';
     }catch{stopReason='provider_error';break outer}
@@ -114,7 +114,7 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
   for(const p of all)p.chain_hint=!!p.chain_group&&group.get(p.chain_group)>1;
   const qualified=all.filter(p=>p.candidate);
   return json({results:[...qualified,...all.filter(p=>!p.candidate)],provider:'Google Places',goal:'both',target:TARGET,
-   matched:qualified.length,unique:all.length,calls,stopReason,checkedAt:clock().toISOString(),
+   matched:qualified.length,landingMatches:qualified.filter(p=>p.match_type==='landing').length,botLeadsToInvestigate:qualified.filter(p=>p.match_type==='bot_investigate').length,unique:all.length,calls,stopReason,checkedAt:clock().toISOString(),
    source:{pages,neighborhoodQueries:areaCalls,areas:queries.slice(1)},usage:usage||{dailyLimit:DAY_CALLS,monthlyLimit:MONTH_CALLS},
    disclaimer:'Landing e bot são hipóteses comerciais. Site não informado não comprova ausência; celular não confirma WhatsApp; atendimento manual não foi confirmado. Cada página é uma chamada da API.'});
  };
