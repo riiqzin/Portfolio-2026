@@ -20,6 +20,7 @@
   <a href="#radar" data-nav="radar"><span class="nav-symbol">◎</span> Radar <span class="nav-pill">LOCAL</span></a>
   <a href="#hoje" data-nav="hoje"><span class="nav-symbol">◷</span> Pra Hoje <span class="nav-count" id="navTodayCount" hidden></span></a>
   <a href="#clientes" data-nav="clientes"><span class="nav-symbol">♧</span> Clientes</a>
+  <a href="#custos" data-nav="custos"><span class="nav-symbol">◫</span> Custos & APIs</a>
  </nav>
  <div class="side-bottom"><span class="side-online"><i></i> CENTRAL PRIVADA</span><a href="../" target="_blank" rel="noopener">Meu portfólio ↗</a><button class="logout" id="logoutButton" type="button">Sair da conta ↗</button></div>
 </aside>
@@ -71,6 +72,24 @@
  <div class="page-intro inline-intro"><div><span class="eyebrow">CARTEIRA DE CLIENTES</span><h1>Relações que<br><em>viram negócio.</em></h1><p>Histórico simples de cada contato, do primeiro oi até fechar.</p></div><button type="button" class="btn btn-primary" id="addClient">+ Adicionar negócio</button></div>
  <div class="client-tools"><label class="search-wrap"><span>⌕</span><input id="clientSearch" placeholder="Buscar negócio, cidade ou contato"></label><select id="clientStatus"><option value="all">Todos os status</option><option value="novo">Ainda não abordado</option><option value="abordado">Abordado</option><option value="respondeu">Respondeu</option><option value="interessado">Interessado</option><option value="proposta">Proposta enviada</option><option value="fechou">Fechou</option><option value="sem_interesse">Sem interesse</option></select></div>
  <div id="clientList" class="client-list"></div>
+</section>
+<section class="page" id="page-custos" hidden>
+ <div class="page-intro inline-intro"><div><span class="eyebrow">CONTROLE DE CONSUMO / SERVIÇOS INTEGRADOS</span><h1>Seus custos,<br><em>sem surpresas.</em></h1><p>Acompanhe o uso das APIs, limites internos e possíveis cobranças, com dados identificados pela origem.</p></div><button type="button" class="btn btn-outline" id="refreshCosts">↻ Atualizar consumo</button></div>
+ <div class="costs-note" role="note"><strong><span>ⓘ</span> Como ler este painel</strong><p>Os contadores abaixo vêm das chamadas registradas pelo Ricky CRM. Eles <b>não</b> representam automaticamente a fatura do Google, OpenAI ou outros provedores. Franquia gratuita, saldo e cobrança oficial só aparecem quando há dados oficiais conectados.</p></div>
+ <div class="costs-overview">
+  <div class="costs-stat"><small>Gasto oficial confirmado</small><strong>Não conectado</strong><span>Sem acesso consolidado às faturas dos provedores</span></div>
+  <div class="costs-stat"><small>Uso total Places no mês</small><strong id="costsPlacesCount">—</strong><span id="costsPlacesRemaining">Consultando...</span></div>
+  <div class="costs-stat"><small>Ricky AI no mês</small><strong id="costsAiCount">—</strong><span id="costsAiRemaining">Consultando...</span></div>
+ </div>
+ <div class="section-title"><div><span class="eyebrow">SERVIÇOS & LIMITES</span><h2>O que está sendo utilizado</h2></div><span id="costsUpdated" class="tiny-muted">Aguardando atualização</span></div>
+ <div id="costsCards" class="costs-services"><div class="action-card"><span class="text-muted">Carregando informações das integrações...</span></div></div>
+ <div class="section-title small-top"><div><span class="eyebrow">SEGURANÇA DE ORÇAMENTO</span><h2>Como o Ricky protege seu saldo</h2></div></div>
+ <div class="costs-bottom glass">
+  <div><strong>Limites internos</strong><p>Places e Ricky AI bloqueiam novas consultas quando o teto configurado no servidor é atingido. O limite é compartilhado pelas instâncias do CRM; pode haver reservas de chamadas que não chegaram a retornar resultados.</p></div>
+  <div><strong>Faturamento externo</strong><p>Para verificar créditos gratuitos restantes, custos em reais ou dólares e consumo fora do Ricky, consulte a conta oficial de cada provedor. Um limite interno não impede cobranças feitas por outros projetos ou aplicações.</p></div>
+ </div>
+ <div class="costs-links"><a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener noreferrer">Faturamento Google <span>↗</span></a><a href="https://platform.openai.com/usage" target="_blank" rel="noopener noreferrer">Uso OpenAI <span>↗</span></a><a href="https://api-dashboard.search.brave.com/" target="_blank" rel="noopener noreferrer">Painel Brave <span>↗</span></a><a href="https://console.upstash.com/" target="_blank" rel="noopener noreferrer">Upstash <span>↗</span></a><a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer">Vercel <span>↗</span></a></div>
+ <p class="field-note" id="costsError" role="status"></p>
 </section>
 </main>
 <footer class="footer"><span>RICKY STUDIO · OPERAÇÕES PRIVADAS</span><span>Dados públicos identificados como indícios. Sua confirmação vem primeiro.</span></footer>
