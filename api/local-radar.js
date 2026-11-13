@@ -112,9 +112,15 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
    p.chain_group=n;p.chain_hint=false;if(n)group.set(n,(group.get(n)||0)+1);
   }
   for(const p of all)p.chain_hint=!!p.chain_group&&group.get(p.chain_group)>1;
-  const qualified=all.filter(p=>p.candidate);
+  // Select up to 40 mixed candidates, without claiming bot demand is verified.
+  const possibleLanding=all.filter(p=>p.candidate&&p.match_type==='landing');
+  const possibleBot=all.filter(p=>p.candidate&&p.match_type==='bot_investigate');
+  const selectedLanding=possibleLanding.slice(0,Math.min(20,TARGET));
+  const selectedBot=possibleBot.slice(0,TARGET-selectedLanding.length);
+  if(selectedLanding.length+selectedBot.length<TARGET)selectedLanding.push(...possibleLanding.slice(selectedLanding.length,TARGET-selectedBot.length));
+  const qualified=[...selectedLanding,...selectedBot].slice(0,TARGET);
   return json({results:[...qualified,...all.filter(p=>!p.candidate)],provider:'Google Places',goal:'both',target:TARGET,
-   matched:qualified.length,landingMatches:qualified.filter(p=>p.match_type==='landing').length,botLeadsToInvestigate:qualified.filter(p=>p.match_type==='bot_investigate').length,unique:all.length,calls,stopReason,checkedAt:clock().toISOString(),
+   matched:qualified.length,eligibleDiscovered:possibleLanding.length+possibleBot.length,landingMatches:selectedLanding.length,botLeadsToInvestigate:selectedBot.length,unique:all.length,calls,stopReason,checkedAt:clock().toISOString(),
    source:{pages,neighborhoodQueries:areaCalls,areas:queries.slice(1)},usage:usage||{dailyLimit:DAY_CALLS,monthlyLimit:MONTH_CALLS},
    disclaimer:'Landing e bot são hipóteses comerciais. Site não informado não comprova ausência; celular não confirma WhatsApp; atendimento manual não foi confirmado. Cada página é uma chamada da API.'});
  };
