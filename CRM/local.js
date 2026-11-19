@@ -666,11 +666,11 @@ async function analyzeExperiment(){
 
 
 const COSTS_ICONS={
- openai:{src:'https://cdn.simpleicons.org/openai/FFFFFF',fallback:'✦'},
- maps:{src:'https://cdn.simpleicons.org/googlemaps',fallback:'📍'},
- brave:{src:'https://cdn.simpleicons.org/brave',fallback:'B'},
- upstash:{src:'https://cdn.simpleicons.org/upstash',fallback:'U'},
- vercel:{src:'https://cdn.simpleicons.org/vercel/FFFFFF',fallback:'▲'}
+ openai:{src:'/CRM/brands/openai.svg',fallback:'✦'},
+ maps:{src:'/CRM/brands/maps.svg',fallback:'📍'},
+ brave:{src:'/CRM/brands/brave.svg',fallback:'B'},
+ upstash:{src:'/CRM/brands/upstash.svg',fallback:'U'},
+ vercel:{src:'/CRM/brands/vercel.svg',fallback:'▲'}
 };
 const usd=value=>Number(value).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2});
 const count=value=>Number(value||0).toLocaleString('pt-BR');
@@ -678,8 +678,9 @@ function providerIcon(provider){
  const settings=COSTS_ICONS[provider];
  const icon=dom('span','costs-provider-icon costs-provider-'+provider,settings.fallback);
  const img=document.createElement('img');
- img.src=settings.src;img.alt='';img.width=29;img.height=29;img.loading='lazy';img.referrerPolicy='no-referrer';
- img.onload=()=>{icon.textContent='';icon.append(img)};
+ img.src=settings.src;img.alt='';img.width=29;img.height=29;img.loading='lazy';
+ img.onload=()=>{icon.replaceChildren(img)};
+ img.onerror=()=>{icon.title='Ícone temporariamente indisponível'};
  return icon;
 }
 function costMetric(label,value,highlight=false){
@@ -724,23 +725,23 @@ async function loadCosts(){
   const budgetPct=hasBudget?Math.max(0,Math.min(100,Number(aiBudget.percentage)||0)):0;
   $('#costsUpdated').textContent='Atualizado '+new Date(data.updatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   $('#costsOfficialAmount').textContent=ai.official&&Number.isFinite(Number(ai.billedAmount))?usd(ai.billedAmount):'—';
-  $('#costsOfficialCaption').textContent=ai.official?'Gasto da organização OpenAI · não só do Ricky':'Faturamento oficial indisponível';
+  $('#costsOfficialCaption').textContent=ai.official?'Toda a organização OpenAI · dados sujeitos a atraso':'Fatura OpenAI indisponível no momento';
   $('#costsBudgetAmount').textContent=hasBudget?usd(Number(aiBudget.reservedCents||0)/100)+' / '+usd(Number(aiBudget.limitCents)/100):'Não configurado';
   $('#costsBudgetFill').style.width=budgetPct+'%';
   $('#costsBudgetFill').className=budgetPct>=100?'is-danger':budgetPct>=80?'is-warning':'';
   $('#costsBudgetTrack').setAttribute('aria-valuenow',String(Math.round(budgetPct)));
-  $('#costsBudgetCaption').textContent=hasBudget?(budgetPct>=100?'Limite atingido':budgetPct>=80?'Atenção · '+budgetPct+'% reservado':budgetPct+'% reservado · estimativa preventiva'):'Defina um limite na Vercel';
+  $('#costsBudgetCaption').textContent=hasBudget?(budgetPct>=100?'Limite interno atingido':budgetPct>=80?'Atenção · '+budgetPct+'% do limite reservado':budgetPct+'% reservado · apenas novas chamadas de IA'):'Defina um limite na Vercel';
   $('#costsAiCount').textContent=count(ai.requestsMonth.used);
-  $('#costsAiRemaining').textContent=count(ai.requestsMonth.remaining)+' análises restantes no limite do CRM';
+  $('#costsAiRemaining').textContent=count(ai.requestsMonth.remaining)+' solicitações disponíveis no CRM';
   const cards=$('#costsCards');cards.replaceChildren();
   cards.append(
    costCard({provider:'openai',title:'OpenAI',subtitle:'Ricky AI · respostas e análises',connected:ai.connected,attention:!!aiBudget.warning,
-    mainLabel:'Gasto oficial · mês',mainValue:ai.official?usd(ai.billedAmount):'Não disponível',
-    secondLabel:'Análises · mês',secondValue:count(ai.requestsMonth.used)+' / '+count(ai.requestsMonth.limit),
-    extraLabel:'Tokens registrados',extraValue:count(Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)),
+    mainLabel:'Fatura OpenAI · mês',mainValue:ai.official?usd(ai.billedAmount):'Não disponível',
+    secondLabel:'Solicitações · mês',secondValue:count(ai.requestsMonth.used)+' / '+count(ai.requestsMonth.limit),
+    extraLabel:'Tokens medidos',extraValue:Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)>0?count(Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)):'Aguardando novos usos',
     details:[{label:'Consultas hoje',value:count(ai.requestsDay.used)+' / '+count(ai.requestsDay.limit)},
-     {label:'Tokens entrada / saída',value:count(ai.tokens?.inputMonth)+' / '+count(ai.tokens?.outputMonth),note:'Tokens contabilizados apenas desde que o registro foi ativado.'},
-     {label:'Reserva interna · mês',value:hasBudget?usd(Number(aiBudget.reservedCents||0)/100)+' / '+usd(Number(aiBudget.limitCents)/100):'Não configurada',note:'Reserva estimada por requisição, não equivale à fatura.'},
+     {label:'Tokens entrada / saída',value:Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)>0?count(ai.tokens?.inputMonth)+' / '+count(ai.tokens?.outputMonth):'Sem registros posteriores à atualização',note:'Solicitações antigas ou interrompidas podem contar no limite sem informar tokens.'},
+     {label:'Reserva interna · mês',value:hasBudget?usd(Number(aiBudget.reservedCents||0)/100)+' / '+usd(Number(aiBudget.limitCents)/100):'Não configurada',note:'Reserva preventiva das novas chamadas. Não é o valor cobrado pela OpenAI.'},
      {label:'Fonte do gasto',value:ai.billingSource||'Não conectada'}],
     link:'https://platform.openai.com/usage',linkLabel:'Abrir OpenAI'}),
    costCard({provider:'maps',title:'Google Maps',subtitle:'Places · busca de negócios',connected:places.connected,
