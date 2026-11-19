@@ -665,7 +665,7 @@ async function analyzeExperiment(){
 }
 
 
-function costCard({mark,title,connected,rows,description,link,linkLabel}){
+function costCard({mark,title,connected,rows,description,link,linkLabel,billingNote,history}){
  const card=dom('article','costs-service');
  const head=dom('div','costs-service-head');
  const left=dom('div','costs-service-name'),avatar=dom('span','costs-provider-icon',mark),label=dom('div');
@@ -709,7 +709,13 @@ async function loadCosts(){
   const cards=$('#costsCards');cards.replaceChildren();
   cards.append(
    costCard({mark:'◎',title:'Google Places',connected:data.places.connected,description:'Radar Local · descoberta de estabelecimentos',rows:[meter('Chamadas neste mês',data.places.callsMonth),meter('Chamadas hoje',data.places.callsDay),meter('Varreduras neste mês',data.places.scansMonth,'varreduras'),{label:'Franquia gratuita do Google',value:'Não verificada',pct:null,caption:'Contas e outros projetos podem consumir a franquia.'}],link:'https://console.cloud.google.com/billing',linkLabel:'Ver fatura Google'}),
-   costCard({mark:'✦',title:'OpenAI · Ricky AI',connected:data.openai.connected,description:'Mensagens, respostas e análises comerciais',rows:[meter('Análises neste mês',data.openai.requestsMonth),meter('Análises hoje',data.openai.requestsDay),{label:'Tokens e custo em USD',value:'Não conectado',pct:null,caption:'Número de chamadas não permite calcular o preço real.'}],link:'https://platform.openai.com/usage',linkLabel:'Ver custos OpenAI'}),
+   costCard({mark:'✦',title:'OpenAI · Ricky AI',connected:data.openai.connected,description:'Mensagens, respostas e análises comerciais',
+    rows:[meter('Análises neste mês',data.openai.requestsMonth),meter('Análises hoje',data.openai.requestsDay),
+     {label:'Tokens de entrada · mês',value:Number(data.openai.tokens?.inputMonth||0).toLocaleString('pt-BR'),pct:null,caption:'Registrados nas respostas da OpenAI após esta atualização.'},
+     {label:'Tokens de saída · mês',value:Number(data.openai.tokens?.outputMonth||0).toLocaleString('pt-BR'),pct:null},
+     {label:'Gasto oficial da organização',value:data.openai.official?Number(data.openai.billedAmount).toLocaleString('en-US',{style:'currency',currency:'USD'}):'Não conectado',pct:null,caption:data.openai.billingSource},
+     {label:'Orçamento interno de reservas',value:data.openai.budget?.limitCents?(Number(data.openai.budget.reservedCents)/100).toLocaleString('en-US',{style:'currency',currency:'USD'})+' / '+(Number(data.openai.budget.limitCents)/100).toLocaleString('en-US',{style:'currency',currency:'USD'}):'Não configurado',pct:data.openai.budget?.percentage??null,caption:data.openai.budget?.warning?'Atenção: 80% ou mais do limite interno reservado.': 'Reserva conservadora por chamada; NÃO é o gasto oficial nem um limite geral da conta OpenAI.'}],
+    history:data.openai.history,billingNote:data.openai.official?'Custo oficial da organização OpenAI':'Cobrança oficial: não conectada',link:'https://platform.openai.com/usage',linkLabel:'Ver custos OpenAI'}),
    costCard({mark:'♜',title:'Brave Search',connected:data.brave.connected,description:'Busca web do Radar antigo',rows:[meter('Buscas neste mês',data.brave.requestsMonth),meter('Buscas hoje',data.brave.requestsDay),data.brave.reservedBudgetCents?{label:'Reserva interna acumulada',value:(data.brave.reservedBudgetCents.used/100).toLocaleString('pt-BR',{style:'currency',currency:'USD'}),pct:Math.min(100,data.brave.reservedBudgetCents.used/data.brave.reservedBudgetCents.limit*100),caption:'Reserva em centavos configurados; não equivale à fatura oficial.'}:{label:'Reserva interna',value:'Não configurada',pct:null}, {label:'Créditos do plano Brave',value:'Não verificados',pct:null}],link:'https://api-dashboard.search.brave.com/',linkLabel:'Ver painel Brave'}),
    costCard({mark:'⬡',title:'Upstash Redis',connected:data.upstash.connected,description:'Armazenamento e controle de limites',rows:[{label:'Requisições e armazenamento totais',value:'Não conectado',pct:null,caption:'Consulte a franquia e o uso total no console Upstash.'}],link:'https://console.upstash.com/',linkLabel:'Ver console Upstash'}),
    costCard({mark:'▱',title:'Vercel',connected:data.vercel.connected,description:'Hospedagem e funções do CRM',rows:[{label:'Consumo da hospedagem',value:'Não conectado',pct:null,caption:'O consumo total da Vercel depende de outros recursos da conta.'}],link:'https://vercel.com/dashboard',linkLabel:'Ver custos Vercel'})
