@@ -164,7 +164,7 @@ async function refresh(){
 }
 async function signIn(){
  const candidate=$('#loginKey').value.trim();
- if(!candidate){$('#loginError').textContent='Informe a chave.';return}
+ if(!candidate){$('#loginError').textContent='Informe a senha.';return}
  state.key=candidate;
  try{
   await refresh();
@@ -174,7 +174,7 @@ async function signIn(){
   $('#loginError').textContent='';
   checkPlaces();
   if(location.hash==='#custos')void loadCosts();
- }catch(e){state.key='';$('#loginError').textContent='Não foi possível entrar. Verifique a chave.';}
+ }catch(e){state.key='';$('#loginError').textContent=/invalid|incorrect|unauthoriz|forbidden|credencial|inválid|incorret|autorizad/i.test(String(e?.message||''))?'Senha incorreta. Tente novamente.':'Não foi possível acessar o servidor. Verifique sua conexão e tente novamente.';}
 }
 function showLogin(){
  $('#authOverlay').hidden=false;
