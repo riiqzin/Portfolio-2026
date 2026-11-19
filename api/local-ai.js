@@ -2,6 +2,31 @@ import {authorized,boundedText,json,redisClient,configured} from '../lib/radar-c
 
 const ALLOWED_TASKS=new Set(['approach','reply','insights']);
 const MAX_DAILY=30,MAX_MONTHLY=350;
+// Budget is a conservative reservation, NOT the OpenAI invoice. A timed-out request may still be charged.
+const BUDGET_LUA=`local day=tonumber(redis.call('GET',KEYS[1]) or '0')
+local month=tonumber(redis.call('GET',KEYS[2]) or '0')
+local spent=tonumber(redis.call('GET',KEYS[3]) or '0')
+if day>=tonumber(ARGV[1]) or month>=tonumber(ARGV[2]) then return {0,day,month,spent} end
+if tonumber(ARGV[3])>0 and spent+tonumber(ARGV[4])>tonumber(ARGV[3]) then return {-1,day,month,spent} end
+redis.call('INCR',KEYS[1]);redis.call('EXPIRE',KEYS[1],172800)
+redis.call('INCR',KEYS[2]);redis.call('EXPIRE',KEYS[2],5356800)
+redis.call('INCRBY',KEYS[3],ARGV[4]);redis.call('EXPIRE',KEYS[3],5356800)
+return {1,day+1,month+1,spent+tonumber(ARGV[4])}`;
+const USAGE_LUA=`for i=1,4 do
+local v=tonumber(ARGV[i])
+if v>0 then
+redis.call('INCRBY',KEYS[i],v)
+redis.call('EXPIRE',KEYS[i],5356800)
+end
+end
+return 1`;
+const safeInt=value=>Number.isSafeInteger(value)&&value>=0?value:0;
+async function registerTokens(redis,day,month,usage){
+ const input=safeInt(usage?.input_tokens),output=safeInt(usage?.output_tokens);
+ if(!input&&!output)return;
+ try{await redis(['EVAL',USAGE_LUA,4,'ricky:ai:tokens:input:month:'+month,'ricky:ai:tokens:output:month:'+month,'ricky:ai:tokens:input:day:'+day,'ricky:ai:tokens:output:day:'+day,input,output,input,output]);}catch{/* Never fail a valid generated response solely due to telemetry. */}
+}
+
 const QUOTA_SCRIPT=`local d=tonumber(redis.call('GET',KEYS[1]) or '0')
 local m=tonumber(redis.call('GET',KEYS[2]) or '0')
 if d>=tonumber(ARGV[1]) or m>=tonumber(ARGV[2]) then return {0,d,m} end
@@ -89,7 +114,7 @@ async function callModel(env,fetcher,kind,data){
  :'Você analisa resultados de prospecção comercial de pequenos negócios. Receberá APENAS estatísticas agregadas. Não invente taxa, causalidade, perfis ou resultados não presentes. Amostra pequena é exploratória. Retorne APENAS JSON {"summary":"até 220 caracteres","insights":["até 3 observações fundamentadas em contagens"],"next_step":"uma ação prática de teste"}';
  const response=await fetcher('https://api.openai.com/v1/responses',{method:'POST',redirect:'error',signal:AbortSignal.timeout(18000),headers:{Authorization:'Bearer '+env.OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model:env.LOCAL_AI_MODEL||env.GMAIL_AI_MODEL||'gpt-4.1-mini',store:false,max_output_tokens:kind==='approach'?290:kind==='reply'?300:450,instructions:instruction,input:JSON.stringify(data),text:{format:{type:'json_object'}}})});
  if(!response.ok)throw new Error('provider_unavailable');
- return jsonResult(toText(await response.json()));
+ const payload=await response.json();return {generated:jsonResult(toText(payload)),usage:payload.usage};
 }
 export function createHandler({env=process.env,fetcher=fetch}={}){
  return async request=>{
@@ -120,9 +145,16 @@ export function createHandler({env=process.env,fetcher=fetch}={}){
   const date=new Date().toISOString();
   try{
    const redis=redisClient(env,fetcher);
-   const claim=await redis(['EVAL',QUOTA_SCRIPT,2,'ricky:ai:day:'+date.slice(0,10),'ricky:ai:month:'+date.slice(0,7),MAX_DAILY,MAX_MONTHLY]);
-   if(!Array.isArray(claim)||claim[0]!==1)return json({message:'Limite de análises com IA atingido. Retome amanhã ou no próximo mês.'},429);
-   const generated=await callModel(env,fetcher,task,source);
+   const day=date.slice(0,10),month=date.slice(0,7);
+   const budget=safeInt(Number(env.AI_MONTHLY_BUDGET_CENTS||0));
+   const reserve=safeInt(Number(env.AI_REQUEST_RESERVE_CENTS||2))||2;
+   const claim=await redis(['EVAL',BUDGET_LUA,3,'ricky:ai:day:'+day,'ricky:ai:month:'+month,'ricky:ai:reserved-cents:month:'+month,MAX_DAILY,MAX_MONTHLY,budget,reserve]);
+   if(!Array.isArray(claim))throw Error('quota_unavailable');
+   if(claim[0]===-1)return json({message:'Orçamento interno da Ricky AI atingido. Nenhuma nova consulta será enviada à OpenAI.'},429);
+   if(claim[0]!==1)return json({message:'Limite de análises com IA atingido. Retome amanhã ou no próximo mês.'},429);
+   const result=await callModel(env,fetcher,task,source);
+   await registerTokens(redis,day,month,result.usage);
+   const generated=result.generated;
    if(task==='approach'){
     const candidate=s(generated?.text,900);
     if(validateApproach(candidate,lead,fallback))return json({text:candidate,source:'openai',reviewRequired:true});
