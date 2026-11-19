@@ -665,66 +665,119 @@ async function analyzeExperiment(){
 }
 
 
-function costCard({mark,title,connected,rows,description,link,linkLabel,billingNote,history}){
- const card=dom('article','costs-service');
- const head=dom('div','costs-service-head');
- const left=dom('div','costs-service-name'),avatar=dom('span','costs-provider-icon',mark),label=dom('div');
- label.append(dom('strong','',title),dom('small','',description));
- left.append(avatar,label);
- head.append(left,dom('span','costs-state '+(connected?'connected':'offline'),connected?'Configurado':'Não configurado'));
- card.append(head);
- for(const row of rows){
-  const section=dom('div','costs-meter');
-  const line=dom('div','costs-meter-line');line.append(dom('span','',row.label),dom('strong','',row.value));section.append(line);
-  if(row.pct!==null&&row.pct!==undefined){
-   const track=dom('div','costs-meter-track'),fill=dom('span','');
-   const p=Math.max(0,Math.min(100,row.pct));fill.style.width=p+'%';
-   if(p>=90)fill.className='danger';else if(p>=75)fill.className='warning';
-   track.append(fill);section.append(track);
-  }
-  if(row.caption)section.append(dom('small','costs-meter-caption',row.caption));
-  card.append(section);
- }
- const note=dom('div','costs-provider-footer');
- note.append(dom('span','', 'Cobrança confirmada: não conectada'));
- const a=dom('a','',linkLabel+' ↗');a.href=link;a.target='_blank';a.rel='noopener noreferrer';note.append(a);card.append(note);
- return card;
+const COSTS_ICONS={
+ openai:{src:'https://cdn.simpleicons.org/openai/FFFFFF',fallback:'✦'},
+ maps:{src:'https://cdn.simpleicons.org/googlemaps',fallback:'📍'},
+ brave:{src:'https://cdn.simpleicons.org/brave',fallback:'B'},
+ upstash:{src:'https://cdn.simpleicons.org/upstash',fallback:'U'},
+ vercel:{src:'https://cdn.simpleicons.org/vercel/FFFFFF',fallback:'▲'}
+};
+const usd=value=>Number(value).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2});
+const count=value=>Number(value||0).toLocaleString('pt-BR');
+function providerIcon(provider){
+ const settings=COSTS_ICONS[provider];
+ const icon=dom('span','costs-provider-icon costs-provider-'+provider,settings.fallback);
+ const img=document.createElement('img');
+ img.src=settings.src;img.alt='';img.width=29;img.height=29;img.loading='lazy';img.referrerPolicy='no-referrer';
+ img.onload=()=>{icon.textContent='';icon.append(img)};
+ return icon;
 }
-function meter(label,value,unit='chamadas'){
- if(!value)return {label,value:'Não disponível',pct:null,caption:'Ainda não há limite instrumentado para este indicador.'};
- const fmt=v=>Number(v).toLocaleString('pt-BR');
- return {label,value:fmt(value.used)+' / '+fmt(value.limit),pct:value.percentage,caption:fmt(value.remaining)+' '+unit+' restantes no limite interno'};
+function costMetric(label,value,highlight=false){
+ const line=dom('div','costs-card-metric'+(highlight?' is-main':''));
+ line.append(dom('span','',label),dom('strong','',String(value)));
+ return line;
+}
+function costCard({provider,title,subtitle,connected,mainLabel,mainValue,secondLabel,secondValue,extraLabel,extraValue,details,link,linkLabel,attention}){
+ const card=dom('article','costs-service');
+ const head=dom('div','costs-service-head'),left=dom('div','costs-service-name'),labels=dom('div','costs-service-labels');
+ labels.append(dom('strong','',title),dom('small','',subtitle));left.append(providerIcon(provider),labels);
+ const status=dom('span','costs-state '+(connected?'connected':'offline')+(attention?' attention':''),attention?'Atenção':connected?'Configurado':'Sem conexão');
+ head.append(left,status);card.append(head);
+ const stats=dom('div','costs-card-metrics');
+ stats.append(costMetric(mainLabel,mainValue,true));
+ if(secondLabel)stats.append(costMetric(secondLabel,secondValue));
+ if(extraLabel)stats.append(costMetric(extraLabel,extraValue));
+ card.append(stats);
+ const disclosure=dom('details','costs-card-details');
+ const summary=dom('summary','','Ver detalhes');
+ disclosure.append(summary);
+ const body=dom('div','costs-card-details-body');
+ for(const item of details||[]){
+  const itemLine=dom('div','costs-detail-line');
+  itemLine.append(dom('span','',item.label),dom('strong','',String(item.value)));
+  body.append(itemLine);
+  if(item.note)body.append(dom('small','',item.note));
+ }
+ const anchor=dom('a','costs-external-link',linkLabel+' ↗');anchor.href=link;anchor.target='_blank';anchor.rel='noopener noreferrer';body.append(anchor);
+ disclosure.append(body);card.append(disclosure);
+ return card;
 }
 async function loadCosts(){
  if(!state.key)return;
- const error=$('#costsError'),button=$('#refreshCosts');button.disabled=true;
- error.textContent='';$('#costsUpdated').textContent='Atualizando contadores…';
+ const error=$('#costsError'),button=$('#refreshCosts');
+ button.disabled=true;error.textContent='';$('#costsUpdated').textContent='Atualizando…';
  try{
   const data=await backend('costs');
-  $('#costsUpdated').textContent='Atualizado em '+new Date(data.updatedAt).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})+' · UTC';
-  $('#costsPlacesCount').textContent=String(data.places.callsMonth.used)+' / '+String(data.places.callsMonth.limit);
-  $('#costsPlacesRemaining').textContent=data.places.callsMonth.remaining+' chamadas disponíveis no limite interno';
-  $('#costsAiCount').textContent=String(data.openai.requestsMonth.used)+' / '+String(data.openai.requestsMonth.limit);
-  $('#costsAiRemaining').textContent=data.openai.requestsMonth.remaining+' análises disponíveis no limite interno';
+  const ai=data.openai,places=data.places,brave=data.brave;
+  const aiBudget=ai.budget||{};
+  const hasBudget=Number(aiBudget.limitCents)>0;
+  const budgetPct=hasBudget?Math.max(0,Math.min(100,Number(aiBudget.percentage)||0)):0;
+  $('#costsUpdated').textContent='Atualizado '+new Date(data.updatedAt).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  $('#costsOfficialAmount').textContent=ai.official&&Number.isFinite(Number(ai.billedAmount))?usd(ai.billedAmount):'—';
+  $('#costsOfficialCaption').textContent=ai.official?'Gasto da organização OpenAI · não só do Ricky':'Faturamento oficial indisponível';
+  $('#costsBudgetAmount').textContent=hasBudget?usd(Number(aiBudget.reservedCents||0)/100)+' / '+usd(Number(aiBudget.limitCents)/100):'Não configurado';
+  $('#costsBudgetFill').style.width=budgetPct+'%';
+  $('#costsBudgetFill').className=budgetPct>=100?'is-danger':budgetPct>=80?'is-warning':'';
+  $('#costsBudgetTrack').setAttribute('aria-valuenow',String(Math.round(budgetPct)));
+  $('#costsBudgetCaption').textContent=hasBudget?(budgetPct>=100?'Limite atingido':budgetPct>=80?'Atenção · '+budgetPct+'% reservado':budgetPct+'% reservado · estimativa preventiva'):'Defina um limite na Vercel';
+  $('#costsAiCount').textContent=count(ai.requestsMonth.used);
+  $('#costsAiRemaining').textContent=count(ai.requestsMonth.remaining)+' análises restantes no limite do CRM';
   const cards=$('#costsCards');cards.replaceChildren();
   cards.append(
-   costCard({mark:'◎',title:'Google Places',connected:data.places.connected,description:'Radar Local · descoberta de estabelecimentos',rows:[meter('Chamadas neste mês',data.places.callsMonth),meter('Chamadas hoje',data.places.callsDay),meter('Varreduras neste mês',data.places.scansMonth,'varreduras'),{label:'Franquia gratuita do Google',value:'Não verificada',pct:null,caption:'Contas e outros projetos podem consumir a franquia.'}],link:'https://console.cloud.google.com/billing',linkLabel:'Ver fatura Google'}),
-   costCard({mark:'✦',title:'OpenAI · Ricky AI',connected:data.openai.connected,description:'Mensagens, respostas e análises comerciais',
-    rows:[meter('Análises neste mês',data.openai.requestsMonth),meter('Análises hoje',data.openai.requestsDay),
-     {label:'Tokens de entrada · mês',value:Number(data.openai.tokens?.inputMonth||0).toLocaleString('pt-BR'),pct:null,caption:'Registrados nas respostas da OpenAI após esta atualização.'},
-     {label:'Tokens de saída · mês',value:Number(data.openai.tokens?.outputMonth||0).toLocaleString('pt-BR'),pct:null},
-     {label:'Gasto oficial da organização',value:data.openai.official?Number(data.openai.billedAmount).toLocaleString('en-US',{style:'currency',currency:'USD'}):'Não conectado',pct:null,caption:data.openai.billingSource},
-     {label:'Orçamento interno de reservas',value:data.openai.budget?.limitCents?(Number(data.openai.budget.reservedCents)/100).toLocaleString('en-US',{style:'currency',currency:'USD'})+' / '+(Number(data.openai.budget.limitCents)/100).toLocaleString('en-US',{style:'currency',currency:'USD'}):'Não configurado',pct:data.openai.budget?.percentage??null,caption:data.openai.budget?.warning?'Atenção: 80% ou mais do limite interno reservado.': 'Reserva conservadora por chamada; NÃO é o gasto oficial nem um limite geral da conta OpenAI.'}],
-    history:data.openai.history,billingNote:data.openai.official?'Custo oficial da organização OpenAI':'Cobrança oficial: não conectada',link:'https://platform.openai.com/usage',linkLabel:'Ver custos OpenAI'}),
-   costCard({mark:'♜',title:'Brave Search',connected:data.brave.connected,description:'Busca web do Radar antigo',rows:[meter('Buscas neste mês',data.brave.requestsMonth),meter('Buscas hoje',data.brave.requestsDay),data.brave.reservedBudgetCents?{label:'Reserva interna acumulada',value:(data.brave.reservedBudgetCents.used/100).toLocaleString('pt-BR',{style:'currency',currency:'USD'}),pct:Math.min(100,data.brave.reservedBudgetCents.used/data.brave.reservedBudgetCents.limit*100),caption:'Reserva em centavos configurados; não equivale à fatura oficial.'}:{label:'Reserva interna',value:'Não configurada',pct:null}, {label:'Créditos do plano Brave',value:'Não verificados',pct:null}],link:'https://api-dashboard.search.brave.com/',linkLabel:'Ver painel Brave'}),
-   costCard({mark:'⬡',title:'Upstash Redis',connected:data.upstash.connected,description:'Armazenamento e controle de limites',rows:[{label:'Requisições e armazenamento totais',value:'Não conectado',pct:null,caption:'Consulte a franquia e o uso total no console Upstash.'}],link:'https://console.upstash.com/',linkLabel:'Ver console Upstash'}),
-   costCard({mark:'▱',title:'Vercel',connected:data.vercel.connected,description:'Hospedagem e funções do CRM',rows:[{label:'Consumo da hospedagem',value:'Não conectado',pct:null,caption:'O consumo total da Vercel depende de outros recursos da conta.'}],link:'https://vercel.com/dashboard',linkLabel:'Ver custos Vercel'})
+   costCard({provider:'openai',title:'OpenAI',subtitle:'Ricky AI · respostas e análises',connected:ai.connected,attention:!!aiBudget.warning,
+    mainLabel:'Gasto oficial · mês',mainValue:ai.official?usd(ai.billedAmount):'Não disponível',
+    secondLabel:'Análises · mês',secondValue:count(ai.requestsMonth.used)+' / '+count(ai.requestsMonth.limit),
+    extraLabel:'Tokens registrados',extraValue:count(Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)),
+    details:[{label:'Consultas hoje',value:count(ai.requestsDay.used)+' / '+count(ai.requestsDay.limit)},
+     {label:'Tokens entrada / saída',value:count(ai.tokens?.inputMonth)+' / '+count(ai.tokens?.outputMonth),note:'Tokens contabilizados apenas desde que o registro foi ativado.'},
+     {label:'Reserva interna · mês',value:hasBudget?usd(Number(aiBudget.reservedCents||0)/100)+' / '+usd(Number(aiBudget.limitCents)/100):'Não configurada',note:'Reserva estimada por requisição, não equivale à fatura.'},
+     {label:'Fonte do gasto',value:ai.billingSource||'Não conectada'}],
+    link:'https://platform.openai.com/usage',linkLabel:'Abrir OpenAI'}),
+   costCard({provider:'maps',title:'Google Maps',subtitle:'Places · busca de negócios',connected:places.connected,
+    mainLabel:'Chamadas · mês',mainValue:count(places.callsMonth.used)+' / '+count(places.callsMonth.limit),
+    secondLabel:'Chamadas · hoje',secondValue:count(places.callsDay.used),
+    extraLabel:'Custo oficial',extraValue:'Não conectado',
+    details:[{label:'Varreduras · mês',value:count(places.scansMonth.used)+' / '+count(places.scansMonth.limit)},
+     {label:'Faturamento do Google',value:'Não conectado',note:'Os contadores são apenas do Ricky CRM; não são a fatura Google.'}],
+    link:'https://console.cloud.google.com/billing',linkLabel:'Abrir Google Cloud'}),
+   costCard({provider:'brave',title:'Brave Search',subtitle:'Busca do Radar antigo',connected:brave.connected,
+    mainLabel:'Buscas · mês',mainValue:brave.requestsMonth?count(brave.requestsMonth.used)+' / '+count(brave.requestsMonth.limit):'Não disponível',
+    secondLabel:'Buscas · hoje',secondValue:brave.requestsDay?count(brave.requestsDay.used):'—',
+    extraLabel:'Custo oficial',extraValue:'Não conectado',
+    details:[{label:'Reserva interna acumulada',value:brave.reservedBudgetCents?usd(Number(brave.reservedBudgetCents.used)/100):'Não configurada',note:'Não é uma cobrança real do Brave.'},
+     {label:'Faturamento do Brave',value:'Não conectado'}],
+    link:'https://api-dashboard.search.brave.com/',linkLabel:'Abrir Brave'}),
+   costCard({provider:'upstash',title:'Upstash',subtitle:'Banco Redis · contadores',connected:data.upstash.connected,
+    mainLabel:'Conexão',mainValue:data.upstash.connected?'Configurada':'Sem conexão',
+    secondLabel:'Consumo oficial',secondValue:'Não conectado',
+    details:[{label:'Uso do Upstash',value:'Consultar painel externo',note:'A API do Ricky não coleta consumo total nem fatura do Redis.'}],
+    link:'https://console.upstash.com/',linkLabel:'Abrir Upstash'}),
+   costCard({provider:'vercel',title:'Vercel',subtitle:'Hospedagem do Ricky CRM',connected:data.vercel.connected,
+    mainLabel:'Hospedagem',mainValue:'Configurada',
+    secondLabel:'Consumo oficial',secondValue:'Não conectado',
+    details:[{label:'Faturamento da Vercel',value:'Consultar painel externo',note:'A API do Ricky não coleta a fatura de hospedagem.'}],
+    link:'https://vercel.com/dashboard',linkLabel:'Abrir Vercel'})
   );
  }catch(e){
-  $('#costsUpdated').textContent='Dados indisponíveis';
-  $('#costsPlacesCount').textContent='—';$('#costsPlacesRemaining').textContent='Contagem indisponível';
-  $('#costsAiCount').textContent='—';$('#costsAiRemaining').textContent='Contagem indisponível';
-  $('#costsCards').replaceChildren(dom('p','field-note','Não foi possível consultar os contadores. Nenhum número foi presumido.'));
+  $('#costsUpdated').textContent='Falha ao atualizar';
+  $('#costsOfficialAmount').textContent='—';
+  $('#costsOfficialCaption').textContent='Sem dados no momento';
+  $('#costsBudgetAmount').textContent='—';
+  $('#costsBudgetCaption').textContent='Não foi possível consultar';
+  $('#costsBudgetFill').style.width='0%';
+  $('#costsAiCount').textContent='—';
+  $('#costsAiRemaining').textContent='Não foi possível consultar';
+  $('#costsCards').replaceChildren(dom('p','field-note','Não foi possível atualizar os serviços. Tente novamente.'));
   error.textContent=e.message;
  }finally{button.disabled=false}
 }
