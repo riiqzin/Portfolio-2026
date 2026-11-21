@@ -195,7 +195,7 @@ function actionCard(item){
  const left=dom('div','action-left'),icon=dom('div','action-icon',item.type==='followup'?'↻':item.type==='reply'?'✉':'✦'),copy=dom('div','action-copy');
  copy.append(dom('strong','',item.c.name),dom('p','',item.detail));
  left.append(icon,copy);
- const btn=dom('button','btn btn-outline compact',item.label+' ↗');btn.type='button';btn.addEventListener('click',()=>openLead(item.c));article.append(left,btn);
+ const actions=dom('div','action-card-controls');const btn=dom('button','btn btn-outline compact',item.label+' ↗');btn.type='button';btn.addEventListener('click',()=>openLead(item.c));const remove=dom('button','btn btn-danger-quiet compact','Excluir');remove.type='button';remove.title='Excluir este lead da carteira';remove.addEventListener('click',()=>deleteLeadById(item.c.id));actions.append(btn,remove);article.append(left,actions);
  return article;
 }
 function renderCentral(){
@@ -459,8 +459,7 @@ function openLead(candidate){
  $('#closeLead').focus();
 }
 function closeLead(){state.aiDraftEpoch++;state.draft=null;$('#leadOverlay').hidden=true;document.body.style.overflow=''}
-async function deleteLead(){
- const id=state.draft?.id;
+async function deleteLeadById(id){
  if(!id){toast('Este negócio ainda não foi salvo.');return}
  const previous=state.leads.find(x=>x.id===id);
  if(!previous){toast('Não foi possível localizar o lead salvo.');return}
@@ -474,12 +473,13 @@ async function deleteLead(){
    const snapshot=Object.values(state.archiveSnapshots).flat().find(x=>x.place_id===previous.place_id);
    if(snapshot)state.results.push({...snapshot});
   }
-  closeLead();
+  if(state.draft?.id===id)closeLead();
   await refresh();
   toast('Lead excluído da carteira. Pode ser salvo novamente quando quiser.');
  }catch(e){toast('Não foi possível excluir: '+e.message)}
  finally{button.disabled=false}
 }
+function deleteLead(){return deleteLeadById(state.draft?.id)}
 
 async function saveLead(showToast=true){
  fromFields();
@@ -488,7 +488,7 @@ async function saveLead(showToast=true){
  if(d.email&&!/^[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}$/i.test(d.email)){toast('E-mail inválido.');return null}
  try{
   const saved=await rpc('crm_local_save',{p_data:{...d,place_id:d.place_id||null}});
-  state.draft=blankLead(saved);await refresh();
+  state.draft=blankLead(saved);$('#deleteLead').hidden=false;await refresh();
   void loadLeadHistory(saved.id);
   if(showToast)toast('Negócio salvo na sua carteira.');
   return saved;
