@@ -963,7 +963,7 @@ function createLab(item){
  const bar=dom('div','ricky-lab-controls');
  const modelLabel=dom('label','', 'Modelo');
  const model=dom('select','');
- for(const [id,label] of [['gpt-5.4-mini','GPT-5.4 mini'],['gpt-5.4','GPT-5.4']]){
+ for(const [id,label] of [['gpt-5.4','GPT-5.4'],['gpt-5.4-mini','GPT-5.4 mini']]){
   const option=dom('option','',label);option.value=id;model.append(option);
  }
  modelLabel.append(model);
