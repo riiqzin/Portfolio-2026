@@ -355,3 +355,8 @@
 .btn-danger-quiet:hover{background:rgba(235,105,92,.12);border-color:rgba(237,133,121,.65);color:#ffd0c8}
 .btn-danger-quiet:disabled{opacity:.55;cursor:wait}
 @media(max-width:640px){.templates-standalone{padding:12px}.dialog-foot .btn-danger-quiet{flex-basis:100%}}
+
+/* Quick, compact controls for actions on Pra Hoje */
+.action-card-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.action-card-controls .btn-danger-quiet{font-size:11px;padding:9px 11px}
+@media(max-width:640px){.action-card-controls{width:100%;justify-content:flex-start}}
