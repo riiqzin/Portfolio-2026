@@ -204,3 +204,14 @@
 @media(max-width:1050px){.costs-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.costs-hero-primary{grid-column:1/-1}}
 @media(max-width:710px){.costs-services{grid-template-columns:1fr}.costs-summary{grid-template-columns:1fr}.costs-hero-primary{grid-column:auto}.costs-hero{min-height:125px}.costs-top{align-items:flex-start!important}.costs-top .btn{white-space:nowrap}.costs-section-heading{align-items:flex-start;flex-direction:column;gap:6px}}
 @media(max-width:420px){.costs-top{flex-wrap:wrap}.costs-hero{padding:18px}.costs-service{padding:16px}.costs-service-head{gap:8px}.costs-state{padding:5px 7px}}
+
+/* Clear costs: service purpose, pricing and visible quota progress */
+.costs-pricing{display:block;width:fit-content;margin-top:8px;padding:5px 8px;border-radius:7px;background:rgba(143,207,175,.10);color:#c1dccb;font-size:11px;line-height:1.5;max-width:100%}
+.costs-simple-progress{margin:-4px 0 2px;display:flex;flex-direction:column;gap:6px}
+.costs-simple-track{height:8px;border-radius:999px;background:rgba(170,202,189,.15);overflow:hidden}
+.costs-simple-track span{display:block;height:100%;background:#8fdbb3;border-radius:999px;transition:width .35s ease}
+.costs-simple-progress small{font-size:11px;color:#a3bfb4}
+.costs-card-warning{color:#a6b7ae;font-size:11px;line-height:1.6;margin:0}
+.costs-service-labels{min-width:0}
+.costs-service-head{align-items:flex-start}
+@media(max-width:480px){.costs-service-head{gap:8px}.costs-state{white-space:nowrap}}
