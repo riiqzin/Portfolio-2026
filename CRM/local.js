@@ -809,7 +809,23 @@ async function loadOnboardings(){
   const response=await backend('onboarding'),items=response.items||[];
   root.replaceChildren();
   if(!items.length){root.append(dom('p','field-note','Nenhum formulário ainda. Gere o primeiro link ao lado.'));return}
-  for(const item of items){
+  const groupOf=segment=>{
+   const value=String(segment||'').toLocaleLowerCase('pt-BR');
+   if(/barbear/.test(value))return 'Barbearias';
+   if(/tatu|tattoo/.test(value))return 'Tatuagem';
+   if(/est[eé]tica|sal[aã]o|cabel|manicure/.test(value))return 'Beleza e estética';
+   if(/loja|com[eé]rcio|varejo/.test(value))return 'Lojas';
+   if(/restaur|lanch|caf[eé]|aliment/.test(value))return 'Alimentação';
+   return segment?.trim()||'Outros negócios';
+  };
+  const groups=new Map();
+  for(const item of items){const name=groupOf(item.segment);if(!groups.has(name))groups.set(name,[]);groups.get(name).push(item)}
+  for(const [groupName,groupItems] of [...groups.entries()].sort(([a],[b])=>a.localeCompare(b,'pt-BR'))){
+   const group=dom('section','onboard-group');
+   const heading=dom('div','onboard-group-heading');
+   heading.append(dom('strong','',groupName),dom('span','',groupItems.length+' '+(groupItems.length===1?'empresa':'empresas')));
+   group.append(heading);
+   for(const item of groupItems){
    const details=dom('details','onboard-item');
    const summary=dom('summary','onboard-item-head');
    const main=dom('span','onboard-item-label');
@@ -823,7 +839,9 @@ async function loadOnboardings(){
     copy.onclick=()=>navigator.clipboard.writeText(item.company+' · '+item.segment+'\n'+Object.entries(item.answers).map(([k,v])=>k+': '+(Array.isArray(v)?v.join(', '):v)).join('\n')).then(()=>toast('Respostas copiadas.')).catch(()=>toast('Não foi possível copiar.'));
     content.append(copy);
    }else content.append(dom('p','field-note','O cliente ainda não respondeu. O link é válido por 30 dias; para reenviar, gere um novo link caso tenha perdido o original.'));
-   details.append(content);root.append(details);
+   details.append(content);group.append(details);
+   }
+   root.append(group);
   }
  }catch(e){root.replaceChildren(dom('p','field-note',e.message))}
 }
