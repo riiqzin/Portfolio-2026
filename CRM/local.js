@@ -292,6 +292,7 @@ function resultCard(c,i){
  art.append(head,dom('h3','',c.name),dom('p','prospect-sub',c.city||'Endereço não informado'));
  const metrics=dom('div','prospect-metrics');
  metrics.append(dom('span','','★ '+formatStars(c.rating)+' · '+(c.reviews??'—')+' avaliações'),dom('span','',siteLabel(c.link_type)),dom('span','',c.mobile_probable?'Celular provável':c.phone?'Telefone público':'Sem telefone'));
+ if(c.reviews!=null&&Number(c.reviews)<30)metrics.append(dom('span','prospect-small-reviews','Negócio com poucas avaliações')); 
  const offer=dom('span','prospect-offer',c.match_type==='landing'?'LANDING · INDÍCIO':c.match_type==='bot_investigate'?'BOT · A VERIFICAR':'SEM CANAL CONFIRMADO');
  offer.classList.add(c.match_type==='landing'?'landing':c.match_type==='bot_investigate'?'bot':'research');
  art.append(offer);
@@ -329,7 +330,7 @@ function renderRadar(){
   if(sort==='reviews_desc')return compareNullable(count(a),count(b),-1);
   if(sort==='name')return String(a.name||'').localeCompare(String(b.name||''),'pt-BR');
   const weights={alta:2,investigar:1,baixa:0};
-  return weights[priority(b).type]-weights[priority(a).type]||Number(b.reviews||0)-Number(a.reviews||0);
+  return weights[priority(b).type]-weights[priority(a).type]||Number(a.reviews??999999)-Number(b.reviews??999999);
  });
  $('#radarMatchCount').textContent=filtered.length+' de '+state.results.length+' candidatos exibidos · filtros locais, sem novas chamadas';
  if(!state.results.length){area.innerHTML=placeholder('Pronto para encontrar oportunidades','Pesquise sua região. O Radar vai organizar candidatos sem inventar oportunidades.');return}
