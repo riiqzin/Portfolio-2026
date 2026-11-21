@@ -19,7 +19,7 @@ export function classifyWebsite(raw){
 }
 export function normalizePlace(place){
  const url=String(place.websiteUri||'').slice(0,1500);
- const phone=String(place.nationalPhoneNumber||place.internationalPhoneNumber||'').slice(0,45);
+ const phone=String(place.internationalPhoneNumber||place.nationalPhoneNumber||'').slice(0,45);
  const digits=phone.replace(/\D/g,'');
  const phoneBr=digits.startsWith('55')&&digits.length>=12?digits.slice(2):digits;
  const mobile=/^[1-9][0-9]9[0-9]{8}$/.test(phoneBr);
@@ -40,7 +40,7 @@ export function normalizePlace(place){
 
 const QUOTA_LUA=["local d=tonumber(redis.call('GET',KEYS[1]) or '0')","local m=tonumber(redis.call('GET',KEYS[2]) or '0')","if d>=tonumber(ARGV[1]) or m>=tonumber(ARGV[2]) then return {0,d,m} end","redis.call('INCR',KEYS[1]);redis.call('EXPIRE',KEYS[1],172800)","redis.call('INCR',KEYS[2]);redis.call('EXPIRE',KEYS[2],5356800)","return {1,d+1,m+1}"].join('\n');
 const DAY_CALLS=15,MONTH_CALLS=200,MAX_PER_SCAN=8,DAY_SCANS=5,MONTH_SCANS=75,TARGET=40;
-const FIELD_MASK='nextPageToken,places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.businessStatus,places.websiteUri,places.nationalPhoneNumber,places.googleMapsUri';
+const FIELD_MASK='nextPageToken,places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.businessStatus,places.websiteUri,places.nationalPhoneNumber,places.internationalPhoneNumber,places.googleMapsUri';
 const valid=s=>typeof s==='string'&&s.length>=2&&s.length<=80&&/^[\p{L}\p{N}\s,.'’&()-]+$/u.test(s);
 const isSP=/^s[aã]o paulo(?:,\s*sp)?$/i;
 const COUNTRIES={
