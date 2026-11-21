@@ -20,6 +20,7 @@
   <a href="#radar" data-nav="radar"><span class="nav-symbol">◎</span> Radar <span class="nav-pill">LOCAL</span></a>
   <a href="#hoje" data-nav="hoje"><span class="nav-symbol">◷</span> Pra Hoje <span class="nav-count" id="navTodayCount" hidden></span></a>
   <a href="#clientes" data-nav="clientes"><span class="nav-symbol">♧</span> Clientes</a>
+  <a href="#implantacoes" data-nav="implantacoes"><span class="nav-symbol">✦</span> Implantações</a>
   <a href="#custos" data-nav="custos"><span class="nav-symbol">◫</span> Custos & APIs</a>
  </nav>
  <div class="side-bottom"><span class="side-online"><i></i> CENTRAL PRIVADA</span><a href="../" target="_blank" rel="noopener">Meu portfólio ↗</a><button class="logout" id="logoutButton" type="button">Sair da conta ↗</button></div>
@@ -78,6 +79,23 @@
  <div class="page-intro inline-intro"><div><span class="eyebrow">CARTEIRA DE CLIENTES</span><h1>Relações que<br><em>viram negócio.</em></h1><p>Histórico simples de cada contato, do primeiro oi até fechar.</p></div><button type="button" class="btn btn-primary" id="addClient">+ Adicionar negócio</button></div>
  <div class="client-tools"><label class="search-wrap"><span>⌕</span><input id="clientSearch" placeholder="Buscar negócio, cidade ou contato"></label><select id="clientStatus"><option value="all">Todos os status</option><option value="novo">Ainda não abordado</option><option value="abordado">Abordado</option><option value="respondeu">Respondeu</option><option value="interessado">Interessado</option><option value="proposta">Proposta enviada</option><option value="fechou">Fechou</option><option value="sem_interesse">Sem interesse</option></select></div>
  <div id="clientList" class="client-list"></div>
+</section>
+<section class="page onboarding-page" id="page-implantacoes" hidden>
+ <div class="page-intro inline-intro"><div><span class="eyebrow">RICKY AI / NOVOS CLIENTES</span><h1>Implantações <em>sem complicação.</em></h1><p>Gere um link para o cliente preencher as informações essenciais. As respostas aparecem aqui para sua revisão.</p></div><span class="intro-tag">✦ ONBOARDING</span></div>
+ <div class="onboard-layout">
+  <form class="onboard-create glass" id="onboardCreate">
+   <h2>Gerar formulário</h2>
+   <p>Preencha os dados que você já conhece. O cliente só completa o que falta.</p>
+   <label>Empresa<input id="onboardCompany" maxlength="120" required placeholder="Ex.: Barbearia Imperial"></label>
+   <label>Segmento<input id="onboardSegment" maxlength="100" required placeholder="Ex.: Barbearia"></label>
+   <button class="btn btn-primary" id="onboardCreateBtn" type="submit">+ Gerar link exclusivo</button>
+   <div class="onboard-link-result" id="onboardResult" hidden><span>Link criado. Envie ao cliente:</span><input id="onboardLink" readonly aria-label="Link do formulário"><button class="btn btn-outline compact" id="onboardCopy" type="button">Copiar link</button><small>Válido por 30 dias. O cliente envia uma única vez.</small></div>
+   <p id="onboardError" class="field-note" role="status"></p>
+  </form>
+  <div class="onboard-inbox glass"><div class="onboard-inbox-title"><h2>Respostas recebidas</h2><button type="button" class="btn btn-outline compact" id="onboardRefresh">↻ Atualizar</button></div>
+   <div id="onboardList" class="onboard-list"><p class="field-note">Abra esta aba para consultar os formulários.</p></div>
+  </div>
+ </div>
 </section>
 <section class="page costs-page" id="page-custos" hidden>
  <div class="costs-top">
