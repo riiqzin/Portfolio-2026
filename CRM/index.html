@@ -81,30 +81,30 @@
 </section>
 <section class="page costs-page" id="page-custos" hidden>
  <div class="costs-top">
-  <div><span class="eyebrow">VISÃO GERAL · ESTE MÊS</span><h1>Custos <em>& uso.</em></h1><p>As informações importantes, sem complicação.</p></div>
+  <div><span class="eyebrow">VISÃO GERAL · ESTE MÊS</span><h1>Custos <em>& uso.</em></h1><p>Veja o que cada ferramenta faz, o que é gratuito e quanto você já utilizou.</p></div>
   <button type="button" class="btn btn-outline compact" id="refreshCosts">↻ Atualizar</button>
  </div>
  <div class="costs-summary" aria-label="Resumo do mês">
   <article class="costs-hero costs-hero-primary">
-   <div class="costs-hero-label"><span class="costs-tiny-dot"></span>OpenAI · gasto oficial do mês</div>
+   <div class="costs-hero-label"><span class="costs-tiny-dot"></span>OpenAI · gasto oficial deste mês (se conectado)</div>
    <strong id="costsOfficialAmount">—</strong>
    <span id="costsOfficialCaption">Consultando faturamento…</span>
   </article>
   <article class="costs-hero">
-   <div class="costs-hero-label">Limite interno da Ricky AI</div>
+   <div class="costs-hero-label">Reserva de segurança da Ricky AI · não é fatura</div>
    <strong id="costsBudgetAmount">—</strong>
    <div class="costs-progress" role="progressbar" aria-label="Porcentagem de reservas do orçamento interno" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="costsBudgetTrack"><span id="costsBudgetFill"></span></div>
    <span id="costsBudgetCaption">Consultando reservas…</span>
   </article>
   <article class="costs-hero">
-   <div class="costs-hero-label">Análises da Ricky AI</div>
+   <div class="costs-hero-label">Análises utilizadas neste mês</div>
    <strong id="costsAiCount">—</strong>
    <span id="costsAiRemaining">Neste mês</span>
   </article>
  </div>
- <div class="costs-section-heading"><div><span class="eyebrow">SEUS SERVIÇOS</span><h2>Onde você está usando</h2></div><span id="costsUpdated" class="tiny-muted">Atualizando…</span></div>
+ <div class="costs-section-heading"><div><span class="eyebrow">SEUS SERVIÇOS</span><h2>Ferramentas do seu CRM</h2></div><span id="costsUpdated" class="tiny-muted">Atualizando…</span></div>
  <div id="costsCards" class="costs-services" aria-live="polite"><div class="action-card">Carregando serviços…</div></div>
- <p class="costs-disclaimer">Gasto oficial da OpenAI e reservas internas são informações diferentes. Outras plataformas mostram uso, não valores de cobrança.</p>
+ <p class="costs-disclaimer">Saldo informado, gastos oficiais e limites do CRM são medidas diferentes. A barra dos cartões indica uso do limite interno — não a porcentagem dos créditos consumidos. Quando o faturamento não estiver integrado, consulte o painel da plataforma.</p>
  <p class="field-note" id="costsError" role="status"></p>
 </section>
 </main>
