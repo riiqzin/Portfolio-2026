@@ -14,7 +14,49 @@ const daysSince=v=>v?Math.floor((Date.now()-Date.parse(v))/86400000):0;
 const formatStars=v=>Number.isFinite(Number(v))&&v!==null&&v!==''?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
 const placeholder=(title,description)=>'<div class="action-card"><div class="action-left"><div class="action-icon">✧</div><div class="action-copy"><strong>'+escapeHTML(title)+'</strong><p>'+escapeHTML(description)+'</p></div></div></div>';
 const prefsKey='ricky:local:archive-v1';
-const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,offerFilter:'all',todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],archiveSnapshots:Object.create(null),archiveView:null,gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
+const COUNTRY_PREFS='ricky:radar:country-v1';
+const COUNTRY_DATA={
+ BR:{city:'São Paulo, SP',areas:'',name:'Brasil',lang:'português',flag:'🇧🇷',terms:['Barbearias','Clínicas de estética','Estúdios de tatuagem','Personal trainer']},
+ IT:{city:'Milano',areas:'',name:'Italia',lang:'italiano',flag:'🇮🇹',terms:['Barbieri','Centri estetici','Studi di tatuaggi','Personal trainer']},
+ PT:{city:'Lisboa',areas:'',name:'Portugal',lang:'português',flag:'🇵🇹',terms:['Barbearias','Clínicas de estética','Estúdios de tatuagem','Personal trainer']},
+ US:{city:'New York',areas:'',name:'United States',lang:'inglês',flag:'🇺🇸',terms:['Barbershops','Beauty clinics','Tattoo studios','Personal trainers']},
+ ES:{city:'Madrid',areas:'',name:'España',lang:'espanhol',flag:'🇪🇸',terms:['Barberías','Centros de estética','Estudios de tatuajes','Entrenadores personales']},
+ FR:{city:'Paris',areas:'',name:'France',lang:'francês',flag:'🇫🇷',terms:['Barbiers','Instituts de beauté','Studios de tatouage','Coach sportif']},
+ DE:{city:'Berlin',areas:'',name:'Deutschland',lang:'alemão',flag:'🇩🇪'},GB:{city:'London',areas:'',name:'United Kingdom',lang:'inglês',flag:'🇬🇧'},CH:{city:'Zürich',areas:'',name:'Schweiz',lang:'alemão',flag:'🇨🇭'},AT:{city:'Wien',areas:'',name:'Österreich',lang:'alemão',flag:'🇦🇹'},NL:{city:'Amsterdam',areas:'',name:'Nederland',lang:'holandês',flag:'🇳🇱'},BE:{city:'Bruxelles',areas:'',name:'Belgique',lang:'francês',flag:'🇧🇪'},IE:{city:'Dublin',areas:'',name:'Ireland',lang:'inglês',flag:'🇮🇪'},CA:{city:'Toronto',areas:'',name:'Canada',lang:'inglês',flag:'🇨🇦'},AR:{city:'Buenos Aires',areas:'',name:'Argentina',lang:'espanhol',flag:'🇦🇷'},MX:{city:'Ciudad de México',areas:'',name:'México',lang:'espanhol',flag:'🇲🇽'},CL:{city:'Santiago',areas:'',name:'Chile',lang:'espanhol',flag:'🇨🇱'},UY:{city:'Montevideo',areas:'',name:'Uruguay',lang:'espanhol',flag:'🇺🇾'},JP:{city:'Tokyo',areas:'',name:'日本',lang:'japonês',flag:'🇯🇵'},AU:{city:'Sydney',areas:'',name:'Australia',lang:'inglês',flag:'🇦🇺'},NZ:{city:'Auckland',areas:'',name:'New Zealand',lang:'inglês',flag:'🇳🇿'}
+};
+const BASE_NICHES=['Barbearias','Clínicas de estética','Estúdios de tatuagem','Personal trainer'];
+function selectedCountry(){return COUNTRY_DATA[$('#localCountry')?.value]||COUNTRY_DATA.BR}
+function refreshCountryDisplay(){
+ const code=$('#localCountry').value,c=selectedCountry();
+ $('#countryScanHint').textContent=c.flag+' Pesquisa localizada em '+c.lang+' · '+c.name;
+ $('#globeCountryName').textContent=c.flag+' '+c.name;
+ $('#globeCountryDetail').textContent='Pesquisa em '+c.lang+' com foco em '+c.name+'.';
+ $('#globeCountrySelect').value=code;
+}
+function setCountry(code,{keepCity=false}={}){
+ const c=COUNTRY_DATA[code];if(!c)return;
+ const old=COUNTRY_DATA[state.countryCode]||COUNTRY_DATA.BR;
+ const value=$('#localNiche').value.trim(),i=[...BASE_NICHES,...(old.terms||[])].findIndex(n=>n.toLocaleLowerCase()===value.toLocaleLowerCase());
+ if(i>=0){const index=i%4;$('#localNiche').value=(c.terms||BASE_NICHES)[index]||BASE_NICHES[index]}
+ state.countryCode=code;$('#localCountry').value=code;
+ if(!keepCity){$('#localCity').value=c.city;$('#localAreas').value=c.areas}
+ $('[data-niche]').forEach((b,i)=>{b.dataset.niche=(c.terms||BASE_NICHES)[i];b.classList.toggle('active',b.dataset.niche.toLocaleLowerCase()===$('#localNiche').value.toLocaleLowerCase())});
+ refreshCountryDisplay();try{localStorage.setItem(COUNTRY_PREFS,code)}catch{}
+}
+function openCountryGlobe(){
+ const modal=$('#countryGlobeModal');modal.hidden=false;document.body.classList.add('globe-modal-open');
+ $('#closeCountryGlobe').focus();
+ if(window.RickyGlobe){window.RickyGlobe.open();window.RickyGlobe.focus($('#localCountry').value);return}
+ if(modal.dataset.loading)return;modal.dataset.loading='true';
+ const script=document.createElement('script');script.src='/CRM/globe.js';script.async=true;
+ script.onerror=()=>{$('#globeFallback').hidden=false;$('#countryGlobeCanvas').hidden=true;modal.dataset.loading='false'};
+ document.head.append(script);
+}
+function closeCountryGlobe(){
+ $('#countryGlobeModal').hidden=true;document.body.classList.remove('globe-modal-open');window.RickyGlobe?.close();$('#openCountryGlobe').focus();
+}
+
+const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',countryCode:'BR',filterOutside:false,offerFilter:'all',todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],archiveSnapshots:Object.create(null),archiveView:null,gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
 const VERIFY=[
  ['whatsapp_confirmed','WhatsApp confirmado (conferi o perfil)'],
  ['instagram_found','Tem Instagram (confirmei)'],
@@ -62,7 +104,7 @@ function loadArchive(){
 }
 state.archive=loadArchive();
 function archiveSearch(meta,results){
- const entry={id:Date.now(),niche:meta.niche,city:meta.city,count:meta.count,date:now(),placeIds:[...new Set((results||[]).map(c=>c.place_id).filter(x=>typeof x==='string'&&x.length>0))].slice(0,200)};
+ const entry={id:Date.now(),niche:meta.niche,city:meta.city,countryCode:meta.countryCode||'BR',count:meta.count,date:now(),placeIds:[...new Set((results||[]).map(c=>c.place_id).filter(x=>typeof x==='string'&&x.length>0))].slice(0,200)};
  // Retain only Google place IDs across reloads. Other Places content is not persistently cached.
  state.archiveSnapshots[entry.id]=(results||[]).map(c=>({...c}));
  state.archive=[entry,...state.archive].slice(0,20);
@@ -70,11 +112,21 @@ function archiveSearch(meta,results){
  try{localStorage.setItem(prefsKey,JSON.stringify(state.archive))}catch{toast('Histórico disponível apenas nesta sessão; armazenamento do navegador cheio.')}
 }
 function normalizePhone(phone){
- let digits=String(phone||'').replace(/\D/g,'');
- if(digits.startsWith('00'))digits=digits.slice(2);
- if(digits.startsWith('55')&&digits.length>=12)digits=digits.slice(2);
- if(digits.length!==10&&digits.length!==11)return '';
- return '55'+digits;
+ const original=String(phone||'').trim(),digits=original.replace(/\D/g,'');
+ if(!digits)return '';
+ // Google Places provides international numbers with +. Never force Brazilian DDDs on Italian leads.
+ if(original.startsWith('+')||original.startsWith('00')){
+  const international=original.startsWith('00')?digits.slice(2):digits;
+  return international.length>=8&&international.length<=15?international:'';
+ }
+ if(digits.startsWith('55')&&[12,13].includes(digits.length))return digits;
+ if(digits.startsWith('39')&&digits.length>=11&&digits.length<=13)return digits;
+ const code=$('#localCountry')?.value||'BR';
+ const dial={BR:'55',IT:'39',PT:'351',US:'1',ES:'34',FR:'33',DE:'49',GB:'44',CH:'41',AT:'43',NL:'31',BE:'32',IE:'353',CA:'1',AR:'54',MX:'52',CL:'56',UY:'598',JP:'81',AU:'61',NZ:'64'}[code]||'55';
+ if(code==='BR'&&(digits.length!==10&&digits.length!==11))return '';
+ const local=code==='IT'?digits:digits.replace(/^0+/,'');
+ const result=dial+local;
+ return result.length>=8&&result.length<=15?result:'';
 }
 function websiteType(url){
  if(!url)return 'none';
@@ -91,7 +143,7 @@ function eligible(c){
  if(c.business_status==='CLOSED_PERMANENTLY')return false;
  const rating=typeof c.rating==='number'?c.rating:NaN,reviews=Number(c.reviews);
  const minR=Number($('#minRating').value),minN=Number($('#minReviews').value);
- return Number.isFinite(rating)&&rating>=minR&&Number.isFinite(reviews)&&reviews>=minN;
+ return (minR===0||Number.isFinite(rating)&&rating>=minR)&&(minN===0||c.reviews!=null&&Number.isFinite(reviews)&&reviews>=minN);
 }
 function priority(c){
  const v=c.verified||{};
@@ -130,6 +182,11 @@ function praise(c){
  return 'Vi a '+c.name+' no Google, nota '+formatStars(c.rating)+suffix+'.';
 }
 function templateMessage(c){
+ const italian=/\\+39\\b|^0039/.test(String(c.phone||''))||/\\b(?:italia|italy)\\b/i.test(String(c.city||''))||(!c.id&&state.countryCode==='IT');
+ if(italian&&c.status==='novo'){
+  if(c.offer==='bot'||c.angle==='B')return 'Ciao! Mi chiamo Henrique. Una domanda veloce: ricevete molte richieste su prezzi e appuntamenti via WhatsApp?\\nRealizzo assistenti virtuali personalizzati per le attività locali. Posso mostrarvi un esempio per '+c.name+'?';
+  return 'Ciao! Mi chiamo Henrique e realizzo siti web moderni per le attività locali. Ho visto '+c.name+' e vorrei proporvi un\\u0027idea. Posso mandarvi qualche dettaglio?';
+ }
  const angle=c.angle||'A';
  if(c.followup_count>=2&&c.status==='abordado')return TEMPLATES[4][1].replaceAll('{{empresa}}',c.name);
  if(c.followup_count===1&&c.status==='abordado')return TEMPLATES[3][1].replaceAll('{{empresa}}',c.name);
@@ -160,7 +217,7 @@ function setNav(){
  if(!['central','radar','hoje','abordagens','clientes','implantacoes','custos'].includes(page))page='central';
  $$('.page').forEach(x=>x.hidden=x.id!=='page-'+page);
  $$('[data-nav]').forEach(a=>{a.classList.toggle('active',a.dataset.nav===page);if(a.dataset.nav===page)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- $('#headerSection').textContent=({central:'Central',radar:'Radar Local',hoje:'Pra Hoje',abordagens:'Banco de Abordagens',clientes:'Clientes',implantacoes:'Implantações',custos:'Custos & APIs'})[page];
+ $('#headerSection').textContent=({central:'Central',radar:'Radar Internacional',hoje:'Pra Hoje',abordagens:'Banco de Abordagens',clientes:'Clientes',implantacoes:'Implantações',custos:'Custos & APIs'})[page];
  if(page==='hoje')loadGmail(true);
  if(page==='custos'&&state.key)void loadCosts();
  if(page==='implantacoes'&&state.key)void loadOnboardings();
@@ -251,7 +308,7 @@ function renderArchive(){
  for(const a of state.archive){
   const b=dom('button','archive-item');b.type='button';
   const hasIds=Array.isArray(a.placeIds)&&a.placeIds.length>0;
-  b.append(dom('small','',formatDate(a.date)+' · GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' referências · abrir histórico (sem custo de API)'));
+  b.append(dom('small','',formatDate(a.date)+' · '+(COUNTRY_DATA[a.countryCode||'BR']?.flag||'🌍')+' GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' referências · abrir histórico (sem custo de API)'));
   b.title=hasIds||state.archiveSnapshots[a.id]?'Abrir os resultados disponíveis sem usar o Google Places.':'Pesquisa antiga sem lista nem identificadores salvos. Repetir não é automático.';
   b.addEventListener('click',()=>showArchivedScan(a));
   box.append(b);
@@ -389,8 +446,9 @@ async function scan(ev){
  try{
   const niche=$('#localNiche').value.trim(),city=$('#localCity').value.trim();
   const neighborhoods=$('#localAreas').value.split(',').map(x=>x.trim()).filter(Boolean).slice(0,5);
-  const data=await backend('local-radar','POST',{niche,city,neighborhoods,goal:'both'});
-  state.niche=niche;state.city=city;
+  const countryCode=$('#localCountry').value;
+  const data=await backend('local-radar','POST',{niche,city,neighborhoods,countryCode,goal:'both'});
+  state.niche=niche;state.city=city;state.countryCode=countryCode;
   $('#radarProgress').classList.remove('busy');
   const all=(data.results||[]).filter(c=>!state.leads.some(lead=>lead.place_id&&lead.place_id===c.place_id));
   const alreadySaved=(data.results||[]).length-all.length;
@@ -408,7 +466,7 @@ async function scan(ev){
   $('#radarExplain').textContent=data.unique+' negócios únicos encontrados · '+data.matched+' candidatos compatíveis ('+landing+' landing, '+bot+' bot a investigar) · '+inside+' dentro dos seus filtros · '+alreadySaved+' já na carteira excluídos. Meta: 40 (não garantida).';
   const reasons={target_reached:'Meta de 40 atingida',scan_limit:'Teto de chamadas da varredura',quota_limit:'Limite diário ou mensal de custo',time_limit:'Limite de tempo',exhausted:'Resultados disponíveis esgotados',provider_error:'A consulta foi interrompida pelo Google',quota_unavailable:'Controle de custos indisponível'};
   $('#radarUsage').textContent=(reasons[data.stopReason]||'Busca concluída')+' · '+(data.calls||0)+' chamadas ao Google · '+(data.usage?.daily??'—')+'/'+(data.usage?.dailyLimit??15)+' hoje · '+(data.usage?.monthly??'—')+'/'+(data.usage?.monthlyLimit??200)+' no mês. Candidatos de bot são hipóteses, não atendimento manual comprovado.';
-  archiveSearch({niche,city,count:all.length},all);renderArchive();
+  archiveSearch({niche,city,countryCode,count:all.length},all);renderArchive();
   if(!all.length)toast('Nenhum estabelecimento retornado para esta busca.');
  }catch(e){$('#radarProgress').classList.remove('busy');$('#scanProgressText').textContent='Não foi possível concluir a busca';$('#radarExplain').textContent=e.message;toast(e.message)}
  finally{state.scanning=false;$('#runLocal').disabled=!state.placesReady;}
@@ -1354,6 +1412,18 @@ function bind(){
  $('#logoutButton').onclick=()=>{localStorage.removeItem(KEY_NAME);sessionStorage.removeItem(KEY_NAME);state.key='';state.leads=[];state.results=[];state.gmail.items=[];state.emailQueue=[];render();showLogin();location.hash='#central';toast('Sessão local encerrada.');};
  $('#logoutMobile').onclick=()=>$('#logoutButton').click();
  $('#localForm').addEventListener('submit',scan);
+ $('#localCountry').addEventListener('change',()=>setCountry($('#localCountry').value));
+ const options=$('#localCountry').cloneNode(true);options.removeAttribute('id');
+ $('#globeCountrySelect').replaceChildren(...[...options.options].map(x=>x.cloneNode(true)));
+ $('#globeCountrySelect').addEventListener('change',()=>{setCountry($('#globeCountrySelect').value);window.RickyGlobe?.focus($('#localCountry').value)});
+ $('#openCountryGlobe').onclick=openCountryGlobe;
+ $('#closeCountryGlobe').onclick=closeCountryGlobe;
+ $('#globeBackdrop').onclick=closeCountryGlobe;
+ $('#globeApply').onclick=closeCountryGlobe;
+ $('[data-globe-country]').forEach(b=>b.onclick=()=>{setCountry(b.dataset.globeCountry);window.RickyGlobe?.focus(b.dataset.globeCountry)});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#countryGlobeModal').hidden){e.preventDefault();closeCountryGlobe()}});
+ setCountry(COUNTRY_DATA[localStorage.getItem(COUNTRY_PREFS)]?localStorage.getItem(COUNTRY_PREFS):'BR');
+ 
  $$('[data-niche]').forEach(b=>b.addEventListener('click',()=>{
   $$('[data-niche]').forEach(x=>x.classList.toggle('active',x===b));
   $('#localNiche').value=b.dataset.niche;
