@@ -4,6 +4,9 @@ import { authorized, json, configured, redisClient, boundedText } from '../lib/r
 
 const INDEX='ricky:onboarding:index:v1';
 const key=id=>'ricky:onboarding:v1:'+id;
+const promptKey=id=>'ricky:onboarding:prompt:v1:'+id;
+const fingerprint=form=>hash(JSON.stringify([form.company,form.segment,form.submittedAt,form.answers]));
+const validId=id=>typeof id==='string'&&/^[a-f0-9]{64}$/.test(id);
 const hash=token=>createHash('sha256').update(token).digest('hex');
 const clean=(v,n=200)=>typeof v==='string'?v.trim().slice(0,n):'';
 const validToken=t=>typeof t==='string'&&/^[a-f0-9]{48}$/.test(t);
@@ -28,6 +31,16 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
     return json({company:d.company,segment:d.segment,profile:d.profile,status:d.status,expiresAt:d.expiresAt});
    }
    if(!admin&&!token)return deny('Acesso não autorizado.',401);
+   const promptId=url.searchParams.get('prompt');
+   if(admin&&request.method==='GET'&&promptId){
+    if(!validId(promptId))return deny('Empresa inválida.');
+    const [formRaw,promptRaw]=await Promise.all([redis(['GET',key(promptId)]),redis(['GET',promptKey(promptId)])]);
+    if(!formRaw)return deny('Formulário não encontrado.',404);
+    const form=JSON.parse(formRaw),saved=promptRaw?JSON.parse(promptRaw):null;
+    const current=!!saved&&saved.fingerprint===fingerprint(form)&&form.status==='recebido';
+    return json({prompt:saved?.text||'',savedAt:saved?.savedAt||null,version:saved?.version||0,current,reason:saved&&!current?'As respostas do formulário foram alteradas. Revise e salve novamente.':null});
+   }
+
    if(admin&&request.method==='GET'){
     const ids=await redis(['ZREVRANGE',INDEX,0,149]);
     const raw=Array.isArray(ids)&&ids.length?await redis(['MGET',...ids.map(key)]):[];
@@ -36,6 +49,26 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    if(request.method!=='POST')return deny('Método não permitido.',405);
    const body=await readBody(request);if(!body||typeof body!=='object')return deny('Confira os dados enviados.');
    if(admin&&!token){
+    if(body.action==='save-prompt'){
+     const id=clean(body.id,64),prompt=typeof body.prompt==='string'?body.prompt.trim():'';
+     if(!validId(id))return deny('Empresa inválida.');
+     if(prompt.length<350||prompt.length>16000)return deny('O prompt revisado deve ter de 350 a 16.000 caracteres.');
+     if(!prompt.includes('RICKY AI')||!prompt.includes('<dados_empresa>')||!prompt.includes('</dados_empresa>'))return deny('Cole o prompt completo com identificação Ricky AI e dados da empresa.');
+     const formRaw=await redis(['GET',key(id)]);
+     if(!formRaw)return deny('Formulário não encontrado.',404);
+     const form=JSON.parse(formRaw);
+     if(form.status!=='recebido'||!form.answers)return deny('A empresa precisa responder ao formulário.');
+     const previous=await redis(['GET',promptKey(id)]),version=previous?(JSON.parse(previous).version||0)+1:1;
+     const savedAt=new Date(clock()).toISOString();
+     await redis(['SET',promptKey(id),JSON.stringify({text:prompt,fingerprint:fingerprint(form),savedAt,version})]);
+     return json({ok:true,savedAt,version,current:true});
+    }
+    if(body.action==='delete-prompt'){
+     const id=clean(body.id,64);
+     if(!validId(id))return deny('Empresa inválida.');
+     await redis(['DEL',promptKey(id)]);
+     return json({ok:true});
+    }
     if(body.action==='clear-answers'||body.action==='delete'){
      const id=clean(body.id,64);
      if(!/^[a-f0-9]{64}$/.test(id))return deny('Formulário inválido.');
@@ -43,11 +76,13 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      if(!existing)return deny('Formulário não encontrado.',404);
      if(body.action==='delete'){
       await redis(['DEL',key(id)]);
+      await redis(['DEL',promptKey(id)]);
       await redis(['ZREM',INDEX,id]);
       return json({ok:true,deleted:true});
      }
      const form=JSON.parse(existing);
      delete form.answers;delete form.submittedAt;
+     await redis(['DEL',promptKey(id)]);
      form.status='pendente';
      const remaining=Math.max(1,Math.ceil((Date.parse(form.expiresAt)-clock())/1000)+86400);
      await redis(['SET',key(id),JSON.stringify(form),'EX',remaining]);
