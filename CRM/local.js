@@ -967,9 +967,18 @@ function createLab(item){
   const option=dom('option','',label);option.value=id;model.append(option);
  }
  modelLabel.append(model);
- const meter=dom('span','ricky-lab-meter','Verificando reserva...');
- const cost=dom('p','ricky-lab-cost','Custo estimado da OpenAI: carregando...');
- bar.append(modelLabel,meter);root.append(bar,cost);
+ const meter=dom('span','ricky-lab-meter','Verificando testes disponíveis...');
+ const cost=dom('div','ricky-lab-cost');
+ const costLabel=dom('span','ricky-lab-cost-label','Gasto estimado com IA · esta empresa');
+ const costValue=dom('strong','ricky-lab-cost-value','Carregando...');
+ const costNote=dom('p','field-note','Estimativa baseada nos tokens. Não é a fatura oficial da OpenAI.');
+ const totalCost=dom('span','ricky-lab-total-cost','');
+ cost.append(costLabel,costValue,costNote,totalCost);
+ const reserve=dom('details','ricky-lab-reserve');
+ reserve.append(dom('summary','','Como funciona o limite de testes?'));
+ const reserveDetail=dom('p','field-note','Este controle reserva uma margem de segurança por mensagem. Não é dinheiro gasto nem cobrado. Ele limita a quantidade de chamadas, mesmo que cada resposta custe menos.');
+ reserve.append(reserveDetail);
+ bar.append(modelLabel,meter);root.append(bar,cost,reserve);
  const conversation=dom('div','ricky-lab-messages');
  conversation.append(dom('p','field-note','Conversa vazia. Faça uma pergunta como se fosse um cliente da empresa.'));
  root.append(conversation);
@@ -982,7 +991,17 @@ function createLab(item){
  const stateText=dom('p','field-note','O laboratório usa o modelo real somente quando habilitado no servidor.');root.append(stateText);
  let history=[],enabled=false,busy=false,spent=0;
  const messages=()=>{conversation.replaceChildren();if(!history.length)conversation.append(dom('p','field-note','Comece uma conversa para avaliar o atendimento.'));for(const m of history){const bubble=dom('div','ricky-lab-message '+(m.role==='user'?'from-user':'from-ai'));const message=dom('p','');const parts=String(m.content).split(/\*([^*\n]+)\*/g);for(let i=0;i<parts.length;i++){if(i%2){message.append(dom('strong','',parts[i]));}else{message.append(document.createTextNode(parts[i]));}}bubble.append(dom('small','',m.role==='user'?'Cliente':'Ricky AI'),message);conversation.append(bubble)}};
- const renderCosts=data=>{meter.textContent='Reserva interna (não é gasto): US$ '+(Number(data.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(data.budgetCents||0)/100).toFixed(2);cost.textContent='Custo OpenAI estimado desde a atualização · Esta empresa: US$ '+Number(data.companyEstimatedUsd||0).toFixed(5)+' · Total do laboratório: US$ '+Number(data.estimatedUsd||0).toFixed(5)+'. Não inclui testes anteriores nem é a fatura oficial.';};
+ let lastBudget=null;
+ const renderCosts=data=>{
+  lastBudget=data;
+  const remaining=data.remainingTests&&Number(data.remainingTests[model.value]);
+  const remainingCount=Number.isFinite(remaining)?Math.max(0,remaining):Math.max(0,Math.floor(((Number(data.budgetCents)||0)-(Number(data.reservedCents)||0))/(model.value==='gpt-5.4'?8:4)));
+  meter.textContent=remainingCount+' '+(remainingCount===1?'teste disponível':'testes disponíveis');
+  costValue.textContent='US$ '+Number(data.companyEstimatedUsd||0).toFixed(5);
+  costNote.textContent='Estimativa da OpenAI nesta empresa desde que ativamos a medição. Não inclui testes anteriores nem é uma cobrança.';
+  totalCost.textContent='Total estimado de todas as empresas: US$ '+Number(data.estimatedUsd||0).toFixed(5);
+  reserveDetail.textContent='Limite de testes: US$ '+(Number(data.budgetCents||0)/100).toFixed(2)+' em reservas preventivas. Já reservado: US$ '+(Number(data.reservedCents||0)/100).toFixed(2)+'. Esses valores NÃO são gastos nem cobrados: o sistema separa uma margem por chamada para impedir uso excessivo. Cada teste GPT-5.4 reserva US$ 0,08; GPT-5.4 mini reserva US$ 0,04. É apenas um controle interno, não um teto da fatura da OpenAI.';
+ };
  const refresh=async()=>{try{
   const data=await backend('onboarding?lab=1&id='+encodeURIComponent(item.id));
   enabled=!!data.enabled;
@@ -993,6 +1012,7 @@ function createLab(item){
  };
  root.addEventListener('toggle',()=>{if(root.open)void refresh()});
  check.addEventListener('change',()=>{send.disabled=!enabled||!check.checked||busy});
+ model.addEventListener('change',()=>{if(lastBudget)renderCosts(lastBudget)});
  clear.onclick=()=>{history=[];spent=0;messages();stateText.textContent='Conversa limpa. O histórico foi apagado, mas o consumo registrado permanece.'};
  send.onclick=async()=>{
   const prompt=input.value.trim();if(!prompt||busy||!enabled||!check.checked)return;
@@ -1005,7 +1025,7 @@ function createLab(item){
    input.value='';messages();
    spent+=Number(result.usage?.estimatedUsd||0);
    stateText.textContent='Última resposta: '+(result.usage?.inputTokens||0)+' tokens de entrada + '+(result.usage?.outputTokens||0)+' saída. Estimativa desta resposta: US$ '+Number(result.usage?.estimatedUsd||0).toFixed(5)+' · Nesta conversa: US$ '+spent.toFixed(5)+'.';
-   try{renderCosts(await backend('onboarding?lab=1&id='+encodeURIComponent(item.id)))}catch{meter.textContent='Reserva interna (não é gasto): US$ '+(Number(result.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(result.budgetCents||0)/100).toFixed(2);}
+   try{renderCosts(await backend('onboarding?lab=1&id='+encodeURIComponent(item.id)))}catch{meter.textContent='Não foi possível atualizar testes restantes.';}
   }catch(e){stateText.textContent='Erro: '+e.message}
   finally{busy=false;send.disabled=!enabled||!check.checked}
  };
