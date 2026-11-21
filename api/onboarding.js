@@ -13,7 +13,7 @@ const validToken=t=>typeof t==='string'&&/^[a-f0-9]{48}$/.test(t);
 const okUrl=s=>!s||(/^https:\/\//i.test(s)&&s.length<=500);
 const knownSegment=s=>/barbear|sal[aã]o|cabel|est[eé]tica|tatu|personal|loja|restaur|lanch|caf[eé]|cl[ií]nica/i.test(s);
 const businessProfile=(segment)=>/barbear|sal[aã]o|cabel|est[eé]tica|tatu|personal|cl[ií]nica/i.test(segment)?'servicos':'geral';
-async function readBody(req){try{return JSON.parse(await boundedText(req,18000))}catch{return null}}
+async function readBody(req){try{return JSON.parse(await boundedText(req,24000))}catch{return null}}
 const deny=(m,code=400)=>json({message:m},code);
 export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetch}={}){
  const labHandler=createLabHandler({env,clock:()=>new Date(clock()),fetcher});
@@ -28,6 +28,7 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
     if(!validToken(token))return deny('Link inválido.',404);
     const raw=await redis(['GET',key(hash(token))]);if(!raw)return deny('Link expirado ou não encontrado.',404);
     const d=JSON.parse(raw);
+    if(Date.parse(d.expiresAt)<clock())return deny('Link expirado.',410);
     return json({company:d.company,segment:d.segment,profile:d.profile,status:d.status,expiresAt:d.expiresAt});
    }
    if(!admin&&!token)return deny('Acesso não autorizado.',401);
@@ -119,7 +120,8 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    // One-time claim avoids double submits from two devices.
    const lock=await redis(['SET','ricky:onboarding:lock:'+data.id,'1','NX','EX',90]);
    if(lock!=='OK')return deny('Formulário já está sendo enviado.',409);
-   await redis(['SET',key(data.id),JSON.stringify(data),'EX',31*86400]);
+   // Keep completed client configurations until explicitly deleted; the public link still expires.
+   await redis(['SET',key(data.id),JSON.stringify(data)]);
    return json({ok:true,receivedAt:now});
   }catch{return deny('Não foi possível concluir. Tente novamente.',503)}
  };
