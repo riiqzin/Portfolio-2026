@@ -901,7 +901,7 @@ function createPromptEditor(item){
   catch(e){state.textContent='Erro ao excluir: '+e.message}
   finally{erase.disabled=false}
  };
- void load();return panel;
+ panel.loadPrompt=load;return panel;
 }
 function createLab(item){
  const root=dom('details','ricky-lab');
@@ -1004,7 +1004,9 @@ async function loadOnboardings(){
     const assistantSection=dom('div','onboard-assistant');
     assistantSection.append(dom('strong','', '✦ Assistente de atendimento'));
     assistantSection.append(dom('p','field-note','Prepare as instruções com o ChatGPT e salve uma versão personalizada para esta empresa. A preparação não consome créditos da API.'));
-    assistantSection.append(createPromptEditor(item));
+    const promptEditor=createPromptEditor(item);
+    assistantSection.append(promptEditor);
+    details.addEventListener('toggle',()=>{if(details.open&&!promptEditor.dataset.loaded){promptEditor.dataset.loaded='true';void promptEditor.loadPrompt()}});
     assistantSection.append(createLab(item));
     const quality=dom('details','onboard-quality');
     const qs=dom('summary','','Banco de testes · sem custo');
