@@ -257,3 +257,7 @@
 .onboard-assistant-output{display:grid;gap:10px}
 .onboard-prompt{width:100%;min-height:240px;font-size:12px;line-height:1.55;resize:vertical;white-space:pre-wrap;border:1px solid #325347;border-radius:10px;background:#0b1820;color:#d8e8df;padding:13px}
 .onboard-assistant-output button{justify-self:start}
+
+.onboard-validation{padding:13px 15px;background:rgba(222,162,82,.08);border:1px solid rgba(222,162,82,.27);border-radius:11px}
+.onboard-validation strong{display:block;color:#f0ce99;font-size:12px;margin-bottom:7px}
+.onboard-validation ul{margin:0;padding-left:19px;color:#d6bd96;font-size:11px;line-height:1.7}
