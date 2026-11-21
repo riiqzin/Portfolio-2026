@@ -832,6 +832,74 @@ function buildGPTConfigurationRequest(item){
   'FIM DOS DADOS. Entregue apenas o prompt final completo.'
  ].join(String.fromCharCode(10));
 }
+function createAnswersEditor(item){
+ const section=dom('details','onboard-answers-editor');
+ const summary=dom('summary','','✎ Editar respostas da empresa');
+ section.append(summary);
+ const form=dom('form','onboard-answers-form');
+ const a=item.answers||{};
+ const fields={};
+ const addField=(key,label,type,maxLength,optional=false)=>{
+  const wrap=dom('label','onboard-edit-field');
+  wrap.append(dom('span','',label+(optional?' · opcional':'')));
+  const control=document.createElement(type==='textarea'?'textarea':'input');
+  if(type==='textarea')control.rows=key==='services'?4:2;
+  else control.type=type==='url'?'url':'text';
+  control.maxLength=maxLength;
+  control.value=a[key]||'';
+  if(!optional)control.required=true;
+  wrap.append(control);form.append(wrap);fields[key]=control;
+ };
+ addField('services','Serviços e preços','textarea',4500);
+ addField('hours','Horário de funcionamento','text',300);
+ const paymentWrap=dom('div','onboard-edit-field');
+ paymentWrap.append(dom('span','','Formas de pagamento'));
+ const checks=dom('div','onboard-edit-payments');
+ const paymentChecks=[];
+ for(const label of ['Pix','Cartão','Dinheiro','Boleto','Outro']){
+  const opt=dom('label','');
+  const check=document.createElement('input');check.type='checkbox';check.value=label;check.checked=Array.isArray(a.payments)&&a.payments.includes(label);
+  opt.append(check,document.createTextNode(' '+label));checks.append(opt);paymentChecks.push(check);
+ }
+ paymentWrap.append(checks);form.append(paymentWrap);
+ addField('address','Endereço','text',300,true);
+ addField('humanContact','Contato para atendimento humano','text',220,true);
+ addField('link','Site ou catálogo (https://)','url',500,true);
+ addField('policy','Informações importantes / políticas','textarea',1600,true);
+ addField('notes','Outras observações','textarea',1600,true);
+ const note=dom('p','field-note','Depois de salvar, o botão Copiar para ChatGPT usará as respostas atualizadas. O prompt antigo ficará guardado, mas precisará ser gerado e salvo novamente antes dos testes.');
+ form.append(note);
+ const state=dom('p','field-note onboard-edit-status','');state.setAttribute('role','status');
+ const buttons=dom('div','onboard-editor-actions');
+ const save=dom('button','btn btn-primary compact','Salvar alterações');save.type='submit';
+ const cancel=dom('button','btn btn-outline compact','Cancelar');cancel.type='button';
+ buttons.append(save,cancel);form.append(buttons,state);
+ const original=JSON.stringify({services:a.services||'',hours:a.hours||'',payments:a.payments||[],address:a.address||'',humanContact:a.humanContact||'',link:a.link||'',policy:a.policy||'',notes:a.notes||''});
+ const collect=()=>({services:fields.services.value.trim(),hours:fields.hours.value.trim(),payments:paymentChecks.filter(c=>c.checked).map(c=>c.value),address:fields.address.value.trim(),humanContact:fields.humanContact.value.trim(),link:fields.link.value.trim(),policy:fields.policy.value.trim(),notes:fields.notes.value.trim()});
+ cancel.onclick=()=>{
+  if(JSON.stringify(collect())!==original&&!window.confirm('Descartar as alterações não salvas?'))return;
+  section.open=false;for(const key of Object.keys(fields))fields[key].value=a[key]||'';
+  for(const check of paymentChecks)check.checked=Array.isArray(a.payments)&&a.payments.includes(check.value);
+  state.textContent='';
+ };
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const answers=collect();
+  if(!answers.payments.length){state.textContent='Selecione pelo menos uma forma de pagamento.';return}
+  if(JSON.stringify(answers)===original){state.textContent='Nenhuma alteração para salvar.';return}
+  if(!window.confirm('Salvar as respostas corrigidas? O prompt anterior ficará desatualizado e precisará ser revisado.'))return;
+  save.disabled=true;cancel.disabled=true;state.textContent='Salvando alterações...';
+  try{
+   const result=await backend('onboarding','POST',{action:'edit-answers',id:item.id,expectedRevision:item.answersUpdatedAt||item.submittedAt,answers});
+   if(result.unchanged){state.textContent='Nenhuma alteração foi necessária.';return}
+   toast('Respostas atualizadas. Gere novamente o prompt pelo botão Copiar para ChatGPT.');
+   await loadOnboardings();
+  }catch(err){state.textContent='Erro ao salvar: '+err.message}
+  finally{save.disabled=false;cancel.disabled=false}
+ });
+ section.append(form);
+ return section;
+}
 function createPromptEditor(item){
  const panel=dom('section','onboard-editor');
  panel.append(dom('strong','','1. Preparar o prompt da empresa'));
@@ -975,7 +1043,7 @@ async function loadOnboardings(){
     for(const [key,label] of [['services','Serviços e preços'],['hours','Horários'],['payments','Formas de pagamento'],['address','Endereço'],['humanContact','Contato humano'],['link','Site / catálogo'],['policy','Informações importantes'],['notes','Outras observações']])content.append(answerLine(label,item.answers[key]));
     const copy=dom('button','btn btn-outline compact','Copiar respostas');copy.type='button';
     copy.onclick=()=>navigator.clipboard.writeText(item.company+' · '+item.segment+'\n'+Object.entries(item.answers).map(([k,v])=>k+': '+(Array.isArray(v)?v.join(', '):v)).join('\n')).then(()=>toast('Respostas copiadas.')).catch(()=>toast('Não foi possível copiar.'));
-    content.append(copy);
+    content.append(copy,createAnswersEditor(item));
     const issues=checkAssistantInformation(item);
     if(issues.length){
      const validation=dom('div','onboard-validation');
