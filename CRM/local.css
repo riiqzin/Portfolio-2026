@@ -347,3 +347,11 @@
 .archive-prospect h3{margin:7px 0 3px}
 .archive-prospect .prospect-actions{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
 .prospect-small-reviews{color:#9adbb8!important;font-weight:600}
+
+/* Dedicated outreach-template workspace and intentional lead removal */
+.templates-standalone{padding:18px 20px;margin-top:18px;border-radius:18px}
+.templates-standalone .template-grid{margin:0}
+.btn-danger-quiet{background:transparent;color:#f0afa7;border:1px solid rgba(237,133,121,.38)}
+.btn-danger-quiet:hover{background:rgba(235,105,92,.12);border-color:rgba(237,133,121,.65);color:#ffd0c8}
+.btn-danger-quiet:disabled{opacity:.55;cursor:wait}
+@media(max-width:640px){.templates-standalone{padding:12px}.dialog-foot .btn-danger-quiet{flex-basis:100%}}
