@@ -309,3 +309,19 @@
 .onboard-editor-actions button{font-size:11px}
 .onboard-editor[data-ready=true]{border-color:rgba(132,204,154,.44)}
 .onboard-editor .field-note[role=status]{line-height:1.6;color:#b9d4c1}
+
+/* Inline corrections to completed onboarding responses */
+.onboard-answers-editor{margin:12px 0;padding:13px 14px;border:1px solid rgba(143,207,171,.28);border-radius:12px;background:#102126}
+.onboard-answers-editor>summary{cursor:pointer;color:#aee6c6;font-size:12px;font-weight:750;list-style-position:inside}
+.onboard-answers-editor[open]>summary{margin-bottom:12px}
+.onboard-answers-form{display:grid;gap:12px}
+.onboard-edit-field{display:grid;gap:6px;margin:0!important;font-size:11px;color:#c4dfd0;font-weight:650}
+.onboard-edit-field>span{display:block}
+.onboard-edit-field input:not([type=checkbox]),.onboard-edit-field textarea{width:100%;min-width:0;box-sizing:border-box;background:#0a1920;color:#e5f1e9;border:1px solid #355649;border-radius:9px;padding:10px 12px;font:inherit;font-size:12px;line-height:1.5;resize:vertical}
+.onboard-edit-field input:focus,.onboard-edit-field textarea:focus{outline:2px solid rgba(144,226,178,.35);outline-offset:1px}
+.onboard-edit-payments{display:flex;gap:8px;flex-wrap:wrap}
+.onboard-edit-payments label{display:flex;align-items:center;gap:6px;margin:0!important;padding:8px 10px;font-size:11px;font-weight:500;border:1px solid #355649;border-radius:8px;background:#0b1c21;cursor:pointer}
+.onboard-edit-payments input{accent-color:#90dba9}
+.onboard-answers-form>.field-note{margin:0!important;line-height:1.55}
+.onboard-edit-status{min-height:16px}
+.onboard-answers-form button:disabled{opacity:.55;cursor:wait}
