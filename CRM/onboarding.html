@@ -27,6 +27,9 @@ button{background:#87dfaf;border:0;color:#0b2219;font-weight:800;font-size:14px;
 <label>Formas de pagamento *</label><div class="checks" id="payments"></div>
 <label for="address">Endereço <span class="optional">(se atende presencialmente)</span></label>
 <input id="address" maxlength="300" placeholder="Rua, número, bairro e cidade">
+<label for="humanContact">Contato para falar com a equipe <span class="optional">(opcional)</span></label>
+<p class="hint">WhatsApp, telefone ou e-mail para atendimento humano, caso o assistente não consiga encaminhar a conversa.</p>
+<input id="humanContact" maxlength="220" placeholder="Ex.: WhatsApp (11) 99999-9999 ou contato@empresa.com">
 <label for="link">Site, Instagram ou catálogo <span class="optional">(opcional)</span></label>
 <input id="link" type="url" maxlength="500" placeholder="https://...">
 <label for="policy">Informações importantes <span class="optional">(opcional)</span></label>
@@ -45,7 +48,7 @@ labels.forEach(label=>{const l=document.createElement('label'),c=document.create
 async function request(method,body){const r=await fetch('/api/onboarding?token='+encodeURIComponent(token||''),{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,cache:'no-store'});const data=await r.json().catch(()=>({message:'Erro de conexão'}));if(!r.ok)throw Error(data.message||'Falha de comunicação');return data}
 async function init(){if(!token){$('#company').textContent='Link inválido';return}try{const d=await request('GET');$('#company').textContent=d.company;[d.segment].filter(Boolean).forEach(v=>{const s=document.createElement('span');s.className='chip';s.textContent=v;$('#prefill').append(s)});if(d.status==='recebido'){$('#company').textContent='Informações já recebidas!';return}$('#form').hidden=false;}catch(e){$('#company').textContent=e.message}}
 $('#form').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#send');btn.disabled=true;status('Enviando...');
-try{const a={services:$('#services').value,hours:$('#hours').value,payments:[...document.querySelectorAll('#payments input:checked')].map(x=>x.value),address:$('#address').value,link:$('#link').value,policy:$('#policy').value,notes:$('#notes').value};
+try{const a={services:$('#services').value,hours:$('#hours').value,payments:[...document.querySelectorAll('#payments input:checked')].map(x=>x.value),address:$('#address').value,humanContact:$('#humanContact').value,link:$('#link').value,policy:$('#policy').value,notes:$('#notes').value};
 if(!a.payments.length)throw Error('Selecione pelo menos uma forma de pagamento.');
 await request('POST',{answers:a});$('#form').hidden=true;$('#company').textContent='Tudo certo! Recebemos suas informações.';$('#prefill').replaceChildren();}catch(err){status(err.message)}finally{btn.disabled=false}});
 init();
