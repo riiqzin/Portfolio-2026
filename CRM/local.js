@@ -431,7 +431,7 @@ function renderRadar(){
  const search=$('#radarSearch').value.trim().toLocaleLowerCase('pt-BR');
  const link=$('#radarLink').value, contact=$('#radarContact').value, reviews=$('#radarReviews').value, sort=$('#radarSort').value;
  const filtered=state.results.filter(c=>eligible(c)!==state.filterOutside)
-  .filter(c=>state.filterOutside||c.candidate!==false)
+  // Include leads lacking public contact details; these are investigation candidates, not verified outreach leads.
   .filter(c=>state.offerFilter==='all'||(state.offerFilter==='landing'?c.match_type==='landing':c.match_type==='bot_investigate'))
   .filter(c=>!search||[c.name,c.city,c.address,c.website].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(search)))
   .filter(c=>link==='all'||(link==='other'?!['none','social','whatsapp','bio','booking','own'].includes(c.link_type):c.link_type===link))
@@ -490,8 +490,8 @@ async function scan(ev){
   }
   $('#scanProgressText').textContent='Busca ampliada concluída · '+data.calls+' consultas utilizadas';
   const landing=all.filter(x=>x.match_type==='landing').length,bot=all.filter(x=>x.match_type==='bot_investigate').length;
-  const inside=all.filter(x=>eligible(x)&&x.candidate!==false).length;
-  $('#radarExplain').textContent=data.unique+' negócios únicos encontrados · '+data.matched+' candidatos compatíveis ('+landing+' landing, '+bot+' bot a investigar) · '+inside+' dentro dos seus filtros · '+alreadySaved+' já na carteira excluídos. Meta: 40 (não garantida).';
+  const inside=all.filter(x=>eligible(x)).length;
+  $('#radarExplain').textContent=data.unique+' negócios únicos encontrados · '+data.matched+' com contato público identificado · '+inside+' dentro dos seus filtros · '+alreadySaved+' já na carteira excluídos. Negócios sem telefone também são exibidos para investigação; nenhum contato é inventado.';
   const reasons={target_reached:'Meta de 40 atingida',scan_limit:'Teto de chamadas da varredura',quota_limit:'Limite diário ou mensal de custo',time_limit:'Limite de tempo',exhausted:'Resultados disponíveis esgotados',provider_error:'A consulta foi interrompida pelo Google',quota_unavailable:'Controle de custos indisponível'};
   $('#radarUsage').textContent=(reasons[data.stopReason]||'Busca concluída')+' · '+(data.calls||0)+' chamadas ao Google · sem limite diário de varreduras. Cobranças podem ocorrer no Google Cloud. Candidatos de bot são hipóteses, não atendimento manual comprovado.';
   archiveSearch({niche,city,countryCode,count:all.length},all);renderArchive();
