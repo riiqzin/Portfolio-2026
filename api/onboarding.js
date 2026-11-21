@@ -6,7 +6,10 @@ const INDEX='ricky:onboarding:index:v1';
 const key=id=>'ricky:onboarding:v1:'+id;
 const promptKey=id=>'ricky:onboarding:prompt:v1:'+id;
 const fingerprint=form=>hash(JSON.stringify([form.company,form.segment,form.submittedAt,form.answers]));
-const tagCount=(s,tag)=>(s.match(new RegExp('^\\s*<'+tag+'>\\s*
+const tagCount=(value,tag)=>{
+ const lines=value.split(String.fromCharCode(10)).map(line=>line.trim());
+ return lines.filter(line=>line==='<'+tag+'>').length===1 && lines.filter(line=>line==='</'+tag+'>').length===1;
+};
 const requiredTags=['regras_fixas','dados_empresa','modulo_atendimento_humano','modulo_agendamento','contexto_da_conversa'];
 const validId=id=>typeof id==='string'&&/^[a-f0-9]{64}$/.test(id);
 const hash=token=>createHash('sha256').update(token).digest('hex');
@@ -58,7 +61,9 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      if(prompt.length<350||prompt.length>16000)return deny('O prompt revisado deve ter de 350 a 16.000 caracteres.');
      if(!requiredTags.every(tag=>tagCount(prompt,tag)))return deny('Cole o prompt completo da versão 3 com as cinco seções obrigatórias.');
      if(!prompt.includes('{{DATA_HORA_ATUAL}}')||!prompt.includes('{{FUSO}}'))return deny('Mantenha os marcadores de data, hora e fuso sem preencher.');
-     const locations=requiredTags.map(tag=>prompt.search(new RegExp('^\\s*<'+tag+'>\\s*
+     const lines=prompt.split(String.fromCharCode(10)).map(line=>line.trim());
+     const locations=requiredTags.map(tag=>lines.indexOf('<'+tag+'>'));
+     if(locations.some(position=>position<0))return deny('Estrutura incompleta.');
      if(locations.some((position,i)=>i>0&&position<=locations[i-1]))return deny('Mantenha as seções na ordem definida.');
      if(!/RICKY AI/i.test(prompt))return deny('Identifique o prompt como RICKY AI.');
      const formRaw=await redis(['GET',key(id)]);
