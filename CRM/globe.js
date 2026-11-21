@@ -21,7 +21,7 @@ const continents=[
  [[-52,60],[-42,60],[-39,70],[-45,82],[-55,82],[-61,72]],
  [[-24,64],[-14,64],[-13,67],[-20,67]]
 ];
-let lon=-35,lat=9,zoom=1,drag=null,raf=0,alive=true,points=[],hover=null,move=0,lastTick=0,dirty=true;
+let lon=-35,lat=9,zoom=1,drag=null,raf=0,alive=true,points=[],hover=null,move=0,lastTick=0,lastFrame=0,dirty=true;
 const rad=Math.PI/180;
 function project(a,b,r){
  const phi=b*rad,lambda=(a-lon)*rad,center=lat*rad;
@@ -30,6 +30,7 @@ function project(a,b,r){
 }
 function draw(t){
  if(!alive||modal.hidden){raf=0;return}
+ if(t-lastFrame<32){raf=requestAnimationFrame(draw);return}lastFrame=t;
  const dpr=Math.min(2,window.devicePixelRatio||1),w=canvas.clientWidth||420,h=canvas.clientHeight||420;
  if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);dirty=true}
  if(!drag&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&t-lastTick<15000){lon=(lon+.019)%360;dirty=true}
