@@ -1,3 +1,4 @@
+import { createHandler as createLabHandler } from '../lib/ai-lab-handler.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { authorized, json, configured, redisClient, boundedText } from '../lib/radar-control.js';
 
@@ -12,8 +13,10 @@ const businessProfile=(segment)=>/barbear|sal[aã]o|cabel|est[eé]tica|tatu|pers
 async function readBody(req){try{return JSON.parse(await boundedText(req,18000))}catch{return null}}
 const deny=(m,code=400)=>json({message:m},code);
 export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetch}={}){
+ const labHandler=createLabHandler({env,clock:()=>new Date(clock()),fetcher});
  return async request=>{
   const url=new URL(request.url),token=url.searchParams.get('token');
+  if(url.searchParams.get('lab')==='1')return labHandler(request);
   const admin=authorized(request,env);
   if(!configured(env))return deny('Armazenamento de formulários indisponível.',503);
   const redis=redisClient(env,fetcher);
