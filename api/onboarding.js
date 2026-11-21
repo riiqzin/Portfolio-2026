@@ -57,11 +57,36 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    if(admin&&request.method==='GET'){
     const ids=await redis(['ZREVRANGE',INDEX,0,149]);
     const raw=Array.isArray(ids)&&ids.length?await redis(['MGET',...ids.map(key)]):[];
-    return json({items:(Array.isArray(raw)?raw:[]).filter(Boolean).map(s=>{const x=JSON.parse(s);return {id:x.id,company:x.company,segment:x.segment,profile:x.profile,status:x.status,createdAt:x.createdAt,submittedAt:x.submittedAt||null,answers:x.answers||null,expiresAt:x.expiresAt}})});
+    return json({items:(Array.isArray(raw)?raw:[]).filter(Boolean).map(s=>{const x=JSON.parse(s);return {id:x.id,company:x.company,segment:x.segment,profile:x.profile,status:x.status,createdAt:x.createdAt,submittedAt:x.submittedAt||null,answersUpdatedAt:x.answersUpdatedAt||null,answers:x.answers||null,expiresAt:x.expiresAt}})});
    }
    if(request.method!=='POST')return deny('Método não permitido.',405);
    const body=await readBody(request);if(!body||typeof body!=='object')return deny('Confira os dados enviados.');
    if(admin&&!token){
+    if(body.action==='edit-answers'){
+     const id=clean(body.id,64);
+     if(!validId(id))return deny('Empresa inválida.');
+     const formRaw=await redis(['GET',key(id)]);
+     if(!formRaw)return deny('Formulário não encontrado.',404);
+     const form=JSON.parse(formRaw);
+     if(form.status!=='recebido'||!form.answers)return deny('O cliente ainda não respondeu ao formulário.',409);
+     const revision=form.answersUpdatedAt||form.submittedAt||'';
+     if(body.expectedRevision!==revision)return deny('As respostas mudaram desde que você abriu o editor. Atualize a página antes de salvar.',409);
+     const a=body.answers;
+     if(!a||typeof a!=='object'||Array.isArray(a))return deny('Respostas inválidas.');
+     const hours=clean(a.hours,300),services=clean(a.services,4500);
+     const payments=Array.isArray(a.payments)?[...new Set(a.payments.filter(v=>['Pix','Cartão','Dinheiro','Boleto','Outro'].includes(v)))].slice(0,5):[];
+     const policy=clean(a.policy,1600),address=clean(a.address,300),humanContact=clean(a.humanContact,220),link=clean(a.link,500),notes=clean(a.notes,1600);
+     if(hours.length<3||services.length<8||payments.length<1)return deny('Informe serviços, horários e pelo menos uma forma de pagamento.');
+     if(!/\\d/.test(services)||!/R\\$|reais|\\d+[,.]\\d{2}|sob consulta|a combinar/i.test(services))return deny('Informe preços dos serviços ou sob consulta.');
+     if(!okUrl(link))return deny('O link deve começar com https://');
+     const updated={hours,services,payments,policy,address,humanContact,link,notes};
+     if(JSON.stringify(updated)===JSON.stringify({hours:form.answers.hours,services:form.answers.services,payments:form.answers.payments,policy:form.answers.policy||'',address:form.answers.address||'',humanContact:form.answers.humanContact||'',link:form.answers.link||'',notes:form.answers.notes||''}))return json({ok:true,unchanged:true,revision,promptOutdated:false});
+     form.answers=updated;
+     form.answersUpdatedAt=new Date(clock()).toISOString();
+     // Keep the saved prompt for review/history; fingerprint mismatch disables old prompt in the lab.
+     await redis(['SET',key(id),JSON.stringify(form)]);
+     return json({ok:true,revision:form.answersUpdatedAt,promptOutdated:true});
+    }
     if(body.action==='save-prompt'){
      const id=clean(body.id,64),prompt=typeof body.prompt==='string'?normalizePrompt(body.prompt):'';
      if(!validId(id))return deny('Empresa inválida.');
