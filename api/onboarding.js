@@ -25,6 +25,17 @@ const validToken=t=>typeof t==='string'&&/^[a-f0-9]{48}$/.test(t);
 const okUrl=s=>!s||(/^https:\/\//i.test(s)&&s.length<=500);
 const knownSegment=s=>/barbear|sal[aã]o|cabel|est[eé]tica|tatu|personal|loja|restaur|lanch|caf[eé]|cl[ií]nica/i.test(s);
 const businessProfile=(segment)=>/barbear|sal[aã]o|cabel|est[eé]tica|tatu|personal|cl[ií]nica/i.test(segment)?'servicos':'geral';
+const BARBER_FEATURES=['corteInfantil','barba','sobrancelha','degrade','maquina','tesoura','lavagem','coloracao','tratamentos','domicilio','acessibilidade','comAgendamento','semAgendamento','escolhaProfissional','atendeFeriados','aceitaAtraso','cancelamento','sinal','cartaoCredito','cartaoDebito','parcelamento','promocoes','petFriendly'];
+const BARBER_DETAILS=['idadeInfantil','profissionais','duracoes','regrasAgendamento','regrasAtraso','regrasSinal','formasAtendimento','servicosEspeciais'];
+function normalizeKnowledge(input){
+ if(input==null)return null;
+ if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Dados adicionais da barbearia inválidos.');
+ const rawFeatures=input.features,rawDetails=input.details;
+ if(!rawFeatures||typeof rawFeatures!=='object'||Array.isArray(rawFeatures)||!rawDetails||typeof rawDetails!=='object'||Array.isArray(rawDetails))throw Error('Informações da barbearia incompletas.');
+ const features={};for(const name of BARBER_FEATURES){const value=rawFeatures[name];if(!['sim','nao','desconhecido'].includes(value))throw Error('Confirme as respostas de Sim, Não ou Não sei.');features[name]=value}
+ const details={};for(const name of BARBER_DETAILS){const value=rawDetails[name];if(value!==undefined&&typeof value!=='string')throw Error('Informação adicional inválida.');const cleanValue=clean(value||'',300);if(cleanValue)details[name]=cleanValue}
+ return {features,details};
+}
 async function readBody(req){try{return JSON.parse(await boundedText(req,24000))}catch{return null}}
 const deny=(m,code=400)=>json({message:m},code);
 export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetch}={}){
@@ -79,8 +90,9 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      if(hours.length<3||services.length<8||payments.length<1)return deny('Informe serviços, horários e pelo menos uma forma de pagamento.');
      if(!/\\d/.test(services)||!/R\\$|reais|\\d+[,.]\\d{2}|sob consulta|a combinar/i.test(services))return deny('Informe preços dos serviços ou sob consulta.');
      if(!okUrl(link))return deny('O link deve começar com https://');
-     const updated={hours,services,payments,policy,address,humanContact,link,notes};
-     if(JSON.stringify(updated)===JSON.stringify({hours:form.answers.hours,services:form.answers.services,payments:form.answers.payments,policy:form.answers.policy||'',address:form.answers.address||'',humanContact:form.answers.humanContact||'',link:form.answers.link||'',notes:form.answers.notes||''}))return json({ok:true,unchanged:true,revision,promptOutdated:false});
+     const knowledge= a.knowledge===undefined ? (form.answers.knowledge||null) : normalizeKnowledge(a.knowledge);
+     const updated={hours,services,payments,policy,address,humanContact,link,notes,...(knowledge?{knowledge}:{})};
+     if(JSON.stringify(updated)===JSON.stringify({hours:form.answers.hours,services:form.answers.services,payments:form.answers.payments,policy:form.answers.policy||'',address:form.answers.address||'',humanContact:form.answers.humanContact||'',link:form.answers.link||'',notes:form.answers.notes||'',...(form.answers.knowledge?{knowledge:form.answers.knowledge}:{})}))return json({ok:true,unchanged:true,revision,promptOutdated:false});
      form.answers=updated;
      form.answersUpdatedAt=new Date(clock()).toISOString();
      // Keep the saved prompt for review/history; fingerprint mismatch disables old prompt in the lab.
@@ -160,14 +172,16 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    if(!/\d/.test(services))return deny('Inclua os valores dos serviços ou produtos, ou informe claramente que o preço é sob consulta.');
    if(!/R\$|reais|\d+[,.]\d{2}|sob consulta|a combinar/i.test(services))return deny('Inclua preços (ex.: Corte — R$ 35) ou indique “sob consulta”.');
    const now=new Date(clock()).toISOString();
-   data.status='recebido';data.submittedAt=now;data.answers={hours,payments,services,policy,address,humanContact,link,notes};
+   const knowledge=normalizeKnowledge(answers.knowledge);
+   if(/barbear/i.test(data.segment||'')&&!knowledge)return deny('Preencha as perguntas da secretária virtual antes de enviar.');
+   data.status='recebido';data.submittedAt=now;data.answers={hours,payments,services,policy,address,humanContact,link,notes,...(knowledge?{knowledge}:{})};
    // One-time claim avoids double submits from two devices.
    const lock=await redis(['SET','ricky:onboarding:lock:'+data.id,'1','NX','EX',90]);
    if(lock!=='OK')return deny('Formulário já está sendo enviado.',409);
    // Keep completed client configurations until explicitly deleted; the public link still expires.
    await redis(['SET',key(data.id),JSON.stringify(data)]);
    return json({ok:true,receivedAt:now});
-  }catch{return deny('Não foi possível concluir. Tente novamente.',503)}
+  }catch(error){return deny(error?.message&&/informações da barbearia|dados adicionais|confirme as respostas|informação adicional/i.test(error.message)?error.message:'Não foi possível concluir. Tente novamente.',error?.message&&/informações da barbearia|dados adicionais|confirme as respostas|informação adicional/i.test(error.message)?400:503)}
  };
 }
 export default {fetch:createHandler()};
