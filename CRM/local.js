@@ -157,10 +157,10 @@ function getTodos(){
 }
 function setNav(){
  let page=(location.hash||'#central').replace('#','');
- if(!['central','radar','hoje','clientes','implantacoes','custos'].includes(page))page='central';
+ if(!['central','radar','hoje','abordagens','clientes','implantacoes','custos'].includes(page))page='central';
  $$('.page').forEach(x=>x.hidden=x.id!=='page-'+page);
  $$('[data-nav]').forEach(a=>{a.classList.toggle('active',a.dataset.nav===page);if(a.dataset.nav===page)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- $('#headerSection').textContent=({central:'Central',radar:'Radar Local',hoje:'Pra Hoje',clientes:'Clientes',implantacoes:'Implantações',custos:'Custos & APIs'})[page];
+ $('#headerSection').textContent=({central:'Central',radar:'Radar Local',hoje:'Pra Hoje',abordagens:'Banco de Abordagens',clientes:'Clientes',implantacoes:'Implantações',custos:'Custos & APIs'})[page];
  if(page==='hoje')loadGmail(true);
  if(page==='custos'&&state.key)void loadCosts();
  if(page==='implantacoes'&&state.key)void loadOnboardings();
@@ -453,11 +453,34 @@ function openLead(candidate){
  $('#draftAIStatus').textContent='A IA só recebe os fatos disponíveis e suas verificações marcadas.';
  const stored=candidate.id?state.leads.find(x=>x.id===candidate.id):state.leads.find(x=>candidate.place_id&&x.place_id===candidate.place_id);
  state.draft=blankLead(stored||candidate);
+ $('#deleteLead').hidden=!state.draft.id;
  populateLead();
  $('#leadOverlay').hidden=false;document.body.style.overflow='hidden';
  $('#closeLead').focus();
 }
 function closeLead(){state.aiDraftEpoch++;state.draft=null;$('#leadOverlay').hidden=true;document.body.style.overflow=''}
+async function deleteLead(){
+ const id=state.draft?.id;
+ if(!id){toast('Este negócio ainda não foi salvo.');return}
+ const previous=state.leads.find(x=>x.id===id);
+ if(!previous){toast('Não foi possível localizar o lead salvo.');return}
+ if(!window.confirm('Excluir "'+previous.name+'" da carteira?\\n\\nO lead e o histórico de contatos serão apagados. Se ele estiver nos resultados da varredura atual, voltará a aparecer como não salvo. Esta ação não pode ser desfeita.'))return;
+ const button=$('#deleteLead');button.disabled=true;
+ try{
+  const deleted=await rpc('crm_local_delete',{p_lead_id:id});
+  if(deleted!==true)throw Error('O lead não foi encontrado no banco de dados.');
+  // A candidate saved during the current scan is restored without any API request.
+  if(previous.place_id&&!state.results.some(x=>x.place_id===previous.place_id)){
+   const snapshot=Object.values(state.archiveSnapshots).flat().find(x=>x.place_id===previous.place_id);
+   if(snapshot)state.results.push({...snapshot});
+  }
+  closeLead();
+  await refresh();
+  toast('Lead excluído da carteira. Pode ser salvo novamente quando quiser.');
+ }catch(e){toast('Não foi possível excluir: '+e.message)}
+ finally{button.disabled=false}
+}
+
 async function saveLead(showToast=true){
  fromFields();
  const d=state.draft;
@@ -1219,6 +1242,7 @@ function bind(){
  $('#leadOverlay').addEventListener('click',e=>{if(e.target===$('#leadOverlay'))closeLead()});
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#leadOverlay').hidden)closeLead()});
  $('#saveLead').onclick=()=>saveLead();
+ $('#deleteLead').onclick=deleteLead;
  $('#improveMessageAI').onclick=improveMessageAI;
  $('#analyzeReply').onclick=analyzeWhatsAppReply;
  $('#analyzeResults').onclick=analyzeExperiment;
