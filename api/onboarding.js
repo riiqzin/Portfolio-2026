@@ -6,9 +6,16 @@ const INDEX='ricky:onboarding:index:v1';
 const key=id=>'ricky:onboarding:v1:'+id;
 const promptKey=id=>'ricky:onboarding:prompt:v1:'+id;
 const fingerprint=form=>hash(JSON.stringify([form.company,form.segment,form.submittedAt,form.answers]));
+const normalizePrompt=(value)=>{
+ let output=value.trim().replace(/\r\n?/g,'\n');
+ // Formatting escapes sometimes appear when copying ChatGPT output.
+ output=output.replace(/(^|\n)[ \t]*\\+(<\/?(?:regras_fixas|dados_empresa|modulo_atendimento_humano|modulo_agendamento|contexto_da_conversa)>)[ \t]*\\*[ \t]*(?=\n|$)/g,'$1$2');
+ output=output.replace(/(^|\n)[ \t]*(<\/?(?:regras_fixas|dados_empresa|modulo_atendimento_humano|modulo_agendamento|contexto_da_conversa)>)[ \t]*\\+[ \t]*(?=\n|$)/g,'$1$2');
+ return output;
+};
 const tagCount=(value,tag)=>{
- const lines=value.split(String.fromCharCode(10)).map(line=>line.trim());
- return lines.filter(line=>line==='<'+tag+'>').length===1 && lines.filter(line=>line==='</'+tag+'>').length===1;
+ const lines=value.split('\n').map(line=>line.trim());
+ return lines.filter(line=>line==='<'+tag+'>').length===1&&lines.filter(line=>line==='</'+tag+'>').length===1;
 };
 const requiredTags=['regras_fixas','dados_empresa','modulo_atendimento_humano','modulo_agendamento','contexto_da_conversa'];
 const validId=id=>typeof id==='string'&&/^[a-f0-9]{64}$/.test(id);
@@ -56,15 +63,16 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    const body=await readBody(request);if(!body||typeof body!=='object')return deny('Confira os dados enviados.');
    if(admin&&!token){
     if(body.action==='save-prompt'){
-     const id=clean(body.id,64),prompt=typeof body.prompt==='string'?body.prompt.trim():'';
+     const id=clean(body.id,64),prompt=typeof body.prompt==='string'?normalizePrompt(body.prompt):'';
      if(!validId(id))return deny('Empresa inválida.');
      if(prompt.length<350||prompt.length>16000)return deny('O prompt revisado deve ter de 350 a 16.000 caracteres.');
-     if(!requiredTags.every(tag=>tagCount(prompt,tag)))return deny('Cole o prompt completo da versão 3 com as cinco seções obrigatórias.');
+     const missing=requiredTags.filter(tag=>!tagCount(prompt,tag));
+     if(missing.length)return deny('Verifique as tags de seção (uma por linha, abertura e fechamento): '+missing.map(tag=>'<'+tag+'>').join(', ')+'.');
      if(!prompt.includes('{{DATA_HORA_ATUAL}}')||!prompt.includes('{{FUSO}}'))return deny('Mantenha os marcadores de data, hora e fuso sem preencher.');
-     const lines=prompt.split(String.fromCharCode(10)).map(line=>line.trim());
-     const locations=requiredTags.map(tag=>lines.indexOf('<'+tag+'>'));
-     if(locations.some(position=>position<0))return deny('Estrutura incompleta.');
-     if(locations.some((position,i)=>i>0&&position<=locations[i-1]))return deny('Mantenha as seções na ordem definida.');
+     const lines=prompt.split('\n').map(line=>line.trim());
+     const opens=requiredTags.map(tag=>lines.indexOf('<'+tag+'>'));
+     const closes=requiredTags.map(tag=>lines.indexOf('</'+tag+'>'));
+     if(opens.some((position,i)=>position<0||closes[i]<=position||i>0&&position<=closes[i-1]))return deny('Mantenha as cinco seções completas na ordem correta, sem sobreposição.');
      if(!/RICKY AI/i.test(prompt))return deny('Identifique o prompt como RICKY AI.');
      const formRaw=await redis(['GET',key(id)]);
      if(!formRaw)return deny('Formulário não encontrado.',404);
@@ -73,7 +81,7 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      const previous=await redis(['GET',promptKey(id)]),version=previous?(JSON.parse(previous).version||0)+1:1;
      const savedAt=new Date(clock()).toISOString();
      await redis(['SET',promptKey(id),JSON.stringify({text:prompt,fingerprint:fingerprint(form),savedAt,version})]);
-     return json({ok:true,savedAt,version,current:true});
+     return json({ok:true,savedAt,version,current:true,prompt});
     }
     if(body.action==='delete-prompt'){
      const id=clean(body.id,64);
