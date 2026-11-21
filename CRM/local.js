@@ -14,7 +14,7 @@ const daysSince=v=>v?Math.floor((Date.now()-Date.parse(v))/86400000):0;
 const formatStars=v=>Number.isFinite(Number(v))&&v!==null&&v!==''?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
 const placeholder=(title,description)=>'<div class="action-card"><div class="action-left"><div class="action-icon">✧</div><div class="action-copy"><strong>'+escapeHTML(title)+'</strong><p>'+escapeHTML(description)+'</p></div></div></div>';
 const prefsKey='ricky:local:archive-v1';
-const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,offerFilter:'all',todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
+const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',filterOutside:false,offerFilter:'all',todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],archiveSnapshots:Object.create(null),archiveView:null,gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
 const VERIFY=[
  ['whatsapp_confirmed','WhatsApp confirmado (conferi o perfil)'],
  ['instagram_found','Tem Instagram (confirmei)'],
@@ -54,11 +54,20 @@ async function backend(path,method='GET',body){
  if(!response.ok)throw Error(data.message||'Serviço indisponível.');
  return data;
 }
-function loadArchive(){try{const a=JSON.parse(localStorage.getItem(prefsKey)||'[]');return Array.isArray(a)?a.slice(0,20):[]}catch{return []}}
+function loadArchive(){
+ try{
+  const a=JSON.parse(localStorage.getItem(prefsKey)||'[]');
+  return Array.isArray(a)?a.filter(x=>x&&typeof x.niche==='string'&&typeof x.city==='string').slice(0,20):[];
+ }catch{return []}
+}
 state.archive=loadArchive();
-function archiveSearch(meta){
- state.archive=[{id:Date.now(),niche:meta.niche,city:meta.city,count:meta.count,date:now()},...state.archive].slice(0,20);
- try{localStorage.setItem(prefsKey,JSON.stringify(state.archive))}catch{}
+function archiveSearch(meta,results){
+ const entry={id:Date.now(),niche:meta.niche,city:meta.city,count:meta.count,date:now(),placeIds:[...new Set((results||[]).map(c=>c.place_id).filter(x=>typeof x==='string'&&x.length>0))].slice(0,200)};
+ // Retain only Google place IDs across reloads. Other Places content is not persistently cached.
+ state.archiveSnapshots[entry.id]=(results||[]).map(c=>({...c}));
+ state.archive=[entry,...state.archive].slice(0,20);
+ for(const id of Object.keys(state.archiveSnapshots))if(!state.archive.some(x=>String(x.id)===id))delete state.archiveSnapshots[id];
+ try{localStorage.setItem(prefsKey,JSON.stringify(state.archive))}catch{toast('Histórico disponível apenas nesta sessão; armazenamento do navegador cheio.')}
 }
 function normalizePhone(phone){
  let digits=String(phone||'').replace(/\D/g,'');
@@ -219,26 +228,59 @@ function renderClients(){
   btn.onclick=()=>openLead(c);right.append(tag,btn);row.append(left,right);area.append(row);
  }
 }
+function showArchivedScan(a){
+ state.archiveView=a;
+ state.niche=a.niche;state.city=a.city;
+ const snapshot=state.archiveSnapshots[a.id];
+ if(Array.isArray(snapshot)){
+  state.results=snapshot.map(c=>({...c}));
+  state.archiveView=null;
+  $('#radarExplain').textContent='Varredura recuperada desta sessão · '+state.results.length+' negócios apresentados anteriormente. Nenhuma nova consulta ao Google.';
+  $('#radarUsage').textContent='Histórico recuperado sem consumir chamadas ou cotas de varredura.';
+ }else{
+  state.results=[];
+  $('#radarExplain').textContent='Histórico de '+formatDate(a.date)+' · sem novas consultas ao Google. Veja os estabelecimentos vinculados abaixo.';
+  $('#radarUsage').textContent='A lista exata completa só permanece enquanto esta aba estiver aberta. O histórico permanente guarda IDs dos estabelecimentos e registros que você salvou na carteira.';
+ }
+ renderRadar();
+ $('#radarResults').scrollIntoView({behavior:'smooth',block:'start'});
+}
 function renderArchive(){
  const box=$('#radarArchive');box.replaceChildren();
- if(!state.archive.length){box.innerHTML=placeholder('Nenhuma varredura salva','Salvamos data, segmento e cidade — não copiamos os dados do Google Maps para o histórico.');return}
+ if(!state.archive.length){box.innerHTML=placeholder('Nenhuma varredura salva','Novas pesquisas serão listadas aqui. Abrir o histórico não consome novas consultas.');return}
  for(const a of state.archive){
   const b=dom('button','archive-item');b.type='button';
-  b.append(dom('small','',formatDate(a.date)+' · GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' candidatos na busca original · repetir consulta ↗'));
-  b.title='O histórico conserva apenas os parâmetros e a quantidade, não os candidatos antigos. Repetir consome sua cota de API.';
-  b.addEventListener('click',async()=>{
-   if(state.scanning){toast('Aguarde a varredura atual terminar.');return}
-   $('#localNiche').value=a.niche;$('#localCity').value=a.city;
-   // Os bairros não eram salvos nas entradas antigas; não reutilizar bairros de outra pesquisa.
-   $('#localAreas').value='';
-   if(!state.placesReady){$('#localForm').scrollIntoView({behavior:'smooth',block:'start'});toast('Busca preenchida. Conecte o Google Places para executar.');return}
-   if(!confirm('Esta sessão antiga guarda apenas a pesquisa e o total de candidatos; a lista original não foi salva.\\n\\nDeseja executar uma NOVA varredura de '+a.niche+' em '+a.city+'? Os resultados podem mudar e a consulta consumirá sua cota do Google Places.'))return;
-   $('#radarProgress').scrollIntoView({behavior:'smooth',block:'center'});
-   await scan({preventDefault(){}});
-   $('#radarResults').scrollIntoView({behavior:'smooth',block:'start'});
-  });
+  const hasIds=Array.isArray(a.placeIds)&&a.placeIds.length>0;
+  b.append(dom('small','',formatDate(a.date)+' · GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' candidatos · visualizar histórico (sem nova consulta)'));
+  b.title=hasIds||state.archiveSnapshots[a.id]?'Abrir os resultados disponíveis sem usar o Google Places.':'Pesquisa antiga sem lista nem identificadores salvos. Repetir não é automático.';
+  b.addEventListener('click',()=>showArchivedScan(a));
   box.append(b);
  }
+}
+function renderArchivePlaceIds(a){
+ const area=$('#radarResults');area.replaceChildren();
+ const ids=Array.isArray(a.placeIds)?a.placeIds:[];
+ if(!ids.length){
+  area.innerHTML=placeholder('Busca antiga sem dados recuperáveis','Esta pesquisa foi salva antes do novo histórico e não possui lista de estabelecimentos. Nenhuma nova varredura foi executada.');
+  $('#radarMatchCount').textContent='Histórico antigo · 0 chamadas consumidas';
+  return;
+ }
+ const intro=dom('p','field-note','Esta pesquisa guarda '+ids.length+' identificadores originais. Os negócios já salvos na carteira aparecem com seus dados; os demais podem ser abertos no Google Maps sem consumir novas consultas da API. Avaliações e contatos antigos não são armazenados permanentemente.');
+ area.append(intro);
+ ids.forEach((id,i)=>{
+  const saved=state.leads.find(x=>x.place_id===id);
+  const row=dom('article','prospect archive-prospect');
+  row.append(dom('span','prospect-index','CANDIDATO '+String(i+1).padStart(2,'0')),dom('h3','',saved?.name||'Estabelecimento não salvo'));
+  if(saved)row.append(dom('p','prospect-sub',saved.city||'Salvo na carteira'));
+  const actions=dom('div','prospect-actions'),maps=dom('a','btn btn-outline compact','Ver no Google Maps ↗');
+  const query=encodeURIComponent(saved?.name||a.niche+' '+a.city);
+  maps.href='https://www.google.com/maps/search/?api=1&query='+query+'&query_place_id='+encodeURIComponent(id);
+  maps.rel='noopener noreferrer';maps.target='_blank';
+  actions.append(maps);
+  if(saved){const open=dom('button','btn btn-primary compact','Abrir na carteira');open.type='button';open.onclick=()=>openLead(saved);actions.prepend(open)}
+  row.append(actions);area.append(row);
+ });
+ $('#radarMatchCount').textContent=ids.length+' registros históricos · 0 consultas consumidas';
 }
 function resultsReason(c){
  const p=priority(c);
@@ -266,6 +308,7 @@ function resultCard(c,i){
 }
 function safeUrl(v){try{const u=new URL(String(v||''));return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:null}catch{return null}}
 function renderRadar(){
+ if(state.archiveView){renderArchivePlaceIds(state.archiveView);return}
  const area=$('#radarResults');area.replaceChildren();
  const search=$('#radarSearch').value.trim().toLocaleLowerCase('pt-BR');
  const link=$('#radarLink').value, contact=$('#radarContact').value, reviews=$('#radarReviews').value, sort=$('#radarSort').value;
@@ -303,7 +346,7 @@ async function checkPlaces(){
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function scan(ev){
  ev.preventDefault();if(state.scanning||!state.placesReady)return;
- state.scanning=true;state.filterOutside=false;
+ state.scanning=true;state.filterOutside=false;state.archiveView=null;
  $('#filterEligible').classList.add('active');$('#filterOutside').classList.remove('active');
  $('#runLocal').disabled=true;
  $('#radarProgress').hidden=false;$('#radarProgress').classList.add('busy');
@@ -332,7 +375,7 @@ async function scan(ev){
   $('#radarExplain').textContent=data.unique+' negócios únicos encontrados · '+data.matched+' candidatos compatíveis ('+landing+' landing, '+bot+' bot a investigar) · '+inside+' dentro dos seus filtros · '+alreadySaved+' já na carteira excluídos. Meta: 40 (não garantida).';
   const reasons={target_reached:'Meta de 40 atingida',scan_limit:'Teto de chamadas da varredura',quota_limit:'Limite diário ou mensal de custo',time_limit:'Limite de tempo',exhausted:'Resultados disponíveis esgotados',provider_error:'A consulta foi interrompida pelo Google',quota_unavailable:'Controle de custos indisponível'};
   $('#radarUsage').textContent=(reasons[data.stopReason]||'Busca concluída')+' · '+(data.calls||0)+' chamadas ao Google · '+(data.usage?.daily??'—')+'/'+(data.usage?.dailyLimit??15)+' hoje · '+(data.usage?.monthly??'—')+'/'+(data.usage?.monthlyLimit??200)+' no mês. Candidatos de bot são hipóteses, não atendimento manual comprovado.';
-  archiveSearch({niche,city,count:all.length});renderArchive();
+  archiveSearch({niche,city,count:all.length},all);renderArchive();
   if(!all.length)toast('Nenhum estabelecimento retornado para esta busca.');
  }catch(e){$('#radarProgress').classList.remove('busy');$('#scanProgressText').textContent='Não foi possível concluir a busca';$('#radarExplain').textContent=e.message;toast(e.message)}
  finally{state.scanning=false;$('#runLocal').disabled=!state.placesReady;}
