@@ -821,10 +821,9 @@ function buildAssistantInstructions(item){
   horario_de_funcionamento:a.hours||'',formas_de_pagamento:a.payments||[],
   endereco:a.address||'',site_ou_catalogo:a.link||'',
   politicas:a.policy||'',observacoes:a.notes||''
- },null,2).replace(/<\\/dados_empresa>/gi,'[fechamento de bloco informado no cadastro]');
- return RICKY_ASSISTANT_BASE+'\\n\\n<dados_empresa>\\n'+raw+'\\n</dados_empresa>\\n\\n'+
-  'CONTEXTO DE EXECUÇÃO: o backend deve inserir a data, hora e fuso atuais em cada chamada. '+
-  'Ferramentas de atendimento humano e agendamento só podem ser usadas quando habilitadas e realmente disponíveis no backend.';
+ },null,2).replaceAll('</dados_empresa>','[fechamento de bloco removido]');
+ return [RICKY_ASSISTANT_BASE,'<dados_empresa>',raw,'</dados_empresa>',
+  'CONTEXTO DE EXECUÇÃO: o backend deve inserir a data, hora e fuso atuais em cada chamada. Ferramentas humanas e agendamento só podem ser usadas se estiverem habilitadas e disponíveis.'].join(String.fromCharCode(10,10));
 }
 async function loadOnboardings(){
  const root=$('#onboardList');root.replaceChildren(dom('p','field-note','Carregando formulários…'));
