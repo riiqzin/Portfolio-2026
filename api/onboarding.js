@@ -6,6 +6,8 @@ const INDEX='ricky:onboarding:index:v1';
 const key=id=>'ricky:onboarding:v1:'+id;
 const promptKey=id=>'ricky:onboarding:prompt:v1:'+id;
 const fingerprint=form=>hash(JSON.stringify([form.company,form.segment,form.submittedAt,form.answers]));
+const tagCount=(s,tag)=>(s.match(new RegExp('<'+tag+'>','g'))||[]).length===1&&(s.match(new RegExp('</'+tag+'>','g'))||[]).length===1;
+const requiredTags=['regras_fixas','dados_empresa','modulo_atendimento_humano','modulo_agendamento','contexto_da_conversa'];
 const validId=id=>typeof id==='string'&&/^[a-f0-9]{64}$/.test(id);
 const hash=token=>createHash('sha256').update(token).digest('hex');
 const clean=(v,n=200)=>typeof v==='string'?v.trim().slice(0,n):'';
@@ -54,7 +56,11 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      const id=clean(body.id,64),prompt=typeof body.prompt==='string'?body.prompt.trim():'';
      if(!validId(id))return deny('Empresa inválida.');
      if(prompt.length<350||prompt.length>16000)return deny('O prompt revisado deve ter de 350 a 16.000 caracteres.');
-     if(!prompt.includes('RICKY AI')||!prompt.includes('<dados_empresa>')||!prompt.includes('</dados_empresa>'))return deny('Cole o prompt completo com identificação Ricky AI e dados da empresa.');
+     if(!requiredTags.every(tag=>tagCount(prompt,tag)))return deny('Cole o prompt completo da versão 3 com as cinco seções obrigatórias.');
+     if(!prompt.includes('{{DATA_HORA_ATUAL}}')||!prompt.includes('{{FUSO}}'))return deny('Mantenha os marcadores de data, hora e fuso sem preencher.');
+     const locations=requiredTags.map(tag=>prompt.indexOf('<'+tag+'>'));
+     if(locations.some((position,i)=>i>0&&position<=locations[i-1]))return deny('Mantenha as seções na ordem definida.');
+     if(!/RICKY AI/i.test(prompt))return deny('Identifique o prompt como RICKY AI.');
      const formRaw=await redis(['GET',key(id)]);
      if(!formRaw)return deny('Formulário não encontrado.',404);
      const form=JSON.parse(formRaw);
@@ -110,13 +116,13 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    if(data.status==='recebido')return deny('Este formulário já foi enviado.',409);
    if(Date.parse(data.expiresAt)<clock())return deny('Link expirado.',410);
    const answers=body.answers||{},hours=clean(answers.hours,300),payments=Array.isArray(answers.payments)?answers.payments.filter(v=>['Pix','Cartão','Dinheiro','Boleto','Outro'].includes(v)).slice(0,5):[];
-   const services=clean(answers.services,4500),policy=clean(answers.policy,1600),address=clean(answers.address,300),link=clean(answers.link,500),notes=clean(answers.notes,1600);
+   const services=clean(answers.services,4500),policy=clean(answers.policy,1600),address=clean(answers.address,300),humanContact=clean(answers.humanContact,220),link=clean(answers.link,500),notes=clean(answers.notes,1600);
    if(hours.length<3||services.length<8||payments.length<1)return deny('Informe horários, serviços com preços e formas de pagamento.');
    if(!okUrl(link))return deny('O link deve começar com https://');
    if(!/\d/.test(services))return deny('Inclua os valores dos serviços ou produtos, ou informe claramente que o preço é sob consulta.');
    if(!/R\$|reais|\d+[,.]\d{2}|sob consulta|a combinar/i.test(services))return deny('Inclua preços (ex.: Corte — R$ 35) ou indique “sob consulta”.');
    const now=new Date(clock()).toISOString();
-   data.status='recebido';data.submittedAt=now;data.answers={hours,payments,services,policy,address,link,notes};
+   data.status='recebido';data.submittedAt=now;data.answers={hours,payments,services,policy,address,humanContact,link,notes};
    // One-time claim avoids double submits from two devices.
    const lock=await redis(['SET','ricky:onboarding:lock:'+data.id,'1','NX','EX',90]);
    if(lock!=='OK')return deny('Formulário já está sendo enviado.',409);
