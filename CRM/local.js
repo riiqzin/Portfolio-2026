@@ -48,7 +48,7 @@ function setCountry(code,{keepCity=false}={}){
  if(i>=0){const index=i%4;$('#localNiche').value=termsFor(code)[index]||BASE_NICHES[index]}
  state.countryCode=code;$('#localCountry').value=code;
  if(!keepCity){$('#localCity').value=c.city;$('#localAreas').value=c.areas}
- $('[data-niche]').forEach((b,i)=>{b.dataset.niche=termsFor(code)[i];b.textContent=NICHE_ICONS[i]+' '+termsFor(code)[i];b.classList.toggle('active',b.dataset.niche.toLocaleLowerCase()===$('#localNiche').value.toLocaleLowerCase())});
+ $$('[data-niche]').forEach((b,i)=>{b.dataset.niche=termsFor(code)[i];b.textContent=NICHE_ICONS[i]+' '+termsFor(code)[i];b.classList.toggle('active',b.dataset.niche.toLocaleLowerCase()===$('#localNiche').value.toLocaleLowerCase())});
  refreshCountryDisplay();try{localStorage.setItem(COUNTRY_PREFS,code)}catch{}
 }
 function openCountryGlobe(){
@@ -1428,7 +1428,7 @@ function bind(){
  $('#closeCountryGlobe').onclick=closeCountryGlobe;
  $('#globeBackdrop').onclick=closeCountryGlobe;
  $('#globeApply').onclick=closeCountryGlobe;
- $('[data-globe-country]').forEach(b=>b.onclick=()=>{setCountry(b.dataset.globeCountry);window.RickyGlobe?.focus(b.dataset.globeCountry)});
+ $$('[data-globe-country]').forEach(b=>b.onclick=()=>{setCountry(b.dataset.globeCountry);window.RickyGlobe?.focus(b.dataset.globeCountry)});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#countryGlobeModal').hidden){e.preventDefault();closeCountryGlobe()}});
  setCountry(COUNTRY_DATA[localStorage.getItem(COUNTRY_PREFS)]?localStorage.getItem(COUNTRY_PREFS):'BR');
  
