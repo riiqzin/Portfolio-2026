@@ -852,7 +852,7 @@ function createLab(item){
  let history=[],enabled=false,busy=false,spent=0;
  const messages=()=>{conversation.replaceChildren();if(!history.length)conversation.append(dom('p','field-note','Comece uma conversa para avaliar o atendimento.'));for(const m of history){const bubble=dom('div','ricky-lab-message '+(m.role==='user'?'from-user':'from-ai'));bubble.append(dom('small','',m.role==='user'?'Cliente':'Ricky AI'),dom('p','',m.content));conversation.append(bubble)}};
  const refresh=async()=>{try{
-  const data=await backend('ai-lab');
+  const data=await backend('onboarding?lab=1');
   enabled=!!data.enabled;
   meter.textContent='Reserva: US$ '+(Number(data.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(data.budgetCents||0)/100).toFixed(2);
   stateText.textContent=enabled?'Testes reais disponíveis. Cada envio exige confirmação.':'Testes pagos desativados no servidor. Nenhum crédito será consumido.';
@@ -868,7 +868,7 @@ function createLab(item){
   busy=true;send.disabled=true;stateText.textContent='Consultando OpenAI...';
   const existing=history.slice(-8);
   try{
-   const result=await backend('ai-lab','POST',{id:item.id,model:model.value,message:prompt,history:existing,confirmPaid:true});
+   const result=await backend('onboarding?lab=1','POST',{id:item.id,model:model.value,message:prompt,history:existing,confirmPaid:true});
    history.push({role:'user',content:prompt},{role:'assistant',content:result.answer});
    input.value='';messages();
    spent+=Number(result.usage?.estimatedUsd||0);
