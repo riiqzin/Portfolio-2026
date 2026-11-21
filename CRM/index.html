@@ -4,61 +4,65 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
-<meta name="theme-color" content="#080d15">
-<title>Ricky Studio — Operações</title>
+<meta name="theme-color" content="#101110">
+<title>Ricky CRM · Mesa de trabalho</title>
 <link rel="stylesheet" href="/CRM/local.css">
+<link rel="stylesheet" href="/CRM/workbench.css">
 <script defer src="/CRM/local.js"></script>
+<script defer src="/CRM/workbench.js"></script>
 </head>
-<body>
-<div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+<body class="workbench">
+<a class="skip-link" href="#workspace">Ir para o conteúdo</a>
+
 <div class="app-shell">
 <aside class="sidebar">
- <a class="logo" href="#central" aria-label="Ricky Studio"><span class="logo-icon">r<span>.</span></span><span class="logo-name">ricky<small>STUDIO</small></span></a>
- <div class="sidebar-label">ESPAÇO DE TRABALHO</div>
+ <a class="logo" href="#central" aria-label="Ricky CRM"><span class="logo-icon">r<span>.</span></span><span class="logo-name">ricky<small>CRM</small></span></a>
+ <div class="sidebar-label">PESSOAL / TRABALHO</div>
  <nav class="main-nav" aria-label="Navegação">
   <a href="#central" data-nav="central"><span class="nav-symbol">▦</span> Central</a>
   <a href="#radar" data-nav="radar"><span class="nav-symbol">◎</span> Radar <span class="nav-pill">LOCAL</span></a>
   <a href="#hoje" data-nav="hoje"><span class="nav-symbol">◷</span> Pra Hoje <span class="nav-count" id="navTodayCount" hidden></span></a>
-  <a href="#abordagens" data-nav="abordagens"><span class="nav-symbol">✎</span> Banco de Abordagens</a>
-  <a href="#clientes" data-nav="clientes"><span class="nav-symbol">♧</span> Clientes</a>
+  <a href="#abordagens" data-nav="abordagens"><span class="nav-symbol">✎</span> Abordagens</a>
+  <a href="#clientes" data-nav="clientes"><span class="nav-symbol">♧</span> Pipeline</a>
   <a href="#implantacoes" data-nav="implantacoes"><span class="nav-symbol">✦</span> Implantações</a>
-  <a href="#custos" data-nav="custos"><span class="nav-symbol">◫</span> Custos & APIs</a>
+  <a href="#custos" data-nav="custos"><span class="nav-symbol">◫</span> Custos e APIs</a>
  </nav>
  <div class="side-bottom"><span class="side-online"><i></i> CENTRAL PRIVADA</span><a href="../" target="_blank" rel="noopener">Meu portfólio ↗</a><button class="logout" id="logoutButton" type="button">Sair da conta ↗</button></div>
 </aside>
 <div class="main-area">
 <header class="topbar">
- <div><span class="breadcrumb">RICKY / OPERAÇÕES</span><strong id="headerSection">Central</strong></div>
+ <div><span class="breadcrumb">RICKY / CRM</span><strong id="headerSection">Central</strong></div>
  <div class="top-actions"><span id="connectionState" class="conn"><i></i> Conectando</span><button type="button" class="btn btn-outline compact" id="refreshApp">↻ Atualizar</button><button type="button" class="btn btn-outline compact mobile-logout" id="logoutMobile" aria-label="Sair da conta">Sair</button></div>
 </header>
 <main id="workspace">
 <section class="page" id="page-central">
- <div class="page-intro"><span class="eyebrow">O SEU DIA, MAIS SIMPLES</span><h1>O próximo passo,<br><em>sempre à vista.</em></h1><p>Encontre bons negócios, converse no seu ritmo e deixe o Ricky cuidar do acompanhamento.</p></div>
- <div class="hero-cta"><div><span class="eyebrow">RICKY / NOVO CICLO</span><h2>Comece pelo negócio certo.</h2><p>Barbearias e serviços locais com potencial para uma presença digital melhor.</p></div><a href="#radar" class="btn btn-primary">Abrir Radar Local <span>↗</span></a></div>
+ <div class="page-intro"><span class="eyebrow">ROTINA</span><h1>Central</h1></div>
  <div class="stats"><div class="stat"><small>Na carteira</small><strong id="statLeads">0</strong><span>negócios acompanhados</span></div><div class="stat"><small>Pra hoje</small><strong id="statToday">0</strong><span>ações pendentes</span></div><div class="stat"><small>Responderam</small><strong id="statReplies">0</strong><span>contatos iniciados</span></div><div class="stat"><small>Fechamentos</small><strong id="statWon">0</strong><span>clientes conquistados</span></div></div>
- <div class="section-title"><div><span class="eyebrow">PRIORIDADES</span><h2>Seu foco agora</h2></div><a href="#hoje" class="quiet-link">Ver todas as ações ↗</a></div>
+<div class="desk-layout"><div class="desk-queue"> <div class="section-title"><div><span class="eyebrow">PRIORIDADES</span><h2>Próximas ações</h2></div><a href="#hoje" class="quiet-link">Abrir agenda</a></div>
  <div id="centralActions" class="action-list"></div>
- <div class="section-title tight"><div><span class="eyebrow">ACOMPANHAMENTO</span><h2>Seu experimento comercial</h2></div><span class="tiny-muted">Primeiros 40 contatos</span></div>
+</div><aside class="desk-side"><a class="radar-launch" href="#radar"><span class="eyebrow">PROSPECÇÃO</span><span class="launch-scope" aria-hidden="true"><i></i><b>◎</b></span><strong>Nova varredura</strong><span>Escolher região e segmento</span></a> <div class="section-title tight"><div><span class="eyebrow">ACOMPANHAMENTO</span><h2>Contatos registrados</h2></div><span class="tiny-muted">Primeiros 40 contatos</span></div>
  <div class="experiment"><div class="experiment-bar"><span id="experimentFill"></span></div><div class="experiment-numbers"><strong id="experimentCount">0 / 40</strong><span id="experimentSummary">Registre suas abordagens para descobrir o que funciona.</span></div><div class="ai-insight-control"><button class="btn btn-outline compact" id="analyzeResults" type="button">✦ Ricky AI · Analisar resultados</button><small id="insightsStatus">Uma análise baseada nos seus contatos registrados.</small></div><div id="insightsOutput" class="ai-insights" hidden></div></div>
+</aside></div>
 </section>
 <section class="page" id="page-radar" hidden>
- <div class="page-intro inline-intro"><div><span class="eyebrow">DESCOBERTA / FONTES PÚBLICAS</span><h1>Encontre quem<br><em>vale abordar.</em></h1><p>Dados reais, hipóteses honestas e sua verificação final.</p></div><span class="intro-tag">◎ RADAR 2.0</span></div>
+ <div class="page-intro inline-intro"><div><span class="eyebrow">PROSPECÇÃO</span><h1>Radar</h1></div><a class="quiet-link" href="#recent-scans" data-scroll-target="recent-scans">Varreduras recentes</a></div>
  <div class="radar-switch"><button type="button" class="switch active" id="switchLocal">⌖ Negócios locais</button><a href="/CRM/legacy.html#radar" target="_blank" rel="noopener noreferrer" class="switch" title="Radar antigo de e-commerce; leads desse modo não entram automaticamente na nova carteira">▣ E-commerce antigo ↗</a></div>
- <div class="scanner glass"><div class="scanner-art"><span class="scanner-overline">RICKY DISCOVERY ENGINE</span><div class="scanner-circle"><i></i><i></i><b>r<span>RADAR</span></b></div><span class="scanner-art-foot">LOCAL BUSINESS / WORLDWIDE</span></div>
+ <div class="scanner glass"><div class="scanner-art"><div class="scope-coordinates" aria-hidden="true"><span>N</span><span>E</span><span>S</span><span>W</span></div><span class="scanner-overline">ÁREA DE BUSCA</span><div class="scanner-circle"><i></i><i></i><b>r<span>RADAR</span></b></div><span class="scanner-art-foot" id="scopeState" role="status">PRONTO PARA CONFIGURAR</span></div>
  <form id="localForm" class="scanner-form">
-  <span class="eyebrow">RADAR / DOIS TIPOS DE OPORTUNIDADE</span><h2>Encontre negócios com potencial.</h2><div class="radar-target"><strong>◎ Ambos · até 40 candidatos</strong><span>Landing pages + automação de atendimento. Não presumimos necessidade de bot nem ausência de site.</span></div>
+  <span class="eyebrow">NOVA VARREDURA</span><h2>Definir busca</h2><div class="radar-target"><strong>◎ Ambos · até 40 candidatos</strong><span>Landing pages + automação de atendimento. Não presumimos necessidade de bot nem ausência de site.</span></div>
   <div class="quick-niches"><button type="button" data-niche="Barbearias" class="chip active">✂ Barbearias</button><button type="button" data-niche="Clínicas de estética" class="chip">✦ Estética</button><button type="button" data-niche="Estúdios de tatuagem" class="chip">◈ Tatuagem</button><button type="button" data-niche="Personal trainer" class="chip">◎ Personal</button></div>
   <label>Tipo de negócio<input name="niche" id="localNiche" value="Barbearias" maxlength="80" required></label>
-  <div class="radar-country-head"><label for="localCountry">País da pesquisa</label><button type="button" class="btn btn-outline compact globe-open" id="openCountryGlobe">◉ Selecionar no globo <span aria-hidden="true">↗</span></button></div>
+  <div class="country-field">  <div class="radar-country-head"><label for="localCountry">País da pesquisa</label><button type="button" class="btn btn-outline compact globe-open" id="openCountryGlobe">◉ Selecionar no globo <span aria-hidden="true">↗</span></button></div>
   <select id="localCountry" aria-label="País da pesquisa">
    <option value="BR">🇧🇷 Brasil</option><option value="IT">🇮🇹 Itália</option><option value="PT">🇵🇹 Portugal</option><option value="US">🇺🇸 Estados Unidos</option><option value="ES">🇪🇸 Espanha</option><option value="FR">🇫🇷 França</option><option value="DE">🇩🇪 Alemanha</option><option value="GB">🇬🇧 Reino Unido</option><option value="CH">🇨🇭 Suíça</option><option value="AT">🇦🇹 Áustria</option><option value="NL">🇳🇱 Países Baixos</option><option value="BE">🇧🇪 Bélgica</option><option value="IE">🇮🇪 Irlanda</option><option value="CA">🇨🇦 Canadá</option><option value="AR">🇦🇷 Argentina</option><option value="MX">🇲🇽 México</option><option value="CL">🇨🇱 Chile</option><option value="UY">🇺🇾 Uruguai</option><option value="JP">🇯🇵 Japão</option><option value="AU">🇦🇺 Austrália</option><option value="NZ">🇳🇿 Nova Zelândia</option>
   </select>
   <p class="country-hint" id="countryScanHint">🇧🇷 Pesquisa localizada em português · Brasil</p>
-  <label>Cidade ou região<input name="city" id="localCity" value="São Paulo, SP" maxlength="80" required></label><label>Bairros para ampliar a busca <span class="muted-inline">(opcional)</span><input id="localAreas" placeholder="Ex.: Mooca, Tatuapé, Pinheiros" maxlength="260"></label>
+</div>
+  <label>Cidade ou região<input name="city" id="localCity" value="São Paulo, SP" maxlength="80" required></label><label>Bairros para ampliar a busca <span class="muted-inline">Opcional</span><input id="localAreas" placeholder="Ex.: Mooca, Tatuapé, Pinheiros" maxlength="260"></label>
   <div class="radar-filter-row"><label>Nota mínima<select id="minRating"><option value="0" selected>Qualquer nota</option><option value="4">4,0+</option><option value="4.5">4,5+</option><option value="4.7">4,7+</option></select></label><label>Avaliações mínimas<select id="minReviews"><option value="0" selected>Sem mínimo</option><option value="10">10+</option><option value="30">30+</option><option value="50">50+</option></select></label></div>
   <button type="submit" class="btn btn-primary big" id="runLocal">◎ Iniciar varredura</button>
-  <p id="placesNotice" class="field-note" role="status">Verificando conexão com o Google Places…</p><p class="field-note">Até 8 chamadas por varredura; teto compartilhado de 15 chamadas/dia e 200/mês. Cada página conta como uma chamada. A busca distribui consultas por bairros para encontrar negócios de portes variados. Nenhum mínimo de avaliações é aplicado por padrão.</p>
-  <details class="setup-help"><summary>Como habilitar a busca pelo Google Maps?</summary><div><p>É necessário ativar <strong>Places API (New)</strong> no Google Cloud, com faturamento e limites de consumo configurados. Depois, adicione a chave secreta <code>GOOGLE_PLACES_API_KEY</code> no ambiente Production da Vercel e publique novamente.</p><p>O Ricky limita a cinco varreduras por dia, com no máximo oito chamadas por varredura e limites globais menores para proteger os custos. Cadastro manual permanece disponível.</p></div></details>
+  <p id="placesNotice" class="field-note" role="status">Verificando conexão com o Google Places…</p>
+  <details class="setup-help"><summary>Limites e configuração do Google Maps</summary><div><p class="field-note">Até 8 chamadas por varredura; teto compartilhado de 15 chamadas/dia e 200/mês. Cada página conta como uma chamada. A busca distribui consultas por bairros para encontrar negócios de portes variados. Nenhum mínimo de avaliações é aplicado por padrão.</p><p>É necessário ativar <strong>Places API (New)</strong> no Google Cloud, com faturamento e limites de consumo configurados. Depois, adicione a chave secreta <code>GOOGLE_PLACES_API_KEY</code> no ambiente Production da Vercel e publique novamente.</p><p>O Ricky limita a cinco varreduras por dia, com no máximo oito chamadas por varredura e limites globais menores para proteger os custos. Cadastro manual permanece disponível.</p></div></details>
  </form></div>
  <div class="globe-modal" id="countryGlobeModal" role="dialog" aria-modal="true" aria-labelledby="countryGlobeTitle" hidden>
  <div class="globe-backdrop" id="globeBackdrop"></div>
@@ -72,34 +76,35 @@
 <div id="radarProgress" class="progress-card glass" hidden><div class="progress-head"><span class="eyebrow"><i class="live-dot"></i> ANÁLISE EM ANDAMENTO</span><span id="scanProgressCount">0 / 0</span></div><h3 id="scanProgressText">Consultando estabelecimentos…</h3><div class="progress-track"><span id="scanProgressBar"></span></div><div class="progress-stages"><span>01 Localizar</span><span>02 Classificar</span><span>03 Apresentar</span></div></div>
  <div class="section-title"><div><span class="eyebrow">RESULTADOS</span><h2>Oportunidades encontradas</h2></div><div class="result-filters"><button type="button" class="chip active" id="filterEligible">Dentro do filtro</button><button type="button" class="chip" id="filterOutside">Fora do filtro</button></div></div>
  <p id="radarExplain" class="text-muted">Nenhuma varredura realizada. Os resultados do Google Maps aparecerão aqui, sem notas inventadas.</p><div class="radar-offer-tabs"><button type="button" class="chip active" data-offer="all">Todos os candidatos</button><button type="button" class="chip" data-offer="landing">Landing pages</button><button type="button" class="chip" data-offer="bot">Bots · investigar</button></div><p class="field-note" id="radarUsage">O Radar só afirma dados do Google e confirmações feitas por você.</p>
- <div class="radar-refine glass" aria-label="Filtrar e ordenar candidatos"><div class="radar-refine-head"><strong>Encontre o cliente certo</strong><span id="radarMatchCount" class="field-note">Organize os resultados sem gastar API</span></div><div class="radar-refine-grid">
+ <div class="radar-refine glass" aria-label="Filtrar e ordenar candidatos"><div class="radar-refine-head"><strong>Refinar resultados</strong><span id="radarMatchCount" class="field-note">Organize os resultados sem gastar API</span></div><div class="radar-refine-grid">
 <label>Buscar candidato<input id="radarSearch" type="search" placeholder="Nome, bairro ou endereço..." autocomplete="off"></label>
 <label>Ordenar por<select id="radarSort"><option value="priority">Maior potencial</option><option value="rating_asc">Piores notas primeiro</option><option value="rating_desc">Melhores notas primeiro</option><option value="reviews_asc">Menos avaliações primeiro</option><option value="reviews_desc">Mais avaliações primeiro</option><option value="name">Nome A–Z</option></select></label>
 <label>Tipo de link<select id="radarLink"><option value="all">Todos os tipos</option><option value="none">Sem site informado</option><option value="social">Rede social como site</option><option value="whatsapp">WhatsApp como site</option><option value="bio">Link na bio</option><option value="booking">Plataforma de agendamento</option><option value="own">Domínio próprio</option><option value="other">Outros / desconhecidos</option></select></label>
 <label>Contato<select id="radarContact"><option value="all">Todos os contatos</option><option value="phone">Com telefone</option><option value="email">Com e-mail</option><option value="website">Com link</option><option value="none">Sem contato direto</option></select></label>
 <label>Número de avaliações<select id="radarReviews"><option value="all">Qualquer quantidade</option><option value="lt10">Menos de 10</option><option value="lt30">Menos de 30</option><option value="lt100">Menos de 100</option><option value="gte100">100 ou mais</option></select></label>
 <button type="button" id="resetRadarFilters" class="btn btn-outline compact">Limpar filtros</button></div><p class="field-note">O tipo de link é classificado pela URL cadastrada; não equivale à análise automática do conteúdo ou design do site.</p></div><div id="radarResults" class="prospect-grid"></div>
- <div class="section-title small-top"><div><span class="eyebrow">SEU ARQUIVO</span><h2>Varreduras recentes</h2></div></div>
+ <div class="section-title small-top" id="recent-scans"><div><span class="eyebrow">SEU ARQUIVO</span><h2>Varreduras recentes</h2></div></div>
  <div id="radarArchive" class="archive-row"></div>
  <div class="manual-add"><div><strong>Já encontrou um negócio interessante?</strong><span>Cadastre manualmente e comece a acompanhar, mesmo sem a API.</span></div><button class="btn btn-outline" id="manualAdd" type="button">+ Novo negócio</button></div>
 </section>
 <section class="page" id="page-hoje" hidden>
- <div class="page-intro inline-intro"><div><span class="eyebrow">SUA MESA DE TRABALHO</span><h1>Um contato<br><em>de cada vez.</em></h1><p>Abordagens, conversas e retornos — sem perder nenhum próximo passo.</p></div><span class="intro-tag">◷ PRA HOJE</span></div>
+ <div class="page-intro inline-intro"><div><span class="eyebrow">CONTATOS</span><h1>Pra hoje</h1></div></div>
  <div class="today-tabs"><button class="chip active" data-today="all">Tudo</button><button class="chip" data-today="new">Para abordar</button><button class="chip" data-today="followup">Follow-ups</button><button class="chip" data-today="reply">Responderam</button></div>
  <div id="todayList" class="action-list"></div><details class="gmail-integrated glass" id="whatsappAI"><summary><span><strong>✦ Ricky AI · Resposta no WhatsApp</strong><small>Cole uma resposta recebida para entender o contexto e preparar sua resposta. Não envia nada.</small></span><span>Abrir assistente ↗</span></summary><div class="ai-reply-panel"><label class="textarea-label">Mensagem recebida<textarea id="aiIncoming" rows="4" maxlength="2500" placeholder="Cole aqui o que o cliente respondeu no WhatsApp..."></textarea></label><button id="analyzeReply" class="btn btn-primary compact" type="button">✦ Sugerir resposta</button><div class="ai-result" id="replyAIResult" hidden><strong id="replyAIClassification"></strong><p id="replyAISummary"></p><label class="textarea-label">Resposta sugerida (editável)<textarea id="replyAISuggestion" rows="4" maxlength="850"></textarea></label><button class="btn btn-outline compact" type="button" id="copyReplyAI">Copiar resposta</button><p class="field-note">Confira a conversa. O CRM não altera status ou envia mensagens por conta própria.</p></div><p class="field-note" id="replyAIStatus"></p></div></details>
  <details class="gmail-integrated glass" id="gmailDetails"><summary><span><strong>✉ Respostas do Gmail</strong><small>Sincronização e classificação automáticas para contatos por e-mail</small></span><span>Gerenciar ↗</span></summary><div class="gmail-in"><div class="gmail-toolbar"><span id="gmailState">Verificando conexão…</span><div><button class="btn btn-outline compact" type="button" id="gmailConnect">Conectar Gmail</button><button class="btn btn-outline compact" type="button" id="gmailSync">Sincronizar respostas</button></div></div><div id="gmailReplyList" class="gmail-replies"></div><p class="field-note">O Gmail reconhece somente mensagens de leads com e-mail registrado. Respostas de WhatsApp são marcadas manualmente.</p></div></details>
 </section>
 <section class="page" id="page-abordagens" hidden>
- <div class="page-intro inline-intro"><div><span class="eyebrow">MODELOS DE MENSAGENS</span><h1>Banco de<br><em>abordagens.</em></h1><p>Mensagens prontas para landing pages, bots, retornos e follow-ups. Edite e copie sem sair do CRM.</p></div><span class="intro-tag">✎ MODELOS</span></div>
+ <div class="page-intro inline-intro"><div><span class="eyebrow">MENSAGENS</span><h1>Abordagens</h1><p>Edite, copie e personalize.</p></div></div>
  <div class="templates glass templates-standalone"><div id="templateLibrary" class="template-grid"></div></div>
 </section>
 <section class="page" id="page-clientes" hidden>
- <div class="page-intro inline-intro"><div><span class="eyebrow">CARTEIRA DE CLIENTES</span><h1>Relações que<br><em>viram negócio.</em></h1><p>Histórico simples de cada contato, do primeiro oi até fechar.</p></div><button type="button" class="btn btn-primary" id="addClient">+ Adicionar negócio</button></div>
+ <div class="page-intro inline-intro"><div><span class="eyebrow">CARTEIRA</span><h1>Pipeline</h1></div><button type="button" class="btn btn-primary" id="addClient">+ Adicionar negócio</button></div>
+ <div class="client-view-tools"><div class="view-switch" aria-label="Visualização da carteira"><button type="button" data-client-view="board" aria-pressed="true">Etapas</button><button type="button" data-client-view="list" aria-pressed="false">Lista</button></div><span class="tiny-muted">Abra um negócio para registrar o próximo passo.</span></div>
  <div class="client-tools"><label class="search-wrap"><span>⌕</span><input id="clientSearch" placeholder="Buscar negócio, cidade ou contato"></label><select id="clientStatus"><option value="all">Todos os status</option><option value="novo">Ainda não abordado</option><option value="abordado">Abordado</option><option value="respondeu">Respondeu</option><option value="interessado">Interessado</option><option value="proposta">Proposta enviada</option><option value="fechou">Fechou</option><option value="sem_interesse">Sem interesse</option></select></div>
- <div id="clientList" class="client-list"></div>
+ <div id="clientList" class="client-list" tabindex="0" role="region" aria-label="Pipeline de negócios; role horizontalmente para ver as etapas"></div>
 </section>
 <section class="page onboarding-page" id="page-implantacoes" hidden>
- <div class="page-intro inline-intro"><div><span class="eyebrow">RICKY AI / NOVOS CLIENTES</span><h1>Implantações <em>sem complicação.</em></h1><p>Gere um link para o cliente preencher as informações essenciais. As respostas aparecem aqui para sua revisão.</p></div><span class="intro-tag">✦ ONBOARDING</span></div>
+ <div class="page-intro inline-intro"><div><span class="eyebrow">RICKY AI</span><h1>Implantações</h1><p>Formulários, configurações e testes dos assistentes.</p></div></div>
  <div class="onboard-layout">
   <form class="onboard-create glass" id="onboardCreate">
    <h2>Gerar formulário</h2>
@@ -117,7 +122,7 @@
 </section>
 <section class="page costs-page" id="page-custos" hidden>
  <div class="costs-top">
-  <div><span class="eyebrow">VISÃO GERAL · ESTE MÊS</span><h1>Custos <em>& uso.</em></h1><p>Veja o que cada ferramenta faz, o que é gratuito e quanto você já utilizou.</p></div>
+  <div><span class="eyebrow">VISÃO GERAL · ESTE MÊS</span><h1>Custos e APIs</h1><p>Faturamento, reservas e limites de uso.</p></div>
   <button type="button" class="btn btn-outline compact" id="refreshCosts">↻ Atualizar</button>
  </div>
  <div class="costs-summary" aria-label="Resumo do mês">
@@ -138,16 +143,16 @@
    <span id="costsAiRemaining">Neste mês</span>
   </article>
  </div>
- <div class="costs-section-heading"><div><span class="eyebrow">SEUS SERVIÇOS</span><h2>Ferramentas do seu CRM</h2></div><span id="costsUpdated" class="tiny-muted">Atualizando…</span></div>
+ <div class="costs-section-heading"><div><span class="eyebrow">SEUS SERVIÇOS</span><h2>Serviços</h2></div><span id="costsUpdated" class="tiny-muted">Atualizando…</span></div>
  <div id="costsCards" class="costs-services" aria-live="polite"><div class="action-card">Carregando serviços…</div></div>
  <p class="costs-disclaimer">Saldo informado, gastos oficiais e limites do CRM são medidas diferentes. A barra dos cartões indica uso do limite interno — não a porcentagem dos créditos consumidos. Quando o faturamento não estiver integrado, consulte o painel da plataforma.</p>
  <p class="field-note" id="costsError" role="status"></p>
 </section>
 </main>
-<footer class="footer"><span>RICKY STUDIO · OPERAÇÕES PRIVADAS</span><span>Dados públicos identificados como indícios. Sua confirmação vem primeiro.</span></footer>
+<footer class="footer"><span>RICKY CRM / PESSOAL</span><span>Verifique os dados antes de abordar.</span></footer>
 </div></div>
-<div class="overlay" id="authOverlay"><form class="auth-modal glass" id="loginForm"><div class="auth-logo">r.</div><span class="eyebrow">ACESSO PRIVADO</span><h1>Seu espaço.<br>Seu ritmo.</h1><p>Digite sua senha para acessar suas oportunidades.</p><label>Senha<input id="loginKey" type="password" autocomplete="current-password" required></label><label class="check-row"><input type="checkbox" id="rememberKey" checked> Manter conectado neste navegador</label><button class="btn btn-primary big" type="submit">Entrar no Ricky Studio →</button><span id="loginError" class="error" role="alert"></span></form></div>
-<div class="overlay" id="leadOverlay" hidden><section class="lead-dialog glass" role="dialog" aria-modal="true" aria-labelledby="leadDialogTitle"><header class="dialog-head"><div><span class="eyebrow">RICKY / DETALHES DO NEGÓCIO</span><h2 id="leadDialogTitle">Nova oportunidade</h2></div><button class="btn btn-icon" type="button" id="closeLead" aria-label="Fechar">×</button></header>
+<div class="overlay" id="authOverlay" role="dialog" aria-modal="true" aria-label="Acesso ao Ricky CRM"><form class="auth-modal glass" id="loginForm"><div class="auth-logo">r.</div><span class="eyebrow">ACESSO PRIVADO</span><h1>Ricky CRM</h1><p>Sua mesa de trabalho.</p><label>Senha<input id="loginKey" type="password" autocomplete="current-password" required></label><label class="check-row"><input type="checkbox" id="rememberKey" checked> Manter conectado neste navegador</label><button class="btn btn-primary big" type="submit">Entrar</button><span id="loginError" class="error" role="alert"></span></form></div>
+<div class="overlay" id="leadOverlay" hidden><section class="lead-dialog glass" role="dialog" aria-modal="true" aria-labelledby="leadDialogTitle"><header class="dialog-head"><div><span class="eyebrow">CARTEIRA / NEGÓCIO</span><h2 id="leadDialogTitle">Nova oportunidade</h2></div><button class="btn btn-icon" type="button" id="closeLead" aria-label="Fechar">×</button></header>
  <div class="dialog-scroll">
  <div id="leadSource" class="lead-source"></div>
  <div class="edit-grid"><label>Nome do negócio<input id="leadName" maxlength="180"></label><label>Cidade / bairro<input id="leadCity" maxlength="180"></label><label>Telefone comercial<input id="leadPhone" maxlength="45" placeholder="DDD + número"></label><label>Site ou link cadastrado<input id="leadWebsite" maxlength="1500" placeholder="https://..."></label><label>E-mail comercial (se houver)<input id="leadEmail" type="email" maxlength="254" placeholder="contato@..."></label><label>Canal<select id="leadChannel"><option value="whatsapp">WhatsApp</option><option value="email">E-mail</option></select></label></div>

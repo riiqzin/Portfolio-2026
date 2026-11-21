@@ -1,5 +1,15 @@
 # CRM visual redesign
 
+## Workbench redesign (November 2026)
+
+`workbench.css` provides the shared graphite / amber visual system for the local CRM, legacy e-commerce workspace and public onboarding form. `workbench.js` handles short navigation and value-update animations, modal keyboard containment and focus restoration. System reduced-motion preference cancels active animations. The Radar scope only sweeps during a real search. The globe retains its existing lazy loading and frame-rate limit with a new palette.
+
+The local client view supports stage columns and the existing list. Both use the same filtered leads, edit dialog and original save/status actions. No API, database, authentication, sending, quota or billing contracts were changed. All changes are confined to `CRM/`.
+
+From `CRM/tests`, install with `npm ci`, then run `npm run test:workbench` (local CRM and onboarding) and `npm test` (legacy CRM). Set `CRM_BROWSER_CHANNEL=msedge` for the legacy suite on Windows, or select another installed Playwright channel. Both suites intercept APIs and external traffic; they do not query production data or spend API credits. The workbench suite covers seven routes, responsive layouts, login, filters, stage/list switching, lead creation and editing, status changes, globe selection, scan/history, templates, onboarding display, cost errors and reduced motion. The legacy suite now targets `legacy.html` and checks the current approach composer instead of retired visual-audit controls. Screenshots remain ignored under `tests/artifacts/`.
+
+The notes below describe the earlier legacy implementation.
+
 The CRM remains a static HTML page. `crm.css` contains the responsive design tokens, navigation, cards, lead list, dialogs and reduced-motion rules. Radar now has an isolated UI (`radar.js`/`radar.css`) and server-side discovery endpoint (`api/radar.js`). See [Radar setup, limitations and staged roadmap](RADAR.md). Search stays disabled until server credentials and explicit usage limits are configured.
 
 ## Preserved contracts

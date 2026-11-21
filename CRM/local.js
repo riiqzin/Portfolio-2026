@@ -225,7 +225,7 @@ function setNav(){
  if(!['central','radar','hoje','abordagens','clientes','implantacoes','custos'].includes(page))page='central';
  $$('.page').forEach(x=>x.hidden=x.id!=='page-'+page);
  $$('[data-nav]').forEach(a=>{a.classList.toggle('active',a.dataset.nav===page);if(a.dataset.nav===page)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- $('#headerSection').textContent=({central:'Central',radar:'Radar Internacional',hoje:'Pra Hoje',abordagens:'Banco de Abordagens',clientes:'Clientes',implantacoes:'Implantações',custos:'Custos & APIs'})[page];
+ $('#headerSection').textContent=({central:'Central',radar:'Radar Internacional',hoje:'Pra Hoje',abordagens:'Abordagens',clientes:'Pipeline',implantacoes:'Implantações',custos:'Custos & APIs'})[page];
  if(page==='hoje')loadGmail(true);
  if(page==='custos'&&state.key)void loadCosts();
  if(page==='implantacoes'&&state.key)void loadOnboardings();
@@ -280,17 +280,37 @@ function renderToday(){
  if(!todos.length)area.innerHTML=placeholder('Nada pendente nesta lista','Seu próximo contato aparece aqui depois que você salva uma oportunidade.');
  else todos.forEach(x=>area.append(actionCard(x)));
 }
+let clientView='board';
 function renderClients(){
- const q=$('#clientSearch').value.trim().toLowerCase(),status=$('#clientStatus').value,area=$('#clientList');area.replaceChildren();
+ const previous=new Map([...$('#clientList').querySelectorAll('[data-lead-id]')].map(row=>[row.dataset.leadId,{status:row.dataset.status,rect:row.getBoundingClientRect()}]));
+ const q=$('#clientSearch').value.trim().toLowerCase(),status=$('#clientStatus').value,area=$('#clientList');area.replaceChildren();area.classList.remove('pipeline-board');
  const filtered=state.leads.filter(x=>(status==='all'||x.status===status)&&[x.name,x.city,x.phone,x.email].some(s=>String(s||'').toLowerCase().includes(q)));
  if(!filtered.length){area.innerHTML=placeholder('Nenhum negócio nesta lista','O Radar e o cadastro manual alimentam sua carteira.');return}
  for(const c of filtered){
-  const row=dom('article','client-row');
+  const row=dom('article','client-row');row.dataset.status=c.status;row.dataset.leadId=c.id;
   const left=dom('div','client-main'),avatar=dom('div','client-avatar',c.name.slice(0,1).toUpperCase()),label=dom('div');
   label.append(dom('strong','',c.name),dom('span','',c.city||'Localidade não informada'));
   left.append(avatar,label);
   const right=dom('div','client-meta'),tag=dom('small','',STATUSES[c.status]||'Novo'),btn=dom('button','btn btn-outline compact','Abrir ↗');
   btn.onclick=()=>openLead(c);right.append(tag,btn);row.append(left,right);area.append(row);
+ }
+ if(clientView==='board'){
+  const rows=[...area.children];area.classList.add('pipeline-board');
+  for(const [status,label] of Object.entries(STATUSES)){
+   const lane=dom('section','pipeline-lane'),head=dom('header','lane-heading');
+   const members=rows.filter(row=>row.dataset.status===status);
+   head.append(dom('h2','',label),dom('span','lane-count',String(members.length)));
+   lane.append(head,...members);
+   if(!members.length)lane.append(dom('p','lane-empty','Sem negócios'));
+   area.append(lane);
+  }
+ }else area.classList.remove('pipeline-board');
+ if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  for(const row of area.querySelectorAll('[data-lead-id]')){
+   const before=previous.get(row.dataset.leadId);if(!before||before.status===row.dataset.status)continue;
+   const after=row.getBoundingClientRect();
+   if(after.width&&after.right>0&&after.left<innerWidth)row.animate([{transform:`translate(${before.rect.left-after.left}px,${before.rect.top-after.top}px)`,background:'#4a4930'},{transform:'translate(0,0)',background:'#202719'}],{duration:300,easing:'cubic-bezier(.22,.8,.3,1)'});
+  }
  }
 }
 function showArchivedScan(a){
@@ -444,7 +464,7 @@ async function checkPlaces(){
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function scan(ev){
  ev.preventDefault();if(state.scanning||!state.placesReady)return;
- state.scanning=true;state.filterOutside=false;state.archiveView=null;
+ state.scanning=true;$('#page-radar').classList.add('is-scanning');$('#scopeState').textContent='VARREDURA EM ANDAMENTO';state.filterOutside=false;state.archiveView=null;
  $('#filterEligible').classList.add('active');$('#filterOutside').classList.remove('active');
  $('#runLocal').disabled=true;
  $('#radarProgress').hidden=false;$('#radarProgress').classList.add('busy');
@@ -477,7 +497,7 @@ async function scan(ev){
   archiveSearch({niche,city,countryCode,count:all.length},all);renderArchive();
   if(!all.length)toast('Nenhum estabelecimento retornado para esta busca.');
  }catch(e){$('#radarProgress').classList.remove('busy');$('#scanProgressText').textContent='Não foi possível concluir a busca';$('#radarExplain').textContent=e.message;toast(e.message)}
- finally{state.scanning=false;$('#runLocal').disabled=!state.placesReady;}
+ finally{state.scanning=false;$('#page-radar').classList.remove('is-scanning');$('#scopeState').textContent='VARREDURA FINALIZADA';$('#runLocal').disabled=!state.placesReady;}
 }
 function blankLead(c={}){
  const base=offerFor(c);
@@ -656,7 +676,7 @@ function templateLibrary(){
  settings.append(header);
  const row=dom('div','template-settings-row');
  const price=dom('input'),deadline=dom('input');
- price.type='text';price.placeholder='Preço, ex.: R$ 700';price.maxLength=70;
+ price.setAttribute('aria-label','Preço dos modelos');deadline.setAttribute('aria-label','Prazo dos modelos');price.type='text';price.placeholder='Preço, ex.: R$ 700';price.maxLength=70;
  deadline.type='text';deadline.placeholder='Prazo, ex.: 5 dias úteis';deadline.maxLength=70;
  try{const x=JSON.parse(localStorage.getItem('ricky:local:pricing-v1')||'{}');price.value=x.price||'';deadline.value=x.deadline||''}catch{}
  const saveValues=()=>{try{localStorage.setItem('ricky:local:pricing-v1',JSON.stringify({price:price.value.trim(),deadline:deadline.value.trim()}));toast('Valores salvos neste navegador.')}catch{toast('Não foi possível salvar neste navegador.')}};
@@ -673,7 +693,7 @@ function templateLibrary(){
    let text=template[1].replaceAll('{{preco}}',price.value.trim()||'[definir preço]').replaceAll('{{prazo}}',deadline.value.trim()||'[definir prazo]');
    try{await navigator.clipboard.writeText(text);toast('Modelo copiado. Personalize os dados do negócio antes de enviar.')}catch{toast('Não foi possível copiar automaticamente.')}
   };
-  const editor=dom('textarea','template-editor');editor.value=body;editor.rows=7;editor.maxLength=1800;editor.hidden=true;
+  const editor=dom('textarea','template-editor');editor.setAttribute('aria-label','Editar modelo: '+name);editor.value=body;editor.rows=7;editor.maxLength=1800;editor.hidden=true;
   edit.onclick=()=>{
    if(editor.hidden){editor.hidden=false;edit.textContent='Salvar';editor.focus();return}
    const value=editor.value.trim();if(!value){toast('O modelo não pode ficar vazio.');return}
@@ -1410,6 +1430,7 @@ async function createOnboarding(e){
 
 function bind(){
  window.addEventListener('hashchange',setNav);
+ $$('[data-client-view]').forEach(button=>button.addEventListener('click',()=>{clientView=button.dataset.clientView;$$('[data-client-view]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));renderClients()}));
  $('#loginForm').addEventListener('submit',e=>{e.preventDefault();signIn()});
  $('#refreshApp').onclick=()=>refresh().then(()=>toast('Carteira atualizada.')).catch(e=>toast(e.message));
  $('#refreshCosts').onclick=()=>loadCosts();

@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "test": "node crm.cjs",
+    "test:workbench": "node workbench.cjs",
     "test:api": "node --test radar-api.mjs radar-audit-api.mjs"
   },
   "devDependencies": {

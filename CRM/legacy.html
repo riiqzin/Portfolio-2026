@@ -14,13 +14,15 @@
 <link rel="stylesheet" href="/CRM/outreach.css">
 <link rel="stylesheet" href="/CRM/studio.css">
 <link rel="stylesheet" href="/CRM/flow.css">
+<link rel="stylesheet" href="/CRM/workbench.css">
+<script defer src="/CRM/workbench.js"></script>
 </head>
-<body>
+<body class="workbench legacy-workbench">
 
 <a class="skip-link" href="#workspace">Ir para leads</a>
 <header class="sidebar" aria-label="Barra principal do Ricky Studio">
   <a class="product" href="#app" aria-label="Ricky Studio, central de operações"><span class="product-mark">r<span>.</span></span><span>ricky<small class="product-sub">/ STUDIO</small></span></a>
-  <div class="nav-label">SEU ESPAÇO DE TRABALHO</div>
+  <div class="nav-label">E-COMMERCE / LEGADO</div><a class="back-local" href="/CRM/">Voltar ao CRM local</a>
   <nav aria-label="Etapas da prospecção">
     <a class="nav-item selected" href="#app" aria-current="page"><span aria-hidden="true">⌘</span> Central</a>
     <a class="nav-item" href="#radar"><span aria-hidden="true">◎</span> Radar</a>
@@ -102,7 +104,7 @@
   <div class="gmail-grid" id="gmailResults"></div>
 </section>
 <section class="outreach-panel" id="outreachPanel" hidden aria-labelledby="outTitle">
- <div class="out-head"><div><span class="out-eyebrow">RICKY / OPERAÇÕES COMERCIAIS</span><h1 id="outTitle">Central de prospecção</h1><p>Seus contatos, mensagens prontas e acompanhamentos em um só lugar.</p></div><button class="ghost" id="outReload" type="button">Atualizar ↻</button></div>
+ <div class="out-head"><div><span class="out-eyebrow">RICKY / OPERAÇÕES COMERCIAIS</span><h1 id="outTitle">Prospecção</h1><p>Seus contatos, mensagens prontas e acompanhamentos em um só lugar.</p></div><button class="ghost" id="outReload" type="button">Atualizar ↻</button></div>
  <div class="out-connection"><span class="out-dot"></span><strong id="outMailbox">Consultando Gmail...</strong><span id="outCount">0 para revisar</span></div>
  <p id="outSendHelp" class="out-warning">Para habilitar o envio, autorize a permissão adicional do Gmail. <a href="#inbox">Ir para Respostas e reconectar Gmail</a>. Nenhuma mensagem será enviada sem sua aprovação.</p>
  <p id="outStatus" role="status" class="out-status">Escolha um modelo ou revise a fila de abordagens.</p>
@@ -122,7 +124,7 @@
   </section>
  </div>
  <section class="out-section out-timeline" aria-label="Acompanhamentos">
-  <div class="out-section-head"><div><span class="out-eyebrow">03 / ACOMPANHAR</span><h2>Seu dia comercial</h2></div></div>
+  <div class="out-section-head"><div><span class="out-eyebrow">03 / ACOMPANHAR</span><h2>Acompanhamento</h2></div></div>
   <div id="outTimeline" class="out-cards"></div>
  </section>
  <details class="out-section out-library">
@@ -134,9 +136,9 @@
  <p class="out-muted out-foot">Envio manual, no máximo 10 mensagens ao dia. Sem campanhas em massa. Follow-ups são apenas sugeridos após 5 dias e dependem de aprovação individual.</p>
 </section>
 <div class="dashboard-layout">
-    <div class="operations-intro"><div><span class="studio-eyebrow">RICKY STUDIO / CENTRAL</span><h1>Boas conexões.<br><span>Novas possibilidades.</span></h1><p>Seu relacionamento com cada lead, do primeiro contato ao próximo passo.</p></div><div class="updated" id="updatedText">Carregando…</div></div>
-    <section class="out-daily-card" aria-label="Seu dia comercial">
-      <div><span class="out-eyebrow">SUA ROTINA COMERCIAL</span><h2>Próximas ações prontas</h2><p>Prepare, revise e aprove seus contatos sem abrir o Gmail.</p></div>
+    <div class="operations-intro"><div><span class="studio-eyebrow">CARTEIRA LEGADA</span><h1>Pipeline</h1><p>E-commerce / contatos e atividade</p></div><div class="updated" id="updatedText">Carregando…</div></div>
+    <section class="out-daily-card" aria-label="Acompanhamento">
+      <div><span class="out-eyebrow">SUA ROTINA COMERCIAL</span><h2>Fila de abordagens</h2><p>Prepare, revise e aprove seus contatos sem abrir o Gmail.</p></div>
       <div class="out-daily-metrics"><span><b id="dashQueued">—</b> na fila</span><span><b id="dashFollowups">—</b> follow-ups</span><span><b id="dashSent">—</b> enviados</span></div>
       <a class="primary out-daily-link" href="#outreach">Abrir Prospecção ↗</a>
     </section>

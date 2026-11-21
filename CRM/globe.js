@@ -39,13 +39,13 @@ function draw(t){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
   const cx=w/2,cy=h/2,r=Math.min(w,h)*.37*zoom;
   ctx.save();
-  ctx.shadowColor='rgba(80,231,197,.25)';ctx.shadowBlur=35;
+  ctx.shadowColor='rgba(205,182,111,.25)';ctx.shadowBlur=35;
   let g=ctx.createRadialGradient(cx-r*.4,cy-r*.52,r*.05,cx,cy,r*1.12);
-  g.addColorStop(0,'#1d6a76');g.addColorStop(.38,'#113a53');g.addColorStop(.78,'#0a1b35');g.addColorStop(1,'#060d19');
+  g.addColorStop(0,'#596342');g.addColorStop(.38,'#343d26');g.addColorStop(.78,'#192210');g.addColorStop(1,'#0d1309');
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
   ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();
   // Subtle latitude and longitude grid projected onto a true orthographic sphere.
-  ctx.strokeStyle='rgba(124,226,214,.12)';ctx.lineWidth=.7;
+  ctx.strokeStyle='rgba(195,199,154,.12)';ctx.lineWidth=.7;
   const curve=(coords,fill=false)=>{
    let start=false;ctx.beginPath();
    for(const [a,b] of coords){const p=project(a,b,r);if(p.z>0){if(!start){ctx.moveTo(cx+p.x,cy+p.y);start=true}else ctx.lineTo(cx+p.x,cy+p.y)}else if(start){start=false}}
@@ -57,22 +57,22 @@ function draw(t){
    // Densify edges to keep curved orthographic projection smooth.
    let coords=[];
    for(let i=0;i<polygon.length;i++){const a=polygon[i],b=polygon[(i+1)%polygon.length];const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/3));for(let j=0;j<n;j++){const p=j/n;coords.push([a[0]+(b[0]-a[0])*p,a[1]+(b[1]-a[1])*p])}}
-   ctx.fillStyle='rgba(35,161,145,.30)';ctx.strokeStyle='rgba(96,233,194,.42)';ctx.lineWidth=1.1;curve(coords,true);
+   ctx.fillStyle='rgba(118,137,70,.30)';ctx.strokeStyle='rgba(194,203,142,.42)';ctx.lineWidth=1.1;curve(coords,true);
   }
   const shine=ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);
-  shine.addColorStop(0,'rgba(116,255,226,.13)');shine.addColorStop(.5,'transparent');shine.addColorStop(1,'rgba(1,8,20,.44)');
+  shine.addColorStop(0,'rgba(232,213,152,.13)');shine.addColorStop(.5,'transparent');shine.addColorStop(1,'rgba(1,8,20,.44)');
   ctx.fillStyle=shine;ctx.fillRect(cx-r,cy-r,r*2,r*2);
   ctx.restore();
-  ctx.strokeStyle='rgba(121,244,217,.37)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+  ctx.strokeStyle='rgba(218,206,151,.37)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
   points=[];
   const selected=country.value;
   for(const [code,[la,lo]] of Object.entries(places)){
    const p=project(lo,la,r);if(p.z<.06)continue;
    const x=cx+p.x,y=cy+p.y,active=selected===code;const radius=active?6.6:4.0;
-   ctx.beginPath();ctx.arc(x,y,radius+4,0,Math.PI*2);ctx.fillStyle=active?'rgba(105,255,210,.18)':'rgba(85,202,217,.13)';ctx.fill();
-   ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fillStyle=active?'#d8ffce':'#78e7d4';ctx.fill();points.push({code,x,y});
+   ctx.beginPath();ctx.arc(x,y,radius+4,0,Math.PI*2);ctx.fillStyle=active?'rgba(228,191,115,.18)':'rgba(185,199,140,.13)';ctx.fill();
+   ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fillStyle=active?'#ffe0a1':'#bdc999';ctx.fill();points.push({code,x,y});
   }
-  if(hover){const p=points.find(x=>x.code===hover);if(p){ctx.font='600 12px system-ui';const name=country.querySelector('option[value="'+p.code+'"]')?.textContent||p.code;const textWidth=ctx.measureText(name).width;const tx=Math.min(Math.max(p.x-textWidth/2-8,6),w-textWidth-24);ctx.fillStyle='rgba(7,18,31,.9)';ctx.fillRect(tx,p.y-32,textWidth+16,25);ctx.fillStyle='#d8fdec';ctx.fillText(name,tx+8,p.y-15)}}
+  if(hover){const p=points.find(x=>x.code===hover);if(p){ctx.font='600 12px system-ui';const name=country.querySelector('option[value="'+p.code+'"]')?.textContent||p.code;const textWidth=ctx.measureText(name).width;const tx=Math.min(Math.max(p.x-textWidth/2-8,6),w-textWidth-24);ctx.fillStyle='rgba(7,18,31,.9)';ctx.fillRect(tx,p.y-32,textWidth+16,25);ctx.fillStyle='#eee4c7';ctx.fillText(name,tx+8,p.y-15)}}
   dirty=false;
  }
  raf=requestAnimationFrame(draw);

@@ -131,6 +131,9 @@ const base = (id, name, extra = {}) => ({
         const response = await radar(new Request(req.url(), { method: req.method(), headers: req.headers(), ...(req.method() === 'POST' ? { body: req.postData() } : {}) }));
         return r.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: await response.text() });
       }
+      if(u.hostname==='127.0.0.1' && u.pathname==='/api/outreach') return r.fulfill({json:{templates:[{id:'initial',name:'Inicial',subject:'Contato',body:'Olá, {{empresa}}'}],queue:[],sent:[],followups:[],connected:false,canSend:false}});
+      if(u.hostname==='127.0.0.1' && u.pathname==='/api/gmail') return r.fulfill({json:{connected:false,items:[]}});
+      if(u.hostname==='127.0.0.1' && u.pathname==='/api/radar-contact') return r.fulfill({json:{results:[]}});
       if (u.hostname === "127.0.0.1") return r.continue();
       if (!u.hostname.endsWith(".supabase.co")) return r.abort();
       const name = u.pathname.split("/").pop(),
@@ -191,7 +194,7 @@ const base = (id, name, extra = {}) => ({
     );
     const page = await context.newPage();
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto("http://127.0.0.1:4173/CRM/");
+    await page.goto("http://127.0.0.1:4173/CRM/legacy.html");
     await expect(page.locator("#loginOverlay")).toBeVisible();
     await page.locator("#loginKey").fill("invalid");
     await page.locator("#loginBtn").click();
@@ -260,7 +263,7 @@ const base = (id, name, extra = {}) => ({
     await expect(page.locator('#radarPanel')).toBeVisible();
     await expect(page.locator('.dashboard-layout')).toBeHidden();
     await expect(page.locator('#radarStatus')).toContainText('Motor pronto');
-    await expect(page.locator('.sidebar nav a')).toHaveCount(2);
+    await expect(page.locator('.sidebar nav a')).toHaveCount(4);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     expect(await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).animationDuration)).toBe('14s');
     const idleTransform = await page.locator('.scope-ray').evaluate(el => getComputedStyle(el).transform);
@@ -295,41 +298,27 @@ const base = (id, name, extra = {}) => ({
     await page.locator('#radarNewSearch').click();
     await expect(page.locator('#radarNiche')).toBeFocused();
     await expect(page.locator('#radarPanel')).toBeVisible();
-    await expect(page.locator('#radarSummary')).toContainText('2 duplicados');
-    await expect(page.locator('#radarSummary')).toContainText('1 com indícios');
+    await expect(page.locator('#radarSummary')).toContainText('2 duplicatas');
+    await expect(page.locator('#radarSummary')).toContainText('1 plataformas filtradas');
     await expect(page.locator('#radarSource')).toContainText('Brave Search');
     expect(radarCalls).toHaveLength(3);
     expect(await page.locator('.prospect-card img').count()).toBe(0);
     const writesBefore = calls.filter(c => c.name === 'crm_create_lead').length;
-    await page.locator('.prospect-card button').first().click();
-    await expect(page.locator('#leadName')).toHaveValue('Clínica Horizonte — fixture');
-    await expect(page.locator('#leadUrl')).toHaveValue('');
-    await expect(page.locator('#leadEmail')).toHaveValue('');
+    // Visual audits were retired in the current product; test the current composer handoff.
+    await page.getByRole('button', {name:'Preparar abordagem',exact:true}).first().click();
+    await expect(page.locator('.out-quick-overlay')).toBeVisible();
+    await expect(page.locator('.out-quick-form [name=company]')).toHaveValue('Clínica Horizonte');
+    await page.locator('.out-quick-close').click();
     expect(calls.filter(c => c.name === 'crm_create_lead').length).toBe(writesBefore);
-    await page.locator('#modalClose').click();
-    await page.locator('#toast').evaluate(e => e.classList.remove('show'));
-    expect(auditCalls.filter(method => method === 'POST')).toHaveLength(0);
-    await page.getByRole('button', { name: 'Auditar site', exact: true }).first().click();
-    await expect(page.locator('.audit-state').first()).toContainText('Auditoria disponível');
-    await page.locator('.audit-details summary').first().click();
-    await expect(page.locator('.audit-details').first()).toContainText('Fixture: <script>não executar</script>');
-    expect(await page.locator('.audit-details script').count()).toBe(0);
-    expect(calls.filter(c => c.name === 'crm_create_lead').length).toBe(writesBefore);
-    for (const width of [320, 390, 768, 1024, 1440]) {
-      await page.setViewportSize({ width, height: 1000 });
-      await page.evaluate(() => document.activeElement?.blur());
-      expect(await page.locator('#radarAutoAudit').evaluate(el => el.getBoundingClientRect().width)).toBe(18);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.screenshot({ path: path.resolve(artifacts, `radar-${width}.png`), fullPage: true });
+    await page.locator('.sidebar nav a[href="#radar"]').click();
+    for (const width of [320,390,768,1024,1440]) {
+      await page.setViewportSize({width,height:1000});
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+      await page.screenshot({path:path.resolve(artifacts,`radar-${width}.png`),fullPage:true});
     }
-    await page.locator('#radarAutoAudit').check();
-    await page.locator('#radarSearch').click();
-    await expect(page.locator('#radarSearch')).toBeEnabled();
-    expect(auditCalls.filter(method => method === 'POST')).toHaveLength(3);
-    await page.locator('#radarAutoAudit').uncheck();
     radarMode = 'empty';
     await page.locator('#radarSearch').click();
-    await expect(page.locator('#radarResults')).toContainText('Nenhum candidato novo');
+    await expect(page.locator('#radarResults')).toContainText('Nenhuma oportunidade nova');
     radarMode = 'quota';
     await page.locator('#radarSearch').click();
     await expect(page.locator('#radarStatus')).toContainText('Limite diário ou mensal atingido');
