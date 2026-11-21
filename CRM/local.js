@@ -25,6 +25,14 @@ const COUNTRY_DATA={
  DE:{city:'Berlin',areas:'',name:'Deutschland',lang:'alemão',flag:'🇩🇪'},GB:{city:'London',areas:'',name:'United Kingdom',lang:'inglês',flag:'🇬🇧'},CH:{city:'Zürich',areas:'',name:'Schweiz',lang:'alemão',flag:'🇨🇭'},AT:{city:'Wien',areas:'',name:'Österreich',lang:'alemão',flag:'🇦🇹'},NL:{city:'Amsterdam',areas:'',name:'Nederland',lang:'holandês',flag:'🇳🇱'},BE:{city:'Bruxelles',areas:'',name:'Belgique',lang:'francês',flag:'🇧🇪'},IE:{city:'Dublin',areas:'',name:'Ireland',lang:'inglês',flag:'🇮🇪'},CA:{city:'Toronto',areas:'',name:'Canada',lang:'inglês',flag:'🇨🇦'},AR:{city:'Buenos Aires',areas:'',name:'Argentina',lang:'espanhol',flag:'🇦🇷'},MX:{city:'Ciudad de México',areas:'',name:'México',lang:'espanhol',flag:'🇲🇽'},CL:{city:'Santiago',areas:'',name:'Chile',lang:'espanhol',flag:'🇨🇱'},UY:{city:'Montevideo',areas:'',name:'Uruguay',lang:'espanhol',flag:'🇺🇾'},JP:{city:'Tokyo',areas:'',name:'日本',lang:'japonês',flag:'🇯🇵'},AU:{city:'Sydney',areas:'',name:'Australia',lang:'inglês',flag:'🇦🇺'},NZ:{city:'Auckland',areas:'',name:'New Zealand',lang:'inglês',flag:'🇳🇿'}
 };
 const BASE_NICHES=['Barbearias','Clínicas de estética','Estúdios de tatuagem','Personal trainer'];
+const NICHES_LOCALIZED={
+ português:BASE_NICHES,italiano:COUNTRY_DATA.IT.terms,inglês:COUNTRY_DATA.US.terms,espanhol:COUNTRY_DATA.ES.terms,francês:COUNTRY_DATA.FR.terms,
+ alemão:['Barbershops','Kosmetikstudios','Tattoo-Studios','Personal Trainer'],
+ holandês:['Barbershops','Schoonheidssalons','Tattoo studio','Personal trainer'],
+ japonês:['理容室','美容サロン','タトゥースタジオ','パーソナルトレーナー']
+};
+function termsFor(code){const c=COUNTRY_DATA[code]||COUNTRY_DATA.BR;return c.terms||NICHES_LOCALIZED[c.lang]||BASE_NICHES}
+const NICHE_ICONS=['✂','✦','◈','◎'];
 function selectedCountry(){return COUNTRY_DATA[$('#localCountry')?.value]||COUNTRY_DATA.BR}
 function refreshCountryDisplay(){
  const code=$('#localCountry').value,c=selectedCountry();
@@ -36,8 +44,8 @@ function refreshCountryDisplay(){
 function setCountry(code,{keepCity=false}={}){
  const c=COUNTRY_DATA[code];if(!c)return;
  const old=COUNTRY_DATA[state.countryCode]||COUNTRY_DATA.BR;
- const value=$('#localNiche').value.trim(),i=[...BASE_NICHES,...(old.terms||[])].findIndex(n=>n.toLocaleLowerCase()===value.toLocaleLowerCase());
- if(i>=0){const index=i%4;$('#localNiche').value=(c.terms||BASE_NICHES)[index]||BASE_NICHES[index]}
+ const value=$('#localNiche').value.trim(),i=[...BASE_NICHES,...termsFor(state.countryCode)].findIndex(n=>n.toLocaleLowerCase()===value.toLocaleLowerCase());
+ if(i>=0){const index=i%4;$('#localNiche').value=termsFor(code)[index]||BASE_NICHES[index]}
  state.countryCode=code;$('#localCountry').value=code;
  if(!keepCity){$('#localCity').value=c.city;$('#localAreas').value=c.areas}
  $('[data-niche]').forEach((b,i)=>{b.dataset.niche=(c.terms||BASE_NICHES)[i];b.classList.toggle('active',b.dataset.niche.toLocaleLowerCase()===$('#localNiche').value.toLocaleLowerCase())});
