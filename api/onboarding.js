@@ -42,7 +42,7 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
     await redis(['SET',key(id),JSON.stringify(data),'EX',31*86400]);
     await redis(['ZADD',INDEX,clock(),id]);
     await redis(['ZREMRANGEBYRANK',INDEX,0,-201]);
-    return json({ok:true,token,createdAt,expiresAt},201);
+    return json({ok:true,token:rawToken,createdAt,expiresAt},201);
    }
    if(!validToken(token))return deny('Link inválido.',404);
    // Limit attempts per shared link. Token is unguessable and never stored in plaintext.
