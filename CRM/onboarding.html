@@ -16,15 +16,31 @@ textarea{resize:vertical;min-height:100px}input:focus,textarea:focus{border-colo
 button{background:#87dfaf;border:0;color:#0b2219;font-weight:800;font-size:14px;padding:15px 22px;border-radius:11px;cursor:pointer;width:100%;margin-top:25px}button:disabled{opacity:.5;cursor:wait}
 .status{min-height:18px;margin-top:14px;font-size:13px;color:#f3b2a4}.success{color:#9fe8ba}.intro{margin-bottom:20px}.footer{font-size:12px;color:#789489;margin-top:18px}
 
-.eyebrow{font-size:11px;letter-spacing:.14em;font-weight:800;color:#91dcae}header h1 em{font-style:normal;color:#a3efc4}header strong{color:#d9f8e6}.steps{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}.steps span{font-size:11px;color:#a5c5b7;border:1px solid #385c4c;border-radius:99px;padding:8px 12px;background:#132b22}.section-label{font-size:12px;color:#8ed9aa;font-weight:850;letter-spacing:.08em;text-transform:uppercase;padding-top:21px;margin-top:16px;border-top:1px solid #30433d}.question{margin:12px 0 17px;padding:15px;border:1px solid #304b3f;background:#0d1d24;border-radius:13px}.question strong{font-size:14px;display:block;margin-bottom:10px}.answer-options{display:flex;flex-wrap:wrap;gap:8px}.answer-options label{display:inline-flex;align-items:center;gap:7px;margin:0;padding:9px 13px;border:1px solid #34594a;border-radius:10px;background:#172d29;font-size:12px;font-weight:600;cursor:pointer}.answer-options input{width:auto;margin:0;accent-color:#83d5a3}.answer-options label:has(input:checked){background:#25533c;border-color:#80ce9e;color:#edfff3}.question .hint{margin:0 0 10px}.details-field{margin:13px 0}.details-field label{margin:8px 0 5px}.details-field input{font-size:14px}.review-note{border:1px solid #3d664f;background:#193327;padding:15px;border-radius:12px;margin:27px 0 10px}.review-note p{margin:5px 0 0;font-size:12px}.card{padding:clamp(16px,4vw,25px)}
+.eyebrow{font-size:11px;letter-spacing:.14em;font-weight:800;color:#91dcae}header h1{font-size:clamp(23px,4.5vw,29px);line-height:1.24;letter-spacing:-.028em;margin:15px 0 8px}header h1 em{font-style:normal;color:#a3efc4}header strong{color:#d9f8e6}.steps{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}.steps span{font-size:11px;color:#a5c5b7;border:1px solid #385c4c;border-radius:99px;padding:8px 12px;background:#132b22}.section-label{font-size:12px;color:#8ed9aa;font-weight:850;letter-spacing:.08em;text-transform:uppercase;padding-top:21px;margin-top:16px;border-top:1px solid #30433d}.question{margin:12px 0 17px;padding:15px;border:1px solid #304b3f;background:#0d1d24;border-radius:13px}.question strong{font-size:14px;display:block;margin-bottom:10px}.answer-options{display:flex;flex-wrap:wrap;gap:8px}.answer-options label{display:inline-flex;align-items:center;gap:7px;margin:0;padding:9px 13px;border:1px solid #34594a;border-radius:10px;background:#172d29;font-size:12px;font-weight:600;cursor:pointer}.answer-options input{width:auto;margin:0;accent-color:#83d5a3}.answer-options label:has(input:checked){background:#25533c;border-color:#80ce9e;color:#edfff3}.question .hint{margin:0 0 10px}.details-field{margin:13px 0}.details-field label{margin:8px 0 5px}.details-field input{font-size:14px}.review-note{border:1px solid #3d664f;background:#193327;padding:15px;border-radius:12px;margin:27px 0 10px}.review-note p{margin:5px 0 0;font-size:12px}.card{padding:clamp(16px,4vw,25px)}
+.service-methods{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0}.service-methods label{display:flex;align-items:center;gap:8px;margin:0;border:1px solid #39584a;border-radius:11px;padding:10px 13px;font-size:12px;cursor:pointer;background:#122821}.service-methods input{width:auto;margin:0;accent-color:#83d5a3}.upload-label{display:inline-block;border:1px solid #80c99c;padding:10px 14px;border-radius:10px;margin:0 0 8px;cursor:pointer}.photo-preview{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}.photo-preview img{height:92px;width:92px;object-fit:cover;border-radius:10px;border:1px solid #3b6050}.extra-details{margin:17px 0}.extra-details summary{cursor:pointer;font-size:13px;font-weight:700;color:#b1e5c8}.section-label{font-size:11px;letter-spacing:.035em;padding-top:13px;margin-top:14px}.question{margin:8px 0;padding:12px}.review-note{margin-top:19px}.steps{display:none}[hidden]{display:none!important}
 </style></head><body><main><div class="brand">ricky<span>.</span> AI</div>
-<header><span class="eyebrow">CONFIGURAÇÃO PERSONALIZADA</span><h1>Vamos ensinar sua <em>secretária virtual</em> a atender seus clientes.</h1><p class="intro">Suas respostas formam o conhecimento da assistente. Marque as opções com calma: quando algo não estiver confirmado, escolha <strong>Não sei / confirmar</strong>. Assim ela não inventa informações.</p><div class="steps"><span>01 · Informações</span><span>02 · Serviços e regras</span><span>03 · Revisão</span></div></header>
+<header><h1>Configuração da sua secretária virtual</h1><p class="intro">Conte um pouco sobre seu negócio. Vamos usar essas informações para preparar o atendimento e você poderá conferir tudo antes da ativação.</p></header>
 <div class="card" id="panel"><h2 id="company">Carregando formulário...</h2><div class="prefill" id="prefill"></div>
 <form id="form" hidden>
-<div class="section-label">01 · O essencial</div>
-<label for="services">Serviços ou produtos e preços *</label>
-<p class="hint">Escreva o que você oferece e o valor. Pode copiar sua tabela de preços. Ex.: Corte — R$ 35; Barba — R$ 25. Se não houver preço fixo, escreva “sob consulta”.</p>
-<textarea id="services" maxlength="4500" required placeholder="Corte masculino — R$ 35&#10;Barba — R$ 25"></textarea>
+<label>Serviços e preços *</label>
+<p class="hint">Escolha como prefere enviar sua tabela. Pode combinar opções. Se enviar fotos ou um link, nós conferimos e cadastramos os valores para você.</p>
+<div class="service-methods" id="serviceMethods">
+ <label><input type="checkbox" id="methodManual" checked> Digitar</label>
+ <label><input type="checkbox" id="methodPhotos"> Enviar fotos</label>
+ <label><input type="checkbox" id="methodLink"> Enviar link</label>
+</div>
+<div id="manualPrices"><textarea id="services" maxlength="4500" placeholder="Ex.: Corte masculino — R$ 35&#10;Barba — R$ 20"></textarea></div>
+<div id="photoPrices" hidden>
+ <label for="pricePhotos" class="upload-label">Escolher fotos da galeria</label>
+ <input id="pricePhotos" type="file" accept="image/*" multiple>
+ <p class="hint">Até 3 imagens. Elas serão reduzidas para envio e revisadas manualmente, sem leitura automática por IA.</p>
+ <div id="photoPreview" class="photo-preview"></div>
+</div>
+<div id="linkPrices" hidden>
+ <label for="priceLink">Link com os preços</label>
+ <input id="priceLink" type="url" maxlength="500" placeholder="https://site.com.br/servicos">
+ <p class="hint">Informe uma página pública que mostre os serviços e valores. Você não precisa copiar tudo.</p>
+</div>
 <label for="hours">Horário de funcionamento *</label>
 <input id="hours" maxlength="300" required placeholder="Ex.: Seg a sáb, das 9h às 18h">
 <label>Formas de pagamento *</label><div class="checks" id="payments"></div>
@@ -35,44 +51,32 @@ button{background:#87dfaf;border:0;color:#0b2219;font-weight:800;font-size:14px;
 <input id="humanContact" maxlength="220" placeholder="Ex.: WhatsApp (11) 99999-9999 ou contato@empresa.com">
 <label for="link">Site, Instagram ou catálogo <span class="optional">(opcional)</span></label>
 <input id="link" type="url" maxlength="500" placeholder="https://...">
-<div id="barberKnowledge" hidden><div class="section-label">02 · O que sua barbearia oferece?</div><p class="hint">Marque uma resposta para cada pergunta. Se não souber, deixe como “Não sei / confirmar”. A IA não vai adivinhar.</p><div id="barberFeatures"></div><div class="section-label">03 · Como vocês atendem?</div><div id="barberPolicies"></div><div class="section-label">04 · Detalhes que evitam erros</div><div id="barberDetails"></div></div>
+<div id="barberKnowledge" hidden><div class="section-label">Sobre o atendimento</div><p class="hint">Algumas informações que não costumam aparecer na tabela de preços. Se não souber, deixe como “Não sei”.</p><div id="barberFeatures"></div><div id="barberPolicies"></div><details class="extra-details"><summary>Adicionar detalhes importantes (opcional)</summary><div id="barberDetails"></div></details></div>
 <label for="policy">Informações importantes <span class="optional">(opcional)</span></label>
 <p class="hint">Por exemplo: atende com agendamento? Tem regra de cancelamento, entrega ou troca? Só escreva o que for necessário para não passarmos informações erradas.</p>
 <textarea id="policy" maxlength="1600" rows="3" placeholder="Ex.: Atendimento somente com agendamento."></textarea>
 <label for="notes">Quer acrescentar algo? <span class="optional">(opcional)</span></label>
 <textarea id="notes" maxlength="1600" rows="2" placeholder="Pode deixar em branco."></textarea>
-<div class="review-note"><strong>Antes de enviar</strong><p>Revise preços, horário e as respostas marcadas. Respostas “Não sei” não serão interpretadas como “Não”. A configuração será revisada antes da secretária entrar em funcionamento.</p></div><button id="send" type="submit">Salvar conhecimento da secretária</button><div class="status" id="status" role="status"></div>
+<div class="review-note"><strong>Pronto para enviar?</strong><p>Nós vamos conferir as informações e os preços antes de ativar o atendimento. Nenhum valor será preenchido automaticamente a partir de fotos ou links.</p></div><button id="send" type="submit">Enviar informações</button><div class="status" id="status" role="status"></div>
 </form></div><p class="footer">Esses dados serão usados exclusivamente para configurar e revisar o atendimento da sua empresa. A secretária não fará reservas ou cobranças reais até as integrações serem ativadas e testadas.</p>
 </main><script>
 (()=>{'use strict';
 const $=s=>document.querySelector(s),token=new URLSearchParams(location.search).get('token');
 const status=(s,good=false)=>{$('#status').textContent=s;$('#status').className=good?'status success':'status'};
 const FEATURE_QUESTIONS=[
- ['corteInfantil','Faz corte infantil?'],
- ['barba','Faz barba?'],
- ['sobrancelha','Faz sobrancelha?'],
- ['degrade','Faz degradê ou fade?'],
- ['maquina','Faz corte só na máquina?'],
- ['tesoura','Faz corte só na tesoura?'],
- ['lavagem','Oferece lavagem do cabelo?'],
- ['coloracao','Oferece coloração ou descoloração?'],
- ['tratamentos','Faz tratamentos capilares?'],
- ['domicilio','Atende a domicílio?'],
- ['acessibilidade','Possui acesso adequado para pessoas com mobilidade reduzida?']
+ ['domicilio','Vocês atendem a domicílio?'],
+ ['acessibilidade','O espaço é acessível a pessoas com mobilidade reduzida?']
 ];
 const POLICY_QUESTIONS=[
- ['comAgendamento','Aceita agendamentos?'],
- ['semAgendamento','Atende sem horário marcado, por ordem de chegada?'],
+ ['comAgendamento','É possível agendar horário?'],
+ ['semAgendamento','Atendem por ordem de chegada?'],
  ['escolhaProfissional','O cliente pode escolher o barbeiro?'],
- ['atendeFeriados','Atende em feriados?'],
- ['aceitaAtraso','Aceita clientes atrasados?'],
- ['cancelamento','Permite cancelamento ou reagendamento?'],
- ['sinal','Exige sinal ou pagamento antecipado para reservar?'],
- ['cartaoCredito','Aceita cartão de crédito?'],
- ['cartaoDebito','Aceita cartão de débito?'],
- ['parcelamento','Permite parcelamento?'],
- ['promocoes','Possui promoções vigentes?'],
- ['petFriendly','Permite animais de estimação no local?']
+ ['atendeFeriados','Abrem em feriados?'],
+ ['aceitaAtraso','Há tolerância para atrasos?'],
+ ['cancelamento','É possível cancelar ou reagendar?'],
+ ['sinal','É necessário pagar um sinal para reservar?'],
+ ['parcelamento','É possível parcelar?'],
+ ['promocoes','Há alguma promoção ativa?']
 ];
 const DETAIL_QUESTIONS=[
  ['idadeInfantil','Se faz corte infantil: existe idade mínima?','Ex.: a partir de 3 anos'],
@@ -82,7 +86,7 @@ const DETAIL_QUESTIONS=[
  ['regrasAtraso','Regras para atrasos e cancelamentos (se houver)','Ex.: tolerância de 10 minutos'],
  ['regrasSinal','Valor e condições de sinal (se houver)','Ex.: sinal de R$ 20; não informe links ou chaves secretas'],
  ['formasAtendimento','Orientações importantes sobre o atendimento','Ex.: não atendemos menores sem responsável'],
- ['servicosEspeciais','Serviços diferentes ou exceções','Ex.: desenho no cabelo somente com agendamento']
+ ['servicosEspeciais','Restrições ou exceções dos serviços','Ex.: corte infantil só a partir de 4 anos']
 ];
 function addQuestions(root,questions){
  for(const [key,title] of questions){
@@ -109,12 +113,53 @@ function collectKnowledge(){
  return {features,details};
 }
 addQuestions($('#barberFeatures'),FEATURE_QUESTIONS);addQuestions($('#barberPolicies'),POLICY_QUESTIONS);addDetails($('#barberDetails'),DETAIL_QUESTIONS);
+const methods=['methodManual','methodPhotos','methodLink'];
+function showMethods(){
+ $('#manualPrices').hidden=!$('#methodManual').checked;
+ $('#photoPrices').hidden=!$('#methodPhotos').checked;
+ $('#linkPrices').hidden=!$('#methodLink').checked;
+}
+methods.forEach(id=>$('#'+id).addEventListener('change',showMethods));
+const MAX_PHOTOS=3,MAX_BYTES=110000;
+async function compactImage(file){
+ if(!file.type.startsWith('image/'))throw Error('Escolha uma imagem da galeria.');
+ if(file.size>12*1024*1024)throw Error('A foto é muito grande. Escolha uma imagem de até 12 MB.');
+ const bitmap=await createImageBitmap(file).catch(()=>null);
+ if(!bitmap)throw Error('Não foi possível abrir uma das fotos. Tente uma imagem JPG ou PNG.');
+ try{
+  let side=1200;
+  for(let pass=0;pass<5;pass++){
+   const scale=Math.min(1,side/Math.max(bitmap.width,bitmap.height));
+   const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+   const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+   const value=canvas.toDataURL('image/jpeg',Math.max(.48,.72-pass*.06));
+   if(value.length<=MAX_BYTES*1.38)return value;
+   side=Math.round(side*.76);
+  }
+  throw Error('A foto ficou grande demais para enviar. Tente recortar a tabela de preços.');
+ }finally{bitmap.close?.()}
+}
+let photoData=[];
+$('#pricePhotos').addEventListener('change',async()=>{
+ const files=[...$('#pricePhotos').files];photoData=[];$('#photoPreview').replaceChildren();
+ if(files.length>MAX_PHOTOS){status('Selecione até 3 imagens.');$('#pricePhotos').value='';return}
+ try{
+  const values=await Promise.all(files.map(compactImage));photoData=values;
+  for(const v of values){const img=document.createElement('img');img.src=v;img.alt='Prévia da tabela de preços';$('#photoPreview').append(img)}
+  status(values.length+' foto(s) pronta(s) para enviar.',true);
+ }catch(err){photoData=[];$('#pricePhotos').value='';status(err.message)}
+});
 const labels=['Pix','Cartão','Dinheiro','Boleto','Outro'];
 labels.forEach(label=>{const l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.value=label;l.append(c,document.createTextNode(label));$('#payments').append(l)});
 async function request(method,body){const r=await fetch('/api/onboarding?token='+encodeURIComponent(token||''),{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,cache:'no-store'});const data=await r.json().catch(()=>({message:'Erro de conexão'}));if(!r.ok)throw Error(data.message||'Falha de comunicação');return data}
 async function init(){if(!token){$('#company').textContent='Link inválido';return}try{const d=await request('GET');$('#company').textContent=d.company;[d.segment].filter(Boolean).forEach(v=>{const s=document.createElement('span');s.className='chip';s.textContent=v;$('#prefill').append(s)});if(d.profile==='servicos'&&/barbear/i.test(d.segment||''))$('#barberKnowledge').hidden=false;if(d.status==='recebido'){$('#company').textContent='Informações já recebidas!';return}$('#form').hidden=false;}catch(e){$('#company').textContent=e.message}}
 $('#form').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#send');btn.disabled=true;status('Enviando...');
-try{const a={services:$('#services').value,hours:$('#hours').value,payments:[...document.querySelectorAll('#payments input:checked')].map(x=>x.value),address:$('#address').value,humanContact:$('#humanContact').value,link:$('#link').value,policy:$('#policy').value,notes:$('#notes').value,...(!$('#barberKnowledge').hidden?{knowledge:collectKnowledge()}:{})};
+try{const services=$('#methodManual').checked?$('#services').value.trim():'';
+const priceLink=$('#methodLink').checked?$('#priceLink').value.trim():'';
+const photos=$('#methodPhotos').checked?photoData:[];
+if(!services&&!priceLink&&!photos.length)throw Error('Digite os preços, escolha fotos ou informe um link.');
+if($('#methodPhotos').checked&&$('#pricePhotos').files.length!==photoData.length)throw Error('Confira as fotos antes de enviar.');
+const a={services,priceLink,photos,hours:$('#hours').value,payments:[...document.querySelectorAll('#payments input:checked')].map(x=>x.value),address:$('#address').value,humanContact:$('#humanContact').value,link:$('#link').value,policy:$('#policy').value,notes:$('#notes').value,...(!$('#barberKnowledge').hidden?{knowledge:collectKnowledge()}:{})};
 if(!a.payments.length)throw Error('Selecione pelo menos uma forma de pagamento.');
 await request('POST',{answers:a});$('#form').hidden=true;$('#company').textContent='Tudo certo! Recebemos suas informações.';$('#prefill').replaceChildren();}catch(err){status(err.message)}finally{btn.disabled=false}});
 init();
