@@ -64,14 +64,14 @@ const INTERNATIONAL_AREAS={
 };
 function queryPlan(niche,city,neighborhoods,country){
  const areas=Array.isArray(neighborhoods)?neighborhoods.filter(valid).slice(0,5):[];
- const normalized=city.trim().toLocaleLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').split(',')[0].trim();
+ const normalized=city.trim().toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').split(',')[0].trim();
  const defaults=INTERNATIONAL_AREAS[country.region]?.[normalized];
  if(!areas.length&&defaults)areas.push(...defaults.slice(0,5));
  if(!areas.length&&country.region==='BR'&&isSP.test(city))areas.push('Itaquera','Penha','Santana','Vila Prudente','Santo Amaro');
  const locality=city+', '+country.name;
  const queries=[];
  // Search by city first, then spread the remaining calls through different districts.
- const isItalianBarber=country.region==='IT'&&/\\b(?:barbieri|barbiere|barber|barbearia|barberia)\\b/i.test(niche);
+ const isItalianBarber=country.region==='IT'&&/\b(?:barbieri|barbiere|barber|barbearia|barberia)\b/i.test(niche);
  if(isItalianBarber)queries.push('barbiere a '+locality);
  else queries.push(niche+' '+locality);
  for(const area of areas.filter(x=>x.toLowerCase()!==city.toLowerCase())){
