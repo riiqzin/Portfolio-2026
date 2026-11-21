@@ -873,6 +873,7 @@ function answerLine(label,value){
 }
 function checkAssistantInformation(item){
  const a=item.answers||{},issues=[];
+ if(a.priceReview===false)issues.push('Serviços e preços pendentes de conferência manual');
  if(!item.company?.trim()||!item.segment?.trim())issues.push('Nome e segmento da empresa');
  if(!a.services?.trim()||!/R\$|reais|sob consulta|a combinar/i.test(a.services))issues.push('Serviços e preços claros');
  if(!a.hours?.trim()||!/[0-2]?\d[:h][0-5]?\d/.test(a.hours))issues.push('Horários com abertura e fechamento');
@@ -917,6 +918,53 @@ function buildGPTConfigurationRequest(item){
   'FIM DOS DADOS. Entregue apenas o prompt final completo.'
  ].join(String.fromCharCode(10));
 }
+function createPriceReview(item){
+ const a=item.answers||{},box=dom('section','price-review-panel');
+ const heading=dom('div','price-review-heading');
+ heading.append(dom('strong','','Conferência dos serviços e preços'),dom('span','price-review-status',a.priceReview===true?'✓ Conferido':a.priceReview===false?'Aguardando conferência':'Cadastro anterior'));
+ box.append(heading);
+ if(a.priceLink){
+  const label=dom('p','field-note','O cliente enviou um link com preços:');box.append(label);
+  const link=dom('a','price-review-link','Abrir tabela enviada ↗');link.href=a.priceLink;link.target='_blank';link.rel='noopener noreferrer';box.append(link);
+ }
+ if(a.pricePhotoCount){
+  const button=dom('button','btn btn-outline compact','Ver '+a.pricePhotoCount+' foto(s)');button.type='button';
+  const gallery=dom('div','price-review-gallery');const feedback=dom('p','field-note','');
+  button.onclick=async()=>{
+   if(gallery.childElementCount){gallery.replaceChildren();button.textContent='Ver '+a.pricePhotoCount+' foto(s)';return}
+   button.disabled=true;feedback.textContent='Carregando as fotos...';
+   try{
+    const result=await backend('onboarding?media='+encodeURIComponent(item.id));
+    for(const src of result.images||[]){
+     if(typeof src!=='string'||!src.startsWith('data:image/jpeg;base64,'))continue;
+     const image=dom('img','');image.src=src;image.alt='Foto da tabela de preços enviada pelo estabelecimento';
+     const anchor=dom('a','price-review-image');anchor.href=src;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.append(image);gallery.append(anchor);
+    }
+    feedback.textContent=gallery.childElementCount?'Clique na foto para ampliar.':'Nenhuma foto encontrada.';
+    button.textContent='Ocultar fotos';
+   }catch(err){feedback.textContent='Não foi possível carregar as fotos: '+err.message}
+   finally{button.disabled=false}
+  };
+  box.append(button,gallery,feedback);
+ }
+ const caption=dom('p','field-note',a.priceReview===true?'Preços revisados. Para alterar, corrija e aprove novamente.':'Confira os valores nas fotos ou no link e transcreva apenas o que estiver confirmado. Não usamos IA para interpretar imagens.');
+ box.append(caption);
+ const field=dom('textarea','price-review-editor');field.rows=5;field.maxLength=4500;field.value=a.services||'';field.placeholder='Corte masculino — R$ 35\nBarba — R$ 20\nServiço especial — sob consulta';field.setAttribute('aria-label','Serviços e preços verificados');
+ const approve=dom('button','btn btn-primary compact',a.priceReview===true?'Atualizar preços conferidos':'Confirmar serviços e preços');approve.type='button';
+ const status=dom('p','field-note','');status.setAttribute('role','status');
+ approve.onclick=async()=>{
+  if(!field.value.trim()){status.textContent='Preencha os serviços e preços antes de confirmar.';return}
+  if(!window.confirm('Você conferiu os serviços e os valores e autoriza o uso dessas informações pela secretária virtual?'))return;
+  approve.disabled=true;status.textContent='Salvando conferência...';
+  try{
+   await backend('onboarding','POST',{action:'confirm-prices',id:item.id,expectedRevision:item.answersUpdatedAt||item.submittedAt,services:field.value.trim()});
+   toast('Serviços e preços confirmados. Agora você pode preparar o prompt.');
+   await loadOnboardings();
+  }catch(err){status.textContent='Não foi possível salvar: '+err.message}
+  finally{approve.disabled=false}
+ };
+ box.append(field,approve,status);return box;
+}
 function createAnswersEditor(item){
  const section=dom('details','onboard-answers-editor');
  const summary=dom('summary','','✎ Editar respostas da empresa');
@@ -935,7 +983,7 @@ function createAnswersEditor(item){
   if(!optional)control.required=true;
   wrap.append(control);form.append(wrap);fields[key]=control;
  };
- addField('services','Serviços e preços','textarea',4500);
+ addField('services','Serviços e preços','textarea',4500,true);
  addField('hours','Horário de funcionamento','text',300);
  const paymentWrap=dom('div','onboard-edit-field');
  paymentWrap.append(dom('span','','Formas de pagamento'));
@@ -1017,6 +1065,7 @@ function createPromptEditor(item){
  panel.append(dom('strong','','1. Preparar o prompt da empresa'));
  panel.append(dom('p','field-note','Copie o pedido para esta conversa do ChatGPT. Ele inclui o prompt base e as respostas do formulário. Depois cole a versão revisada abaixo.'));
  const copy=dom('button','btn btn-primary compact','Copiar para ChatGPT');copy.type='button';
+ if(item.answers?.priceReview===false){copy.disabled=true;copy.title='Confirme serviços e preços antes de preparar o prompt.';}
  copy.onclick=async()=>{try{await navigator.clipboard.writeText(buildGPTConfigurationRequest(item));toast('Pedido completo copiado. Cole nesta conversa do ChatGPT.')}catch{toast('Não foi possível copiar.')}};
  panel.append(copy);
  panel.append(dom('strong','','2. Colar instruções revisadas'));
@@ -1026,6 +1075,7 @@ function createPromptEditor(item){
  const state=dom('p','field-note','Consultando versão salva...');state.setAttribute('role','status');
  const buttons=dom('div','onboard-editor-actions');
  const save=dom('button','btn btn-primary compact','Salvar prompt');save.type='button';
+ if(item.answers?.priceReview===false)save.disabled=true;
  const reload=dom('button','btn btn-outline compact','Recarregar salvo');reload.type='button';
  const erase=dom('button','btn btn-outline compact onboard-delete','Excluir prompt salvo');erase.type='button';
  buttons.append(save,reload,erase);panel.append(editor,buttons,state);
@@ -1069,6 +1119,7 @@ function createPromptEditor(item){
 }
 function createLab(item){
  const root=dom('details','ricky-lab');
+ if(item.answers?.priceReview===false){root.append(dom('summary','','Laboratório de atendimento'));root.append(dom('p','field-note','Confirme os serviços e preços antes de testar a IA.'));return root}
  const summary=dom('summary','','✦ Laboratório de atendimento');
  root.append(summary);
  root.append(dom('p','field-note','Experimente as respostas reais com o contexto desta empresa. Nenhum teste é enviado sem sua confirmação. O laboratório começa desativado.'));
@@ -1177,6 +1228,7 @@ async function loadOnboardings(){
     for(const [key,label] of [['services','Serviços e preços'],['hours','Horários'],['payments','Formas de pagamento'],['address','Endereço'],['humanContact','Contato humano'],['link','Site / catálogo'],['policy','Informações importantes'],['notes','Outras observações']])content.append(answerLine(label,item.answers[key]));
     const copy=dom('button','btn btn-outline compact','Copiar respostas');copy.type='button';
     copy.onclick=()=>navigator.clipboard.writeText(item.company+' · '+item.segment+'\n'+Object.entries(item.answers).map(([k,v])=>k+': '+(Array.isArray(v)?v.join(', '):v)).join('\n')).then(()=>toast('Respostas copiadas.')).catch(()=>toast('Não foi possível copiar.'));
+    if(item.answers.priceReview!==undefined||item.answers.priceLink||item.answers.pricePhotoCount)content.append(createPriceReview(item));
     content.append(copy,createAnswersEditor(item));
     const issues=checkAssistantInformation(item);
     if(issues.length){
