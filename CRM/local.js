@@ -881,6 +881,24 @@ async function loadOnboardings(){
     prepare.onclick=()=>{prompt.value=buildAssistantInstructions(item);prepared.hidden=false;prepare.textContent='Atualizar instruções';};
     assistantSection.append(prepare,prepared);content.append(assistantSection);
    }else content.append(dom('p','field-note','O cliente ainda não respondeu. O link é válido por 30 dias; para reenviar, gere um novo link caso tenha perdido o original.'));
+   const actions=dom('div','onboard-danger-actions');
+   const clear=dom('button','btn btn-outline compact','Excluir respostas');clear.type='button';
+   clear.disabled=!item.answers;
+   clear.onclick=async()=>{
+    if(!window.confirm('Excluir as respostas de '+item.company+'? O formulário voltará a aguardar envio. Esta ação não pode ser desfeita.'))return;
+    clear.disabled=true;
+    try{await backend('onboarding','POST',{action:'clear-answers',id:item.id});toast('Respostas excluídas.');await loadOnboardings();}
+    catch(e){clear.disabled=false;toast('Erro: '+e.message);}
+   };
+   const remove=dom('button','btn btn-outline compact onboard-delete','Excluir formulário');remove.type='button';
+   remove.onclick=async()=>{
+    if(!window.confirm('Excluir o formulário de '+item.company+' e todas as respostas? O link deixará de funcionar. Esta ação é definitiva.'))return;
+    remove.disabled=true;
+    try{await backend('onboarding','POST',{action:'delete',id:item.id});toast('Formulário excluído.');await loadOnboardings();}
+    catch(e){remove.disabled=false;toast('Erro: '+e.message);}
+   };
+   actions.append(clear,remove);
+   content.append(actions);
    details.append(content);group.append(details);
    }
    root.append(group);
