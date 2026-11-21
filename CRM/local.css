@@ -261,3 +261,18 @@
 .onboard-validation{padding:13px 15px;background:rgba(222,162,82,.08);border:1px solid rgba(222,162,82,.27);border-radius:11px}
 .onboard-validation strong{display:block;color:#f0ce99;font-size:12px;margin-bottom:7px}
 .onboard-validation ul{margin:0;padding-left:19px;color:#d6bd96;font-size:11px;line-height:1.7}
+
+/* Onboarding management: explicit destructive controls and cost-free test cases */
+.onboard-danger-actions{display:flex;flex-wrap:wrap;gap:9px;padding-top:14px;border-top:1px solid rgba(171,207,182,.14);margin-top:8px}
+.onboard-danger-actions button{font-size:11px!important}
+.onboard-danger-actions button:disabled{opacity:.4;cursor:not-allowed}
+.onboard-delete{color:#f5b0a6!important;border-color:rgba(222,116,116,.36)!important}
+.onboard-quality{border-top:1px solid rgba(149,200,167,.18);padding-top:12px;margin-top:5px}
+.onboard-quality summary{color:#adddc2;cursor:pointer;font-size:12px;font-weight:700}
+.onboard-quality .field-note{margin:8px 0!important}
+.onboard-tests{display:grid;gap:8px}
+.onboard-test-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border:1px solid rgba(139,194,163,.14);border-radius:9px;background:#0a1b1e}
+.onboard-test-item>div{display:grid;gap:5px}
+.onboard-test-item strong{color:#d8ebdc;font-size:11px}
+.onboard-test-item span{font-size:11px;color:#a7bbaf}
+.onboard-test-item button{flex-shrink:0}
