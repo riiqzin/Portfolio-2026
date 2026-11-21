@@ -952,6 +952,31 @@ function createAnswersEditor(item){
  addField('link','Site ou catálogo (https://)','url',500,true);
  addField('policy','Informações importantes / políticas','textarea',1600,true);
  addField('notes','Outras observações','textarea',1600,true);
+ const featureRadios={};const detailFields={};
+ if(a.knowledge&&a.knowledge.features){
+  const heading=dom('h3','onboard-edit-knowledge-heading','Conhecimento específico da barbearia');form.append(heading);
+  const explainer=dom('p','field-note','Sim e Não são respostas confirmadas. Não sei significa que a IA não deve afirmar nem negar.');form.append(explainer);
+  for(const [key,label] of Object.entries(BARBER_KNOWLEDGE_LABELS)){
+   const fieldset=dom('fieldset','onboard-edit-knowledge-question'),legend=dom('legend','',label);fieldset.append(legend);
+   featureRadios[key]=[];
+   for(const [value,text] of [['sim','Sim'],['nao','Não'],['desconhecido','Não sei / confirmar']]){
+    const opt=dom('label',''),radio=document.createElement('input');radio.type='radio';radio.name='knowledge-'+item.id+'-'+key;radio.value=value;radio.checked=(a.knowledge.features[key]||'desconhecido')===value;
+    opt.append(radio,document.createTextNode(' '+text));fieldset.append(opt);featureRadios[key].push(radio);
+   }
+   form.append(fieldset);
+  }
+  for(const [key,label] of Object.entries(BARBER_DETAIL_LABELS)){
+   const wrap=dom('label','onboard-edit-field'),input=dom('input','');
+   input.type='text';input.maxLength=300;input.value=a.knowledge.details?.[key]||'';
+   wrap.append(dom('span','',label+' · opcional'),input);form.append(wrap);detailFields[key]=input;
+  }
+ }
+ const collectKnowledge=()=>{
+  if(!a.knowledge)return null;
+  const features={};for(const [key,radios] of Object.entries(featureRadios))features[key]=radios.find(r=>r.checked)?.value||'desconhecido';
+  const details={};for(const [key,input] of Object.entries(detailFields)){const value=input.value.trim();if(value)details[key]=value}
+  return {features,details};
+ };
  const note=dom('p','field-note','Depois de salvar, o botão Copiar para ChatGPT usará as respostas atualizadas. O prompt antigo ficará guardado, mas precisará ser gerado e salvo novamente antes dos testes.');
  form.append(note);
  const state=dom('p','field-note onboard-edit-status','');state.setAttribute('role','status');
@@ -959,12 +984,14 @@ function createAnswersEditor(item){
  const save=dom('button','btn btn-primary compact','Salvar alterações');save.type='submit';
  const cancel=dom('button','btn btn-outline compact','Cancelar');cancel.type='button';
  buttons.append(save,cancel);form.append(buttons,state);
- const original=JSON.stringify({services:a.services||'',hours:a.hours||'',payments:a.payments||[],address:a.address||'',humanContact:a.humanContact||'',link:a.link||'',policy:a.policy||'',notes:a.notes||''});
- const collect=()=>({services:fields.services.value.trim(),hours:fields.hours.value.trim(),payments:paymentChecks.filter(c=>c.checked).map(c=>c.value),address:fields.address.value.trim(),humanContact:fields.humanContact.value.trim(),link:fields.link.value.trim(),policy:fields.policy.value.trim(),notes:fields.notes.value.trim()});
+ const original=JSON.stringify({services:a.services||'',hours:a.hours||'',payments:a.payments||[],address:a.address||'',humanContact:a.humanContact||'',link:a.link||'',policy:a.policy||'',notes:a.notes||'',...(a.knowledge?{knowledge:a.knowledge}:{})});
+ const collect=()=>({services:fields.services.value.trim(),hours:fields.hours.value.trim(),payments:paymentChecks.filter(c=>c.checked).map(c=>c.value),address:fields.address.value.trim(),humanContact:fields.humanContact.value.trim(),link:fields.link.value.trim(),policy:fields.policy.value.trim(),notes:fields.notes.value.trim(),...(a.knowledge?{knowledge:collectKnowledge()}:{})});
  cancel.onclick=()=>{
   if(JSON.stringify(collect())!==original&&!window.confirm('Descartar as alterações não salvas?'))return;
   section.open=false;for(const key of Object.keys(fields))fields[key].value=a[key]||'';
   for(const check of paymentChecks)check.checked=Array.isArray(a.payments)&&a.payments.includes(check.value);
+  for(const [key,radios] of Object.entries(featureRadios))for(const radio of radios)radio.checked=radio.value===(a.knowledge?.features?.[key]||'desconhecido');
+  for(const [key,input] of Object.entries(detailFields))input.value=a.knowledge?.details?.[key]||'';
   state.textContent='';
  };
  form.addEventListener('submit',async event=>{
