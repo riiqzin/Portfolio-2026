@@ -938,7 +938,7 @@ function createPriceReview(item){
     for(const src of result.images||[]){
      if(typeof src!=='string'||!src.startsWith('data:image/jpeg;base64,'))continue;
      const image=dom('img','');image.src=src;image.alt='Foto da tabela de preços enviada pelo estabelecimento';
-     const anchor=dom('a','price-review-image');anchor.href=src;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.append(image);gallery.append(anchor);
+     const anchor=dom('button','price-review-image');anchor.type='button';anchor.title='Ampliar ou reduzir foto';anchor.onclick=()=>image.classList.toggle('expanded');anchor.append(image);gallery.append(anchor);
     }
     feedback.textContent=gallery.childElementCount?'Clique na foto para ampliar.':'Nenhuma foto encontrada.';
     button.textContent='Ocultar fotos';
@@ -1220,14 +1220,14 @@ async function loadOnboardings(){
    const details=dom('details','onboard-item');
    const summary=dom('summary','onboard-item-head');
    const main=dom('span','onboard-item-label');
-   main.append(dom('strong','',item.company),dom('small','',item.segment+' · '+(item.status==='recebido'?'✓ Respostas recebidas':'Aguardando cliente')));
+   main.append(dom('strong','',item.company),dom('small','',item.segment+' · '+(item.status==='recebido'?(item.answers?.priceReview===false?'Preços pendentes de revisão':'✓ Respostas recebidas'):'Aguardando cliente')));
    summary.append(main,dom('span','onboard-item-status',item.submittedAt?'Recebido '+formatDate(item.submittedAt):'Criado '+formatDate(item.createdAt)));
    details.append(summary);
    const content=dom('div','onboard-item-body');
    if(item.answers){
     for(const [key,label] of [['services','Serviços e preços'],['hours','Horários'],['payments','Formas de pagamento'],['address','Endereço'],['humanContact','Contato humano'],['link','Site / catálogo'],['policy','Informações importantes'],['notes','Outras observações']])content.append(answerLine(label,item.answers[key]));
     const copy=dom('button','btn btn-outline compact','Copiar respostas');copy.type='button';
-    copy.onclick=()=>navigator.clipboard.writeText(item.company+' · '+item.segment+'\n'+Object.entries(item.answers).map(([k,v])=>k+': '+(Array.isArray(v)?v.join(', '):v)).join('\n')).then(()=>toast('Respostas copiadas.')).catch(()=>toast('Não foi possível copiar.'));
+    copy.onclick=()=>navigator.clipboard.writeText(item.company+' · '+item.segment+'\n'+Object.entries(item.answers).filter(([k])=>!['priceReview','pricePhotoCount'].includes(k)).map(([k,v])=>k+': '+(Array.isArray(v)?v.join(', '):typeof v==='object'?JSON.stringify(v):v)).join('\n')).then(()=>toast('Respostas copiadas.')).catch(()=>toast('Não foi possível copiar.'));
     if(item.answers.priceReview!==undefined||item.answers.priceLink||item.answers.pricePhotoCount)content.append(createPriceReview(item));
     content.append(copy,createAnswersEditor(item));
     const issues=checkAssistantInformation(item);
