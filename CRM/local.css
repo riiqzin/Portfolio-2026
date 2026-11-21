@@ -279,3 +279,22 @@
 
 /* Respect hidden attributes in custom grid components */
 .onboard-assistant-output[hidden],.onboard-link-result[hidden]{display:none!important}
+
+/* Ricky AI lab: explicitly opt-in OpenAI real-model evaluation */
+.ricky-lab{border-top:1px solid rgba(150,207,174,.22);padding-top:14px;margin-top:4px}
+.ricky-lab summary{cursor:pointer;color:#b3e4ca;font-size:12px;font-weight:750}
+.ricky-lab>.field-note{margin:9px 0!important}
+.ricky-lab-controls{display:flex;flex-wrap:wrap;align-items:end;gap:12px;justify-content:space-between;margin:14px 0}
+.ricky-lab-controls label{font-size:11px;color:#aac9b9;display:grid;gap:7px}
+.ricky-lab-controls select{padding:10px 14px;min-width:180px;background:#0b1920;color:#dff1e5;border:1px solid #365746;border-radius:9px}
+.ricky-lab-meter{font-size:11px;color:#c6decf}
+.ricky-lab-messages{min-height:170px;max-height:370px;overflow:auto;background:#09151d;border:1px solid #29463a;border-radius:13px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.ricky-lab-message{max-width:88%;padding:11px 13px;border-radius:13px;background:#193027;border:1px solid #355542;align-self:flex-start}
+.ricky-lab-message.from-user{align-self:flex-end;background:#213447;border-color:#3b5165}
+.ricky-lab-message small{display:block;color:#98baa5;font-size:10px;margin-bottom:5px}
+.ricky-lab-message p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:#e0efe6;font-size:12px;line-height:1.5}
+.ricky-lab-input{margin-top:12px;width:100%;font:inherit;font-size:12px;background:#091922;color:#ecf4ee;border:1px solid #385344;border-radius:11px;padding:12px;resize:vertical}
+.ricky-lab-confirm{display:flex!important;align-items:center;gap:8px;font-weight:450!important;font-size:11px!important;margin:10px 0!important;color:#bdc9c1!important}
+.ricky-lab-confirm input{accent-color:#8fe3b4}
+.ricky-lab-footer{display:flex;flex-wrap:wrap;gap:9px}
+.ricky-lab-footer button:disabled{opacity:.4;cursor:not-allowed}
