@@ -55,13 +55,30 @@ export function assessCandidate(p){
   match_type:closed||!contact?'research':landing?'landing':'bot_investigate',
   reason:closed?'Estabelecimento marcado como fechado no Google.':!contact?'Nenhum contato comercial identificado.':landing?'Link público pode indicar oportunidade de landing; site próprio não verificado.':'Contato identificado; atendimento manual e necessidade de bot ainda não verificados.'};
 }
+const INTERNATIONAL_AREAS={
+ IT:{milano:['Navigli','Brera','Porta Romana','Isola','Città Studi'],roma:['Trastevere','Prati','Testaccio','San Giovanni','Monti'],torino:['San Salvario','Centro','Crocetta','Vanchiglia'],napoli:['Vomero','Chiaia','Centro Storico','Fuorigrotta'],bologna:['Centro Storico','Bolognina','San Donato','Saragozza'],firenze:['Centro Storico','Campo di Marte','Oltrarno','Novoli']},
+ PT:{lisboa:['Baixa','Alfama','Chiado','Campo de Ourique'],porto:['Cedofeita','Boavista','Bonfim','Foz']},
+ ES:{madrid:['Chamberí','Salamanca','Malasaña','Retiro'],barcelona:['Gràcia','Eixample','El Born','Poblenou']},
+ FR:{paris:['Le Marais','Bastille','Montmartre','République']},
+ US:{'new york':['Brooklyn','Queens','Manhattan','Bronx']}
+};
 function queryPlan(niche,city,neighborhoods,country){
  const areas=Array.isArray(neighborhoods)?neighborhoods.filter(valid).slice(0,5):[];
- // Different neighborhoods surface a broader variety than pages of one city-wide relevance ranking.
+ const normalized=city.trim().toLocaleLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').split(',')[0].trim();
+ const defaults=INTERNATIONAL_AREAS[country.region]?.[normalized];
+ if(!areas.length&&defaults)areas.push(...defaults.slice(0,5));
  if(!areas.length&&country.region==='BR'&&isSP.test(city))areas.push('Itaquera','Penha','Santana','Vila Prudente','Santo Amaro');
  const locality=city+', '+country.name;
- const local=areas.filter(x=>x.toLowerCase()!==city.toLowerCase()).map(x=>niche+' '+x+', '+locality);
- return [...local,niche+' '+locality];
+ const queries=[];
+ // Search by city first, then spread the remaining calls through different districts.
+ const isItalianBarber=country.region==='IT'&&/\\b(?:barbieri|barbiere|barber|barbearia|barberia)\\b/i.test(niche);
+ if(isItalianBarber)queries.push('barbiere a '+locality);
+ else queries.push(niche+' '+locality);
+ for(const area of areas.filter(x=>x.toLowerCase()!==city.toLowerCase())){
+  queries.push((isItalianBarber?'barbiere':niche)+' '+area+', '+locality);
+ }
+ if(isItalianBarber)queries.push('barber shop '+locality,'barberia '+locality,'parrucchiere uomo '+locality);
+ return [...new Set(queries)].slice(0,MAX_PER_SCAN);
 }
 function diverseByReviews(rows){
  const buckets=[[],[],[],[]];
@@ -114,7 +131,7 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
      }
      if(all.filter(p=>p.candidate).length>=TARGET&&all.filter(p=>p.match_type==='landing').length>=10){stopReason='target_reached';break outer}
      page++;
-     pageToken=qi===queries.length-1&&page<3&&typeof data.nextPageToken==='string'?data.nextPageToken:'';
+     // Use up to two result pages per query only when the remaining call budget permits.\n     pageToken=page<2&&calls<MAX_PER_SCAN&&typeof data.nextPageToken==='string'?data.nextPageToken:'';
     }catch{stopReason='provider_error';break outer}
    }while(pageToken);
   }
@@ -131,7 +148,9 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
   const selectedBot=possibleBot.slice(0,TARGET-selectedLanding.length);
   if(selectedLanding.length+selectedBot.length<TARGET)selectedLanding.push(...possibleLanding.slice(selectedLanding.length,TARGET-selectedBot.length));
   const qualified=[...selectedLanding,...selectedBot].slice(0,TARGET);
-  return json({results:[...qualified,...all.filter(p=>!p.candidate)],provider:'Google Places',countryCode,languageCode:country.language,goal:'both',target:TARGET,
+  // Keep other actual Google results visible for manual investigation; lack of a phone is not proof of a bad prospect.
+  const others=all.filter(p=>!qualified.some(q=>q.place_id===p.place_id));
+  return json({results:[...qualified,...others],provider:'Google Places',countryCode,languageCode:country.language,goal:'both',target:TARGET,
    matched:qualified.length,eligibleDiscovered:possibleLanding.length+possibleBot.length,landingMatches:selectedLanding.length,botLeadsToInvestigate:selectedBot.length,unique:all.length,calls,stopReason,checkedAt:clock().toISOString(),
    source:{pages,neighborhoodQueries:areaCalls,areas:queries.slice(1)},usage:{unlimitedScans:true,maxCallsPerScan:MAX_PER_SCAN},
    disclaimer:'Landing e bot são hipóteses comerciais. Site não informado não comprova ausência; celular não confirma WhatsApp; atendimento manual não foi confirmado. Cada página é uma chamada da API.'});
