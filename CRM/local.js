@@ -472,6 +472,7 @@ async function deleteLeadById(id){
   if(previous.place_id&&!state.results.some(x=>x.place_id===previous.place_id)){
    const snapshot=Object.values(state.archiveSnapshots).flat().find(x=>x.place_id===previous.place_id);
    if(snapshot)state.results.push({...snapshot});
+   else if(previous.maps_url||previous.place_id)state.results.push({...previous,candidate:true,match_type:previous.offer==='bot'?'bot_investigate':'landing'});
   }
   if(state.draft?.id===id)closeLead();
   await refresh();
