@@ -33,6 +33,23 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    if(request.method!=='POST')return deny('Método não permitido.',405);
    const body=await readBody(request);if(!body||typeof body!=='object')return deny('Confira os dados enviados.');
    if(admin&&!token){
+    if(body.action==='clear-answers'||body.action==='delete'){
+     const id=clean(body.id,64);
+     if(!/^[a-f0-9]{64}$/.test(id))return deny('Formulário inválido.');
+     const existing=await redis(['GET',key(id)]);
+     if(!existing)return deny('Formulário não encontrado.',404);
+     if(body.action==='delete'){
+      await redis(['DEL',key(id)]);
+      await redis(['ZREM',INDEX,id]);
+      return json({ok:true,deleted:true});
+     }
+     const form=JSON.parse(existing);
+     delete form.answers;delete form.submittedAt;
+     form.status='pendente';
+     const remaining=Math.max(1,Math.ceil((Date.parse(form.expiresAt)-clock())/1000)+86400);
+     await redis(['SET',key(id),JSON.stringify(form),'EX',remaining]);
+     return json({ok:true,cleared:true});
+    }
     if(body.action!=='create')return deny('Ação inválida.');
     const company=clean(body.company,120),segment=clean(body.segment,100);
     if(company.length<2||segment.length<2)return deny('Informe empresa e segmento.');
