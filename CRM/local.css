@@ -248,3 +248,12 @@
 .onboard-group-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 3px 3px;border-bottom:1px solid rgba(151,209,173,.17);padding-bottom:10px}
 .onboard-group-heading strong{font-size:13px;color:#d9f0e1}
 .onboard-group-heading span{font-size:11px;color:#8cb29d}
+
+/* Onboarding -> reusable AI instructions, generated entirely offline */
+.onboard-assistant{border:1px solid rgba(134,211,171,.24);background:rgba(78,143,109,.07);border-radius:12px;padding:15px;display:grid;gap:10px;margin-top:8px}
+.onboard-assistant>strong{font-size:13px;color:#ddf4e6}
+.onboard-assistant .field-note{font-size:11px;margin:0;line-height:1.55}
+.onboard-assistant>button{justify-self:start}
+.onboard-assistant-output{display:grid;gap:10px}
+.onboard-prompt{width:100%;min-height:240px;font-size:12px;line-height:1.55;resize:vertical;white-space:pre-wrap;border:1px solid #325347;border-radius:10px;background:#0b1820;color:#d8e8df;padding:13px}
+.onboard-assistant-output button{justify-self:start}
