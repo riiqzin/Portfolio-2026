@@ -148,12 +148,13 @@ function getTodos(){
 }
 function setNav(){
  let page=(location.hash||'#central').replace('#','');
- if(!['central','radar','hoje','clientes','custos'].includes(page))page='central';
+ if(!['central','radar','hoje','clientes','implantacoes','custos'].includes(page))page='central';
  $$('.page').forEach(x=>x.hidden=x.id!=='page-'+page);
  $$('[data-nav]').forEach(a=>{a.classList.toggle('active',a.dataset.nav===page);if(a.dataset.nav===page)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- $('#headerSection').textContent=({central:'Central',radar:'Radar Local',hoje:'Pra Hoje',clientes:'Clientes',custos:'Custos & APIs'})[page];
+ $('#headerSection').textContent=({central:'Central',radar:'Radar Local',hoje:'Pra Hoje',clientes:'Clientes',implantacoes:'Implantações',custos:'Custos & APIs'})[page];
  if(page==='hoje')loadGmail(true);
  if(page==='custos'&&state.key)void loadCosts();
+ if(page==='implantacoes'&&state.key)void loadOnboardings();
 }
 async function refresh(){
  const list=await rpc('crm_local_list',{});
@@ -796,11 +797,56 @@ async function loadCosts(){
  }finally{button.disabled=false}
 }
 
+
+function answerLine(label,value){
+ const div=dom('div','onboard-answer');
+ div.append(dom('strong','',label),dom('p','',Array.isArray(value)?value.join(', '):(value||'Não informado')));
+ return div;
+}
+async function loadOnboardings(){
+ const root=$('#onboardList');root.replaceChildren(dom('p','field-note','Carregando formulários…'));
+ try{
+  const response=await backend('onboarding'),items=response.items||[];
+  root.replaceChildren();
+  if(!items.length){root.append(dom('p','field-note','Nenhum formulário ainda. Gere o primeiro link ao lado.'));return}
+  for(const item of items){
+   const details=dom('details','onboard-item');
+   const summary=dom('summary','onboard-item-head');
+   const main=dom('span','onboard-item-label');
+   main.append(dom('strong','',item.company),dom('small','',item.segment+' · '+(item.status==='recebido'?'✓ Respostas recebidas':'Aguardando cliente')));
+   summary.append(main,dom('span','onboard-item-status',item.submittedAt?'Recebido '+formatDate(item.submittedAt):'Criado '+formatDate(item.createdAt)));
+   details.append(summary);
+   const content=dom('div','onboard-item-body');
+   if(item.answers){
+    for(const [key,label] of [['services','Serviços e preços'],['hours','Horários'],['payments','Formas de pagamento'],['address','Endereço'],['link','Site / catálogo'],['policy','Informações importantes'],['notes','Outras observações']])content.append(answerLine(label,item.answers[key]));
+    const copy=dom('button','btn btn-outline compact','Copiar respostas');copy.type='button';
+    copy.onclick=()=>navigator.clipboard.writeText(item.company+' · '+item.segment+'\n'+Object.entries(item.answers).map(([k,v])=>k+': '+(Array.isArray(v)?v.join(', '):v)).join('\n')).then(()=>toast('Respostas copiadas.')).catch(()=>toast('Não foi possível copiar.'));
+    content.append(copy);
+   }else content.append(dom('p','field-note','O cliente ainda não respondeu. O link é válido por 30 dias; para reenviar, gere um novo link caso tenha perdido o original.'));
+   details.append(content);root.append(details);
+  }
+ }catch(e){root.replaceChildren(dom('p','field-note',e.message))}
+}
+async function createOnboarding(e){
+ e.preventDefault();const button=$('#onboardCreateBtn');button.disabled=true;$('#onboardError').textContent='';
+ try{
+  const data=await backend('onboarding','POST',{action:'create',company:$('#onboardCompany').value,segment:$('#onboardSegment').value});
+  const link=new URL('/CRM/onboarding.html',location.origin);link.searchParams.set('token',data.token);
+  $('#onboardLink').value=link.href;$('#onboardResult').hidden=false;
+  await loadOnboardings();toast('Formulário gerado. Copie o link para enviar ao cliente.');
+ }catch(err){$('#onboardError').textContent=err.message}
+ finally{button.disabled=false}
+}
+
 function bind(){
  window.addEventListener('hashchange',setNav);
  $('#loginForm').addEventListener('submit',e=>{e.preventDefault();signIn()});
  $('#refreshApp').onclick=()=>refresh().then(()=>toast('Carteira atualizada.')).catch(e=>toast(e.message));
  $('#refreshCosts').onclick=()=>loadCosts();
+ $('#onboardCreate').addEventListener('submit',createOnboarding);
+ $('#onboardRefresh').onclick=()=>loadOnboardings();
+ $('#onboardCopy').onclick=()=>navigator.clipboard.writeText($('#onboardLink').value).then(()=>toast('Link copiado.')).catch(()=>toast('Não foi possível copiar.'));
+
  $('#logoutButton').onclick=()=>{localStorage.removeItem(KEY_NAME);sessionStorage.removeItem(KEY_NAME);state.key='';state.leads=[];state.results=[];state.gmail.items=[];state.emailQueue=[];render();showLogin();location.hash='#central';toast('Sessão local encerrada.');};
  $('#logoutMobile').onclick=()=>$('#logoutButton').click();
  $('#localForm').addEventListener('submit',scan);
