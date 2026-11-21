@@ -73,7 +73,7 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      const opens=requiredTags.map(tag=>lines.indexOf('<'+tag+'>'));
      const closes=requiredTags.map(tag=>lines.indexOf('</'+tag+'>'));
      if(opens.some((position,i)=>position<0||closes[i]<=position||i>0&&position<=closes[i-1]))return deny('Mantenha as cinco seções completas na ordem correta, sem sobreposição.');
-     if(!/RICKY AI/i.test(prompt))return deny('Identifique o prompt como RICKY AI.');
+     // O título interno é opcional; a identidade do assistente está nas regras fixas.
      const formRaw=await redis(['GET',key(id)]);
      if(!formRaw)return deny('Formulário não encontrado.',404);
      const form=JSON.parse(formRaw);
