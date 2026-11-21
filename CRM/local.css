@@ -298,3 +298,14 @@
 .ricky-lab-confirm input{accent-color:#8fe3b4}
 .ricky-lab-footer{display:flex;flex-wrap:wrap;gap:9px}
 .ricky-lab-footer button:disabled{opacity:.4;cursor:not-allowed}
+
+/* Manual ChatGPT-assisted per-business prompt review */
+.onboard-editor{display:grid;gap:10px;padding:14px;border:1px solid rgba(142,209,171,.27);background:#0d2023;border-radius:12px}
+.onboard-editor>strong{font-size:12px;color:#e5f3e9}
+.onboard-editor>.field-note{margin:0!important}
+.onboard-editor>button{justify-self:start}
+.onboard-personalized-prompt{min-height:230px;max-width:100%;font-size:12px}
+.onboard-editor-actions{display:flex;flex-wrap:wrap;gap:8px}
+.onboard-editor-actions button{font-size:11px}
+.onboard-editor[data-ready=true]{border-color:rgba(132,204,154,.44)}
+.onboard-editor .field-note[role=status]{line-height:1.6;color:#b9d4c1}
