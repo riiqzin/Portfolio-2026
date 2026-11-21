@@ -825,6 +825,60 @@ function buildAssistantInstructions(item){
  return [RICKY_ASSISTANT_BASE,'<dados_empresa>',raw,'</dados_empresa>',
   'CONTEXTO DE EXECUÇÃO: o backend deve inserir a data, hora e fuso atuais em cada chamada. Ferramentas humanas e agendamento só podem ser usadas se estiverem habilitadas e disponíveis.'].join(String.fromCharCode(10,10));
 }
+function createLab(item){
+ const root=dom('details','ricky-lab');
+ const summary=dom('summary','','✦ Laboratório de atendimento');
+ root.append(summary);
+ root.append(dom('p','field-note','Experimente as respostas reais com o contexto desta empresa. Nenhum teste é enviado sem sua confirmação. O laboratório começa desativado.'));
+ const bar=dom('div','ricky-lab-controls');
+ const modelLabel=dom('label','', 'Modelo');
+ const model=dom('select','');
+ for(const [id,label] of [['gpt-5.4-mini','GPT-5.4 mini'],['gpt-5.4','GPT-5.4']]){
+  const option=dom('option','',label);option.value=id;model.append(option);
+ }
+ modelLabel.append(model);
+ const meter=dom('span','ricky-lab-meter','Verificando limite...');
+ bar.append(modelLabel,meter);root.append(bar);
+ const conversation=dom('div','ricky-lab-messages');
+ conversation.append(dom('p','field-note','Conversa vazia. Faça uma pergunta como se fosse um cliente da empresa.'));
+ root.append(conversation);
+ const input=dom('textarea','ricky-lab-input');input.rows=2;input.maxLength=400;input.placeholder='Ex.: Quanto custa o corte e até que horas vocês funcionam?';
+ const consent=dom('label','ricky-lab-confirm');const check=document.createElement('input');check.type='checkbox';consent.append(check,document.createTextNode(' Confirmo que cada mensagem usa créditos reais da OpenAI'));
+ const footer=dom('div','ricky-lab-footer');
+ const send=dom('button','btn btn-primary compact','Enviar para IA');send.type='button';send.disabled=true;
+ const clear=dom('button','btn btn-outline compact','Limpar conversa');clear.type='button';
+ footer.append(send,clear);root.append(input,consent,footer);
+ const stateText=dom('p','field-note','O laboratório usa o modelo real somente quando habilitado no servidor.');root.append(stateText);
+ let history=[],enabled=false,busy=false,spent=0;
+ const messages=()=>{conversation.replaceChildren();if(!history.length)conversation.append(dom('p','field-note','Comece uma conversa para avaliar o atendimento.'));for(const m of history){const bubble=dom('div','ricky-lab-message '+(m.role==='user'?'from-user':'from-ai'));bubble.append(dom('small','',m.role==='user'?'Cliente':'Ricky AI'),dom('p','',m.content));conversation.append(bubble)}};
+ const refresh=async()=>{try{
+  const data=await backend('ai-lab');
+  enabled=!!data.enabled;
+  meter.textContent='Reserva: US$ '+(Number(data.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(data.budgetCents||0)/100).toFixed(2);
+  stateText.textContent=enabled?'Testes reais disponíveis. Cada envio exige confirmação.':'Testes pagos desativados no servidor. Nenhum crédito será consumido.';
+  send.disabled=!enabled||!check.checked||busy;
+ }catch(e){enabled=false;send.disabled=true;stateText.textContent='Laboratório indisponível: '+e.message}
+ };
+ root.addEventListener('toggle',()=>{if(root.open)void refresh()});
+ check.addEventListener('change',()=>{send.disabled=!enabled||!check.checked||busy});
+ clear.onclick=()=>{history=[];spent=0;messages();stateText.textContent='Conversa limpa. Nenhum teste enviado.'};
+ send.onclick=async()=>{
+  const prompt=input.value.trim();if(!prompt||busy||!enabled||!check.checked)return;
+  if(!window.confirm('Este teste usa créditos da OpenAI com o modelo '+model.value+'. Deseja enviar esta mensagem?'))return;
+  busy=true;send.disabled=true;stateText.textContent='Consultando OpenAI...';
+  const existing=history.slice(-8);
+  try{
+   const result=await backend('ai-lab','POST',{id:item.id,model:model.value,message:prompt,history:existing,confirmPaid:true});
+   history.push({role:'user',content:prompt},{role:'assistant',content:result.answer});
+   input.value='';messages();
+   spent+=Number(result.usage?.estimatedUsd||0);
+   stateText.textContent='Última resposta: '+(result.usage?.inputTokens||0)+' tokens de entrada + '+(result.usage?.outputTokens||0)+' saída. Custo calculado: US$ '+Number(result.usage?.estimatedUsd||0).toFixed(5)+' · Acumulado nesta conversa: US$ '+spent.toFixed(5)+'.';
+   meter.textContent='Reserva: US$ '+(Number(result.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(result.budgetCents||0)/100).toFixed(2);
+  }catch(e){stateText.textContent='Erro: '+e.message}
+  finally{busy=false;send.disabled=!enabled||!check.checked}
+ };
+ messages();return root;
+}
 async function loadOnboardings(){
  const root=$('#onboardList');root.replaceChildren(dom('p','field-note','Carregando formulários…'));
  try{
@@ -880,6 +934,7 @@ async function loadOnboardings(){
     prepared.append(prompt,copyPrompt);
     prepare.onclick=()=>{prompt.value=buildAssistantInstructions(item);prepared.hidden=false;prepare.textContent='Atualizar instruções';};
     assistantSection.append(prepare,prepared);
+    assistantSection.append(createLab(item));
     const quality=dom('details','onboard-quality');
     const qs=dom('summary','','Banco de testes · sem custo');
     quality.append(qs);
