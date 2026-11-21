@@ -5,6 +5,7 @@ import { authorized, json, configured, redisClient, boundedText } from '../lib/r
 const INDEX='ricky:onboarding:index:v1';
 const key=id=>'ricky:onboarding:v1:'+id;
 const promptKey=id=>'ricky:onboarding:prompt:v1:'+id;
+const mediaKey=id=>'ricky:onboarding:media:v1:'+id;
 const fingerprint=form=>hash(JSON.stringify([form.company,form.segment,form.submittedAt,form.answers]));
 const normalizePrompt=(value)=>{
  let output=value.trim().replace(/\r\n?/g,'\n');
@@ -32,11 +33,21 @@ function normalizeKnowledge(input){
  if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Dados adicionais da barbearia inválidos.');
  const rawFeatures=input.features,rawDetails=input.details;
  if(!rawFeatures||typeof rawFeatures!=='object'||Array.isArray(rawFeatures)||!rawDetails||typeof rawDetails!=='object'||Array.isArray(rawDetails))throw Error('Informações da barbearia incompletas.');
- const features={};for(const name of BARBER_FEATURES){const value=rawFeatures[name];if(!['sim','nao','desconhecido'].includes(value))throw Error('Confirme as respostas de Sim, Não ou Não sei.');features[name]=value}
+ const features={};for(const name of BARBER_FEATURES){const value=rawFeatures[name]??'desconhecido';if(!['sim','nao','desconhecido'].includes(value))throw Error('Confirme as respostas de Sim, Não ou Não sei.');features[name]=value}
  const details={};for(const name of BARBER_DETAILS){const value=rawDetails[name];if(value!==undefined&&typeof value!=='string')throw Error('Informação adicional inválida.');const cleanValue=clean(value||'',300);if(cleanValue)details[name]=cleanValue}
  return {features,details};
 }
-async function readBody(req){try{return JSON.parse(await boundedText(req,24000))}catch{return null}}
+function validServices(v){return v.length>=8&&/\d/.test(v)&&/R\$|reais|\d+[,.]\d{2}|sob consulta|a combinar/i.test(v)}
+function pricePhotos(v){
+ if(v==null)return [];if(!Array.isArray(v)||v.length>3)throw Error('Envie até 3 fotos.');
+ return v.map(img=>{
+  if(typeof img!=='string'||img.length>148000||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(img))throw Error('Imagem inválida.');
+  const bytes=Buffer.from(img.slice(23),'base64');
+  if(bytes.length>110000||bytes.length<100||bytes[0]!==255||bytes[1]!==216||bytes[2]!==255||bytes.at(-2)!==255||bytes.at(-1)!==217)throw Error('Imagem inválida.');
+  return img;
+ });
+}
+async function readBody(req){try{return JSON.parse(await boundedText(req,520000))}catch{return null}}
 const deny=(m,code=400)=>json({message:m},code);
 export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetch}={}){
  const labHandler=createLabHandler({env,clock:()=>new Date(clock()),fetcher});
@@ -55,13 +66,19 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
     return json({company:d.company,segment:d.segment,profile:d.profile,status:d.status,expiresAt:d.expiresAt});
    }
    if(!admin&&!token)return deny('Acesso não autorizado.',401);
+   const mediaId=url.searchParams.get('media');
+   if(admin&&request.method==='GET'&&mediaId){
+    if(!validId(mediaId))return deny('Empresa inválida.');
+    if(!await redis(['GET',key(mediaId)]))return deny('Formulário não encontrado.',404);
+    const raw=await redis(['GET',mediaKey(mediaId)]);return json({images:raw?JSON.parse(raw):[]});
+   }
    const promptId=url.searchParams.get('prompt');
    if(admin&&request.method==='GET'&&promptId){
     if(!validId(promptId))return deny('Empresa inválida.');
     const [formRaw,promptRaw]=await Promise.all([redis(['GET',key(promptId)]),redis(['GET',promptKey(promptId)])]);
     if(!formRaw)return deny('Formulário não encontrado.',404);
     const form=JSON.parse(formRaw),saved=promptRaw?JSON.parse(promptRaw):null;
-    const current=!!saved&&saved.fingerprint===fingerprint(form)&&form.status==='recebido';
+    const current=!!saved&&saved.fingerprint===fingerprint(form)&&form.status==='recebido'&&form.answers?.priceReview!==false;
     return json({prompt:saved?.text||'',savedAt:saved?.savedAt||null,version:saved?.version||0,current,reason:saved&&!current?'As respostas do formulário foram alteradas. Revise e salve novamente.':null});
    }
 
@@ -73,7 +90,17 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    if(request.method!=='POST')return deny('Método não permitido.',405);
    const body=await readBody(request);if(!body||typeof body!=='object')return deny('Confira os dados enviados.');
    if(admin&&!token){
-    if(body.action==='edit-answers'){
+    if(body.action==='confirm-prices'){
+      const id=clean(body.id,64);if(!validId(id))return deny('Empresa inválida.');
+      const raw=await redis(['GET',key(id)]);if(!raw)return deny('Formulário não encontrado.',404);
+      const form=JSON.parse(raw);if(form.status!=='recebido'||!form.answers)return deny('Formulário incompleto.',409);
+      const revision=form.answersUpdatedAt||form.submittedAt||'';
+      if(body.expectedRevision!==revision)return deny('O formulário foi alterado. Atualize antes de aprovar.',409);
+      const services=clean(body.services,4500);if(!validServices(services))return deny('Informe os serviços e os preços confirmados ou sob consulta.');
+      form.answers.services=services;form.answers.priceReview=true;form.answersUpdatedAt=new Date(clock()).toISOString();
+      await redis(['SET',key(id),JSON.stringify(form)]);return json({ok:true,revision:form.answersUpdatedAt});
+     }
+     if(body.action==='edit-answers'){
      const id=clean(body.id,64);
      if(!validId(id))return deny('Empresa inválida.');
      const formRaw=await redis(['GET',key(id)]);
@@ -87,12 +114,15 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      const hours=clean(a.hours,300),services=clean(a.services,4500);
      const payments=Array.isArray(a.payments)?[...new Set(a.payments.filter(v=>['Pix','Cartão','Dinheiro','Boleto','Outro'].includes(v)))].slice(0,5):[];
      const policy=clean(a.policy,1600),address=clean(a.address,300),humanContact=clean(a.humanContact,220),link=clean(a.link,500),notes=clean(a.notes,1600);
-     if(hours.length<3||services.length<8||payments.length<1)return deny('Informe serviços, horários e pelo menos uma forma de pagamento.');
-     if(!/\\d/.test(services)||!/R\\$|reais|\\d+[,.]\\d{2}|sob consulta|a combinar/i.test(services))return deny('Informe preços dos serviços ou sob consulta.');
+     if(hours.length<3||payments.length<1)return deny('Informe horários e forma de pagamento.');
+     if(services&&!validServices(services))return deny('Confira os preços.');
+     if(!services&&!form.answers.priceLink&&!form.answers.pricePhotoCount)return deny('Informe os serviços.');
+
      if(!okUrl(link))return deny('O link deve começar com https://');
      const knowledge= a.knowledge===undefined ? (form.answers.knowledge||null) : normalizeKnowledge(a.knowledge);
-     const updated={hours,services,payments,policy,address,humanContact,link,notes,...(knowledge?{knowledge}:{})};
-     if(JSON.stringify(updated)===JSON.stringify({hours:form.answers.hours,services:form.answers.services,payments:form.answers.payments,policy:form.answers.policy||'',address:form.answers.address||'',humanContact:form.answers.humanContact||'',link:form.answers.link||'',notes:form.answers.notes||'',...(form.answers.knowledge?{knowledge:form.answers.knowledge}:{})}))return json({ok:true,unchanged:true,revision,promptOutdated:false});
+     const updated={...form.answers,hours,services,payments,policy,address,humanContact,link,notes,...(knowledge?{knowledge}:{})};
+     if(services!==form.answers.services)updated.priceReview=false;
+     if(JSON.stringify(updated)===JSON.stringify({...form.answers}))return json({ok:true,unchanged:true,revision,promptOutdated:false});
      form.answers=updated;
      form.answersUpdatedAt=new Date(clock()).toISOString();
      // Keep the saved prompt for review/history; fingerprint mismatch disables old prompt in the lab.
@@ -115,6 +145,7 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      if(!formRaw)return deny('Formulário não encontrado.',404);
      const form=JSON.parse(formRaw);
      if(form.status!=='recebido'||!form.answers)return deny('A empresa precisa responder ao formulário.');
+     if(form.answers.priceReview===false||!validServices(clean(form.answers.services,4500)))return deny('Confira e aprove os serviços e preços antes de salvar o prompt.',409);
      const previous=await redis(['GET',promptKey(id)]),version=previous?(JSON.parse(previous).version||0)+1:1;
      const savedAt=new Date(clock()).toISOString();
      await redis(['SET',promptKey(id),JSON.stringify({text:prompt,fingerprint:fingerprint(form),savedAt,version})]);
@@ -134,12 +165,14 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      if(body.action==='delete'){
       await redis(['DEL',key(id)]);
       await redis(['DEL',promptKey(id)]);
+      await redis(['DEL',mediaKey(id)]);
       await redis(['ZREM',INDEX,id]);
       return json({ok:true,deleted:true});
      }
      const form=JSON.parse(existing);
      delete form.answers;delete form.submittedAt;
      await redis(['DEL',promptKey(id)]);
+     await redis(['DEL',mediaKey(id)]);
      form.status='pendente';
      const remaining=Math.max(1,Math.ceil((Date.parse(form.expiresAt)-clock())/1000)+86400);
      await redis(['SET',key(id),JSON.stringify(form),'EX',remaining]);
@@ -166,18 +199,24 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    if(data.status==='recebido')return deny('Este formulário já foi enviado.',409);
    if(Date.parse(data.expiresAt)<clock())return deny('Link expirado.',410);
    const answers=body.answers||{},hours=clean(answers.hours,300),payments=Array.isArray(answers.payments)?answers.payments.filter(v=>['Pix','Cartão','Dinheiro','Boleto','Outro'].includes(v)).slice(0,5):[];
+   const priceLink=clean(answers.priceLink,500);if(!okUrl(priceLink))return deny('O link deve começar com https://');
+   const photos=pricePhotos(answers.photos);
    const services=clean(answers.services,4500),policy=clean(answers.policy,1600),address=clean(answers.address,300),humanContact=clean(answers.humanContact,220),link=clean(answers.link,500),notes=clean(answers.notes,1600);
-   if(hours.length<3||services.length<8||payments.length<1)return deny('Informe horários, serviços com preços e formas de pagamento.');
+   if(hours.length<3||payments.length<1)return deny('Informe horários e forma de pagamento.');
+   if(!services&&!priceLink&&!photos.length)return deny('Digite preços, envie fotos ou informe um link.');
    if(!okUrl(link))return deny('O link deve começar com https://');
-   if(!/\d/.test(services))return deny('Inclua os valores dos serviços ou produtos, ou informe claramente que o preço é sob consulta.');
-   if(!/R\$|reais|\d+[,.]\d{2}|sob consulta|a combinar/i.test(services))return deny('Inclua preços (ex.: Corte — R$ 35) ou indique “sob consulta”.');
+
+
    const now=new Date(clock()).toISOString();
    const knowledge=normalizeKnowledge(answers.knowledge);
    if(/barbear/i.test(data.segment||'')&&!knowledge)return deny('Preencha as perguntas da secretária virtual antes de enviar.');
-   data.status='recebido';data.submittedAt=now;data.answers={hours,payments,services,policy,address,humanContact,link,notes,...(knowledge?{knowledge}:{})};
+   if(services&&!validServices(services))return deny('Confira os preços informados.');
+   data.status='recebido';data.submittedAt=now;data.answers={hours,payments,services,policy,address,humanContact,link,notes,priceLink,pricePhotoCount:photos.length,priceReview:false,...(knowledge?{knowledge}:{})};
    // One-time claim avoids double submits from two devices.
    const lock=await redis(['SET','ricky:onboarding:lock:'+data.id,'1','NX','EX',90]);
    if(lock!=='OK')return deny('Formulário já está sendo enviado.',409);
+   // Store photo bytes separately; only a server-authenticated admin can retrieve them.
+   if(photos.length)await redis(['SET',mediaKey(data.id),JSON.stringify(photos)]);
    // Keep completed client configurations until explicitly deleted; the public link still expires.
    await redis(['SET',key(data.id),JSON.stringify(data)]);
    return json({ok:true,receivedAt:now});
