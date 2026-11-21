@@ -1167,7 +1167,7 @@ function bind(){
  $('#minRating').addEventListener('change',renderRadar);$('#minReviews').addEventListener('change',renderRadar);
  $('#filterEligible').onclick=()=>{state.filterOutside=false;$('#filterEligible').classList.add('active');$('#filterOutside').classList.remove('active');renderRadar()};
  $('#filterOutside').onclick=()=>{state.filterOutside=true;$('#filterOutside').classList.add('active');$('#filterEligible').classList.remove('active');renderRadar()};
- $('[data-offer]').forEach(b=>b.addEventListener('click',()=>{state.offerFilter=b.dataset.offer;$('[data-offer]').forEach(x=>x.classList.toggle('active',x===b));renderRadar()}));
+ $$('[data-offer]').forEach(b=>b.addEventListener('click',()=>{state.offerFilter=b.dataset.offer;$$('[data-offer]').forEach(x=>x.classList.toggle('active',x===b));renderRadar()}));
  $$('[data-today]').forEach(b=>b.addEventListener('click',()=>{state.todayFilter=b.dataset.today;$$('[data-today]').forEach(x=>x.classList.toggle('active',x===b));renderToday()}));
  $('#clientStatus').addEventListener('change',renderClients);$('#clientSearch').addEventListener('input',renderClients);
  $('#manualAdd').onclick=()=>openLead({});$('#addClient').onclick=()=>openLead({});
