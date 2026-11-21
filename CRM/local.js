@@ -871,7 +871,7 @@ function createPromptEditor(item){
   save.disabled=true;
   try{
    const result=await backend('onboarding','POST',{action:'save-prompt',id:item.id,prompt:proposed});
-   saved=proposed;ready=true;panel.dataset.ready='true';
+   saved=result.prompt||proposed;editor.value=saved;ready=true;panel.dataset.ready='true';
    state.textContent='Versão '+result.version+' salva! O laboratório usará este prompt.';
    toast('Prompt personalizado salvo.');
   }catch(e){state.textContent='Erro ao salvar: '+e.message}
