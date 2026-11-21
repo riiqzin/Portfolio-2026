@@ -276,3 +276,6 @@
 .onboard-test-item strong{color:#d8ebdc;font-size:11px}
 .onboard-test-item span{font-size:11px;color:#a7bbaf}
 .onboard-test-item button{flex-shrink:0}
+
+/* Respect hidden attributes in custom grid components */
+.onboard-assistant-output[hidden],.onboard-link-result[hidden]{display:none!important}
