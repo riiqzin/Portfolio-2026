@@ -190,9 +190,9 @@ function praise(c){
  return 'Vi a '+c.name+' no Google, nota '+formatStars(c.rating)+suffix+'.';
 }
 function templateMessage(c){
- const italian=/\\+39\\b|^0039/.test(String(c.phone||''))||/\\b(?:italia|italy)\\b/i.test(String(c.city||''))||(!c.id&&state.countryCode==='IT');
+ const italian=/\\+39\\b|^0039/.test(String(c.phone||''))||/\\b(?:italia|italy)\\b/i.test(String(c.city||''))||(!c.id&&state.countryCode==='IT'&&!/^\+55/.test(String(c.phone||''))&&!/\b(?:brasil|brazil)\b/i.test(String(c.city||'')));
  if(italian&&c.status==='novo'){
-  if(c.offer==='bot'||c.angle==='B')return 'Ciao! Mi chiamo Henrique. Una domanda veloce: ricevete molte richieste su prezzi e appuntamenti via WhatsApp?\\nRealizzo assistenti virtuali personalizzati per le attività locali. Posso mostrarvi un esempio per '+c.name+'?';
+  if(c.offer==='bot'||c.angle==='B')return 'Ciao! Mi chiamo Henrique. Una domanda veloce: ricevete molte richieste su prezzi e appuntamenti via WhatsApp?\nRealizzo assistenti virtuali personalizzati per le attività locali. Posso mostrarvi un esempio per '+c.name+'?';
   return 'Ciao! Mi chiamo Henrique e realizzo siti web moderni per le attività locali. Ho visto '+c.name+' e vorrei proporvi un\\u0027idea. Posso mandarvi qualche dettaglio?';
  }
  const angle=c.angle||'A';
