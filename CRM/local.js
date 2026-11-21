@@ -457,7 +457,7 @@ function renderRadar(){
 function render(){renderCentral();renderToday();renderClients();renderArchive();renderRadar();}
 async function checkPlaces(){
  try{const x=await backend('local-radar');state.placesReady=!!x.ready;
- $('#placesNotice').textContent=x.ready?'Google Places conectado · '+x.dailyLimit+' varreduras/dia · até '+x.maxCallsPerScan+' chamadas por busca · '+x.monthlyCallLimit+' chamadas/mês.':'Google Places ainda não configurado. Cadastro manual liberado; buscas ficam desabilitadas até configurar a chave na Vercel.';
+ $('#placesNotice').textContent=x.ready?'Google Places conectado · varreduras ilimitadas · até '+x.maxCallsPerScan+' chamadas por busca. Uso sujeito à cobrança do Google Cloud.':'Google Places ainda não configurado. Cadastro manual liberado; buscas ficam desabilitadas até configurar a chave na Vercel.';
  $('#placesNotice').classList.toggle('bad',!x.ready);$('#runLocal').disabled=!x.ready;
  }catch(e){$('#placesNotice').textContent=e.message;$('#placesNotice').classList.add('bad');$('#runLocal').disabled=true}
 }
@@ -493,7 +493,7 @@ async function scan(ev){
   const inside=all.filter(x=>eligible(x)&&x.candidate!==false).length;
   $('#radarExplain').textContent=data.unique+' negócios únicos encontrados · '+data.matched+' candidatos compatíveis ('+landing+' landing, '+bot+' bot a investigar) · '+inside+' dentro dos seus filtros · '+alreadySaved+' já na carteira excluídos. Meta: 40 (não garantida).';
   const reasons={target_reached:'Meta de 40 atingida',scan_limit:'Teto de chamadas da varredura',quota_limit:'Limite diário ou mensal de custo',time_limit:'Limite de tempo',exhausted:'Resultados disponíveis esgotados',provider_error:'A consulta foi interrompida pelo Google',quota_unavailable:'Controle de custos indisponível'};
-  $('#radarUsage').textContent=(reasons[data.stopReason]||'Busca concluída')+' · '+(data.calls||0)+' chamadas ao Google · '+(data.usage?.daily??'—')+'/'+(data.usage?.dailyLimit??15)+' hoje · '+(data.usage?.monthly??'—')+'/'+(data.usage?.monthlyLimit??200)+' no mês. Candidatos de bot são hipóteses, não atendimento manual comprovado.';
+  $('#radarUsage').textContent=(reasons[data.stopReason]||'Busca concluída')+' · '+(data.calls||0)+' chamadas ao Google · sem limite diário de varreduras. Cobranças podem ocorrer no Google Cloud. Candidatos de bot são hipóteses, não atendimento manual comprovado.';
   archiveSearch({niche,city,countryCode,count:all.length},all);renderArchive();
   if(!all.length)toast('Nenhum estabelecimento retornado para esta busca.');
  }catch(e){$('#radarProgress').classList.remove('busy');$('#scanProgressText').textContent='Não foi possível concluir a busca';$('#radarExplain').textContent=e.message;toast(e.message)}
