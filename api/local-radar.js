@@ -1,4 +1,4 @@
-import {authorized,boundedText,json,redisClient,configured} from '../lib/radar-control.js';
+import {authorized,boundedText,json} from '../lib/radar-control.js';
 
 const knownSocial=/^(?:www\.)?(?:instagram\.com|facebook\.com|m\.facebook\.com|fb\.com|tiktok\.com)$/i;
 const bioSites=/(?:^|\.)((?:linktr\.ee)|(?:beacons\.ai)|(?:bio\.link)|(?:carrd\.co)|(?:linkme\.bio)|(?:taplink\.cc))$/i;
@@ -38,8 +38,7 @@ export function normalizePlace(place){
  };
 }
 
-const QUOTA_LUA=["local d=tonumber(redis.call('GET',KEYS[1]) or '0')","local m=tonumber(redis.call('GET',KEYS[2]) or '0')","if d>=tonumber(ARGV[1]) or m>=tonumber(ARGV[2]) then return {0,d,m} end","redis.call('INCR',KEYS[1]);redis.call('EXPIRE',KEYS[1],172800)","redis.call('INCR',KEYS[2]);redis.call('EXPIRE',KEYS[2],5356800)","return {1,d+1,m+1}"].join('\n');
-const DAY_CALLS=15,MONTH_CALLS=200,MAX_PER_SCAN=8,DAY_SCANS=5,MONTH_SCANS=75,TARGET=40;
+const MAX_PER_SCAN=8,TARGET=40;
 const FIELD_MASK='nextPageToken,places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.businessStatus,places.websiteUri,places.nationalPhoneNumber,places.internationalPhoneNumber,places.googleMapsUri';
 const valid=s=>typeof s==='string'&&s.length>=2&&s.length<=80&&/^[\p{L}\p{N}\s,.'’&()-]+$/u.test(s);
 const isSP=/^s[aã]o paulo(?:,\s*sp)?$/i;
@@ -81,8 +80,8 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
  return async request=>{
   if(!['GET','POST'].includes(request.method))return json({message:'Método não permitido.'},405);
   if(!authorized(request,env))return json({message:'Não autorizado.'},401);
-  if(request.method==='GET')return json({ready:!!env.GOOGLE_PLACES_API_KEY&&configured(env),provider:'Google Places (New)',goal:'both',target:TARGET,maxCallsPerScan:MAX_PER_SCAN,dailyCallLimit:DAY_CALLS,monthlyCallLimit:MONTH_CALLS,dailyLimit:DAY_SCANS,monthlyLimit:MONTH_SCANS});
-  if(!env.GOOGLE_PLACES_API_KEY||!configured(env))return json({message:'Google Places ou controle de custo não configurado.'},503);
+  if(request.method==='GET')return json({ready:!!env.GOOGLE_PLACES_API_KEY,provider:'Google Places (New)',goal:'both',target:TARGET,maxCallsPerScan:MAX_PER_SCAN,unlimitedScans:true});
+  if(!env.GOOGLE_PLACES_API_KEY)return json({message:'Google Places não configurado.'},503);
   let body;try{body=JSON.parse(await boundedText(request,2500))}catch{return json({message:'Dados inválidos.'},400)}
   const niche=String(body?.niche||'').trim(),city=String(body?.city||'').trim();
   const countryCode=String(body?.countryCode||'BR').trim().toUpperCase();
@@ -91,23 +90,13 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
   if(!valid(niche)||!valid(city))return json({message:'Informe segmento e cidade válidos.'},400);
   if(body.goal&&body.goal!=='both')return json({message:'Modo disponível: Ambos.'},400);
   const queries=[...new Set(queryPlan(niche,city,body.neighborhoods,country))];
-  const date=clock().toISOString(),day=date.slice(0,10),month=date.slice(0,7),redis=redisClient(env,fetcher);
-  try{
-   const scans=await redis(['EVAL',QUOTA_LUA,2,'ricky:local:scans2:day:'+day,'ricky:local:scans2:month:'+month,DAY_SCANS,MONTH_SCANS]);
-   if(!Array.isArray(scans)||scans[0]!==1)return json({message:'Limite de varreduras atingido. Nenhuma chamada enviada.'},429);
-  }catch{return json({message:'Sem acesso ao limitador; busca bloqueada para proteger os custos.'},503)}
-  let all=[],ids=new Set(),calls=0,stopReason='exhausted',usage=null,pages=0,areaCalls=0;
+  let all=[],ids=new Set(),calls=0,stopReason='exhausted',pages=0,areaCalls=0;
   const started=Date.now();
   outer:for(let qi=0;qi<queries.length;qi++){
    let pageToken='',page=0;
    do{
     if(calls>=MAX_PER_SCAN){stopReason='scan_limit';break outer}
     if(Date.now()-started>=37000){stopReason='time_limit';break outer}
-    let reservation;
-    try{reservation=await redis(['EVAL',QUOTA_LUA,2,'ricky:local:calls2:day:'+day,'ricky:local:calls2:month:'+month,DAY_CALLS,MONTH_CALLS])}
-    catch{stopReason='quota_unavailable';break outer}
-    if(!Array.isArray(reservation)||reservation[0]!==1){stopReason='quota_limit';break outer}
-    usage={daily:reservation[1],monthly:reservation[2],dailyLimit:DAY_CALLS,monthlyLimit:MONTH_CALLS};
     const query={textQuery:queries[qi],pageSize:20,languageCode:country.language,regionCode:country.region,...(pageToken?{pageToken}:{})};
     calls++;if(qi===0)pages++;else areaCalls++;
     try{
@@ -144,7 +133,7 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
   const qualified=[...selectedLanding,...selectedBot].slice(0,TARGET);
   return json({results:[...qualified,...all.filter(p=>!p.candidate)],provider:'Google Places',countryCode,languageCode:country.language,goal:'both',target:TARGET,
    matched:qualified.length,eligibleDiscovered:possibleLanding.length+possibleBot.length,landingMatches:selectedLanding.length,botLeadsToInvestigate:selectedBot.length,unique:all.length,calls,stopReason,checkedAt:clock().toISOString(),
-   source:{pages,neighborhoodQueries:areaCalls,areas:queries.slice(1)},usage:usage||{dailyLimit:DAY_CALLS,monthlyLimit:MONTH_CALLS},
+   source:{pages,neighborhoodQueries:areaCalls,areas:queries.slice(1)},usage:{unlimitedScans:true,maxCallsPerScan:MAX_PER_SCAN},
    disclaimer:'Landing e bot são hipóteses comerciais. Site não informado não comprova ausência; celular não confirma WhatsApp; atendimento manual não foi confirmado. Cada página é uma chamada da API.'});
  };
 }
