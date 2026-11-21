@@ -37,7 +37,7 @@ function normalizeKnowledge(input){
  const details={};for(const name of BARBER_DETAILS){const value=rawDetails[name];if(value!==undefined&&typeof value!=='string')throw Error('Informação adicional inválida.');const cleanValue=clean(value||'',300);if(cleanValue)details[name]=cleanValue}
  return {features,details};
 }
-function validServices(v){return v.length>=8&&/\d/.test(v)&&/R\$|reais|\d+[,.]\d{2}|sob consulta|a combinar/i.test(v)}
+function validServices(v){return v.length>=8&&(/\d/.test(v)||/sob consulta|a combinar/i.test(v))&&(/R\$|reais|\d+[,.]\d{2}|(?:^|\s)\d{1,4}(?:\s|$)|sob consulta|a combinar/i.test(v))}
 function pricePhotos(v){
  if(v==null)return [];if(!Array.isArray(v)||v.length>3)throw Error('Envie até 3 fotos.');
  return v.map(img=>{
@@ -115,7 +115,7 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
      const payments=Array.isArray(a.payments)?[...new Set(a.payments.filter(v=>['Pix','Cartão','Dinheiro','Boleto','Outro'].includes(v)))].slice(0,5):[];
      const policy=clean(a.policy,1600),address=clean(a.address,300),humanContact=clean(a.humanContact,220),link=clean(a.link,500),notes=clean(a.notes,1600);
      if(hours.length<3||payments.length<1)return deny('Informe horários e forma de pagamento.');
-     if(services&&!validServices(services))return deny('Confira os preços.');
+     if(services&&services.length<5)return deny('Descreva melhor os serviços.');
      if(!services&&!form.answers.priceLink&&!form.answers.pricePhotoCount)return deny('Informe os serviços.');
 
      if(!okUrl(link))return deny('O link deve começar com https://');
@@ -210,7 +210,7 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    const now=new Date(clock()).toISOString();
    const knowledge=normalizeKnowledge(answers.knowledge);
    if(/barbear/i.test(data.segment||'')&&!knowledge)return deny('Preencha as perguntas da secretária virtual antes de enviar.');
-   if(services&&!validServices(services))return deny('Confira os preços informados.');
+   if(services&&services.length<5)return deny('Descreva melhor os serviços enviados.');
    data.status='recebido';data.submittedAt=now;data.answers={hours,payments,services,policy,address,humanContact,link,notes,priceLink,pricePhotoCount:photos.length,priceReview:false,...(knowledge?{knowledge}:{})};
    // One-time claim avoids double submits from two devices.
    const lock=await redis(['SET','ricky:onboarding:lock:'+data.id,'1','NX','EX',90]);
@@ -220,7 +220,7 @@ export function createHandler({env=process.env,clock=()=>Date.now(),fetcher=fetc
    // Keep completed client configurations until explicitly deleted; the public link still expires.
    await redis(['SET',key(data.id),JSON.stringify(data)]);
    return json({ok:true,receivedAt:now});
-  }catch(error){return deny(error?.message&&/informações da barbearia|dados adicionais|confirme as respostas|informação adicional/i.test(error.message)?error.message:'Não foi possível concluir. Tente novamente.',error?.message&&/informações da barbearia|dados adicionais|confirme as respostas|informação adicional/i.test(error.message)?400:503)}
+  }catch(error){return deny(error?.message&&/informações da barbearia|dados adicionais|confirme as respostas|informação adicional|Envie até|Imagem inválida/i.test(error.message)?error.message:'Não foi possível concluir. Tente novamente.',error?.message&&/informações da barbearia|dados adicionais|confirme as respostas|informação adicional|Envie até|Imagem inválida/i.test(error.message)?400:503)}
  };
 }
 export default {fetch:createHandler()};
