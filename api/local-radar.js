@@ -54,8 +54,23 @@ export function assessCandidate(p){
 }
 function queryPlan(niche,city,neighborhoods){
  const areas=Array.isArray(neighborhoods)?neighborhoods.filter(valid).slice(0,5):[];
- if(!areas.length&&isSP.test(city))areas.push('Mooca','Tatuapé','Santana','Vila Mariana','Pinheiros');
- return [niche+' em '+city,...areas.filter(x=>x.toLowerCase()!==city.toLowerCase()).map(x=>niche+' em '+x+', '+city)];
+ // Different neighborhoods surface a broader variety than pages of one city-wide relevance ranking.
+ if(!areas.length&&isSP.test(city))areas.push('Itaquera','Penha','Santana','Vila Prudente','Santo Amaro');
+ const local=areas.filter(x=>x.toLowerCase()!==city.toLowerCase()).map(x=>niche+' em '+x+', '+city);
+ return [...local,niche+' em '+city];
+}
+function diverseByReviews(rows){
+ const buckets=[[],[],[],[]];
+ for(const row of rows){
+  const n=Number(row.reviews);
+  const group=row.reviews==null||!Number.isFinite(n)?3:n<10?0:n<30?1:n<100?2:3;
+  buckets[group].push(row);
+ }
+ const out=[];
+ while(buckets.some(group=>group.length)){
+  for(const group of buckets)if(group.length)out.push(group.shift());
+ }
+ return out;
 }
 export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date()}={}){
  return async request=>{
@@ -102,7 +117,7 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
      }
      if(all.filter(p=>p.candidate).length>=TARGET&&all.filter(p=>p.match_type==='landing').length>=10){stopReason='target_reached';break outer}
      page++;
-     pageToken=qi===0&&page<3&&typeof data.nextPageToken==='string'?data.nextPageToken:'';
+     pageToken=qi===queries.length-1&&page<3&&typeof data.nextPageToken==='string'?data.nextPageToken:'';
     }catch{stopReason='provider_error';break outer}
    }while(pageToken);
   }
@@ -113,8 +128,8 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
   }
   for(const p of all)p.chain_hint=!!p.chain_group&&group.get(p.chain_group)>1;
   // Select up to 40 mixed candidates, without claiming bot demand is verified.
-  const possibleLanding=all.filter(p=>p.candidate&&p.match_type==='landing');
-  const possibleBot=all.filter(p=>p.candidate&&p.match_type==='bot_investigate');
+  const possibleLanding=diverseByReviews(all.filter(p=>p.candidate&&p.match_type==='landing'));
+  const possibleBot=diverseByReviews(all.filter(p=>p.candidate&&p.match_type==='bot_investigate'));
   const selectedLanding=possibleLanding.slice(0,Math.min(20,TARGET));
   const selectedBot=possibleBot.slice(0,TARGET-selectedLanding.length);
   if(selectedLanding.length+selectedBot.length<TARGET)selectedLanding.push(...possibleLanding.slice(selectedLanding.length,TARGET-selectedBot.length));
