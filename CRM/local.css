@@ -399,3 +399,36 @@
 .archive-list-footer{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .archive-list-counter{font-size:11px;color:var(--muted)}
 @media(max-width:600px){.archive-list-row{align-items:flex-start;flex-direction:column}.archive-list-actions{width:100%}.archive-list-actions .btn{flex:1}}
+
+/* Ricky World Radar · international location selector */
+.radar-country-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:9px 0 8px}
+.radar-country-head>label{margin:0!important;font-weight:700;font-size:12px}
+.radar-country-head .globe-open{border-color:rgba(92,205,183,.39);background:linear-gradient(110deg,rgba(25,74,74,.5),rgba(25,42,65,.6));color:#bdebdc;min-width:0}
+#localCountry{width:100%;background:rgba(12,29,40,.85);border:1px solid rgba(108,183,169,.35);color:#e8f9ef;border-radius:10px;padding:12px 13px;font:inherit}
+.country-hint{font-size:11px!important;color:#9bd0bd!important;margin:8px 0 15px!important}
+.globe-modal[hidden]{display:none!important}
+.globe-modal{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px}
+.globe-backdrop{position:absolute;inset:0;background:rgba(2,8,17,.84);backdrop-filter:blur(13px)}
+body.globe-modal-open{overflow:hidden}
+.globe-panel{position:relative;width:min(990px,100%);max-height:min(92vh,900px);overflow:auto;background:linear-gradient(140deg,#122530,#08131f 75%);border:1px solid rgba(117,221,203,.28);box-shadow:0 28px 100px #000b,0 0 55px rgba(36,158,143,.10);border-radius:24px;padding:24px;color:#eafaf4}
+.globe-panel-top{display:flex;align-items:start;justify-content:space-between;gap:20px}
+.globe-panel-top h2{font-size:clamp(19px,2.5vw,26px);font-weight:650;margin:7px 0}
+.globe-panel-top p{margin:0;color:#9dbbb8;font-size:12px;line-height:1.6}
+.globe-close{font-size:18px;background:rgba(109,164,157,.09);border:1px solid rgba(135,208,192,.26);color:#d7f9ed;border-radius:11px;min-width:38px;height:38px;cursor:pointer}
+.globe-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(235px,.65fr);gap:16px;align-items:center;margin-top:12px}
+.globe-visual{position:relative;background:radial-gradient(circle at 50% 50%,rgba(26,76,80,.17),transparent 69%);min-width:0}
+#countryGlobeCanvas{width:100%;aspect-ratio:1;max-height:530px;display:block;touch-action:none;cursor:grab;user-select:none}
+.globe-controls{position:absolute;bottom:15px;right:12px;display:flex;flex-direction:column;gap:6px}
+.globe-controls button{width:35px;height:35px;border:1px solid rgba(136,226,202,.26);background:rgba(7,18,29,.72);color:#c9eae1;border-radius:10px;font-size:17px;cursor:pointer}
+.globe-side{display:flex;flex-direction:column;align-items:stretch;gap:15px;border:1px solid rgba(100,197,177,.15);border-radius:16px;padding:21px;background:rgba(11,26,38,.66)}
+.globe-side .eyebrow{font-size:10px}
+.globe-current{font-size:clamp(22px,3vw,30px);font-weight:660;letter-spacing:-.04em;line-height:1.2}
+.globe-side p{font-size:12px;line-height:1.7;color:#9dbdb5;margin:0}
+.globe-side label{color:#cadad4;font-weight:600;font-size:12px}
+#globeCountrySelect{width:100%;padding:12px 11px;border:1px solid rgba(137,212,197,.3);color:#e5f8ec;border-radius:11px;background:#102631;font-size:13px}
+.globe-quick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.globe-quick button{min-height:39px;border:1px solid rgba(137,212,197,.16);border-radius:10px;background:#102631;color:#cbe6dc;cursor:pointer;font-size:11px}
+.globe-quick button:hover,.globe-controls button:hover,.globe-close:hover{border-color:rgba(148,244,208,.58)}
+.globe-side .btn.big{width:100%;margin-top:8px}
+@media(max-width:750px){.globe-modal{padding:10px}.globe-panel{max-height:96vh;padding:15px;border-radius:16px}.globe-layout{grid-template-columns:1fr;gap:0}.globe-visual{max-width:360px;width:100%;margin:0 auto}.globe-side{padding:15px;gap:10px}.globe-quick{grid-template-columns:repeat(4,1fr)}.globe-quick button{font-size:10px;padding:4px}.globe-panel-top p{max-width:400px}.radar-country-head .globe-open{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.globe-panel{scroll-behavior:auto}}
