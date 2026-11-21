@@ -215,3 +215,30 @@
 .costs-service-labels{min-width:0}
 .costs-service-head{align-items:flex-start}
 @media(max-width:480px){.costs-service-head{gap:8px}.costs-state{white-space:nowrap}}
+
+
+/* Ricky AI onboarding — private link generator and review */
+.onboarding-page .page-intro{margin-bottom:22px}
+.onboard-layout{display:grid;grid-template-columns:minmax(270px,.85fr) minmax(320px,1.15fr);gap:18px;align-items:start}
+.onboard-create,.onboard-inbox{padding:24px;border-radius:18px;border:1px solid rgba(158,206,182,.17);background:#112027}
+.onboard-create h2,.onboard-inbox h2{font-size:19px;letter-spacing:-.035em;margin:0 0 8px}
+.onboard-create p{font-size:12px;color:#9fb9ac;line-height:1.6;margin:0 0 18px}
+.onboard-create label{display:block;color:#d2e9db;font-weight:600;font-size:12px;margin:14px 0}
+.onboard-create label input{display:block;width:100%;margin-top:8px}
+.onboard-create button[type=submit]{width:100%}
+.onboard-link-result{border:1px solid rgba(133,224,177,.25);border-radius:12px;background:rgba(90,183,135,.07);padding:14px;margin-top:16px;display:grid;gap:9px}
+.onboard-link-result span,.onboard-link-result small{font-size:11px;color:#aac7b7}
+.onboard-link-result input{width:100%;font-size:11px}
+.onboard-inbox-title{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:15px}
+.onboard-list{display:grid;gap:11px}
+.onboard-item{background:#0d1921;border:1px solid #28443a;border-radius:12px;overflow:hidden}
+.onboard-item-head{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px;list-style:none}
+.onboard-item-head::-webkit-details-marker{display:none}
+.onboard-item-label{display:flex;flex-direction:column;gap:5px}
+.onboard-item-label strong{font-size:13px;color:#e8f8ed}
+.onboard-item-label small,.onboard-item-status{font-size:11px;color:#9cbdad}
+.onboard-item-body{display:grid;gap:13px;padding:16px;border-top:1px solid #28443a}
+.onboard-answer{display:grid;gap:5px}.onboard-answer strong{font-size:11px;color:#a5ceba}
+.onboard-answer p{font-size:13px;color:#e5f1e9;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.onboard-item-body button{justify-self:start}
+@media(max-width:900px){.onboard-layout{grid-template-columns:1fr}}
