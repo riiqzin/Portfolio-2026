@@ -967,8 +967,9 @@ function createLab(item){
   const option=dom('option','',label);option.value=id;model.append(option);
  }
  modelLabel.append(model);
- const meter=dom('span','ricky-lab-meter','Verificando limite...');
- bar.append(modelLabel,meter);root.append(bar);
+ const meter=dom('span','ricky-lab-meter','Verificando reserva...');
+ const cost=dom('p','ricky-lab-cost','Custo estimado da OpenAI: carregando...');
+ bar.append(modelLabel,meter);root.append(bar,cost);
  const conversation=dom('div','ricky-lab-messages');
  conversation.append(dom('p','field-note','Conversa vazia. Faça uma pergunta como se fosse um cliente da empresa.'));
  root.append(conversation);
@@ -980,18 +981,19 @@ function createLab(item){
  footer.append(send,clear);root.append(input,consent,footer);
  const stateText=dom('p','field-note','O laboratório usa o modelo real somente quando habilitado no servidor.');root.append(stateText);
  let history=[],enabled=false,busy=false,spent=0;
- const messages=()=>{conversation.replaceChildren();if(!history.length)conversation.append(dom('p','field-note','Comece uma conversa para avaliar o atendimento.'));for(const m of history){const bubble=dom('div','ricky-lab-message '+(m.role==='user'?'from-user':'from-ai'));bubble.append(dom('small','',m.role==='user'?'Cliente':'Ricky AI'),dom('p','',m.content));conversation.append(bubble)}};
+ const messages=()=>{conversation.replaceChildren();if(!history.length)conversation.append(dom('p','field-note','Comece uma conversa para avaliar o atendimento.'));for(const m of history){const bubble=dom('div','ricky-lab-message '+(m.role==='user'?'from-user':'from-ai'));const message=dom('p','');const parts=String(m.content).split(/\\*([^*\\n]+)\\*/g);for(let i=0;i<parts.length;i++){if(i%2){message.append(dom('strong','',parts[i]));}else{message.append(document.createTextNode(parts[i]));}}bubble.append(dom('small','',m.role==='user'?'Cliente':'Ricky AI'),message);conversation.append(bubble)}};
+ const renderCosts=data=>{meter.textContent='Reserva interna (não é gasto): US$ '+(Number(data.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(data.budgetCents||0)/100).toFixed(2);cost.textContent='Custo OpenAI estimado desde a atualização · Esta empresa: US$ '+Number(data.companyEstimatedUsd||0).toFixed(5)+' · Total do laboratório: US$ '+Number(data.estimatedUsd||0).toFixed(5)+'. Não inclui testes anteriores nem é a fatura oficial.';};
  const refresh=async()=>{try{
-  const data=await backend('onboarding?lab=1');
+  const data=await backend('onboarding?lab=1&id='+encodeURIComponent(item.id));
   enabled=!!data.enabled;
-  meter.textContent='Reserva: US$ '+(Number(data.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(data.budgetCents||0)/100).toFixed(2);
+  renderCosts(data);
   stateText.textContent=enabled?'Testes reais disponíveis. Cada envio exige confirmação.':'Testes pagos desativados no servidor. Nenhum crédito será consumido.';
   send.disabled=!enabled||!check.checked||busy;
  }catch(e){enabled=false;send.disabled=true;stateText.textContent='Laboratório indisponível: '+e.message}
  };
  root.addEventListener('toggle',()=>{if(root.open)void refresh()});
  check.addEventListener('change',()=>{send.disabled=!enabled||!check.checked||busy});
- clear.onclick=()=>{history=[];spent=0;messages();stateText.textContent='Conversa limpa. Nenhum teste enviado.'};
+ clear.onclick=()=>{history=[];spent=0;messages();stateText.textContent='Conversa limpa. O histórico foi apagado, mas o consumo registrado permanece.'};
  send.onclick=async()=>{
   const prompt=input.value.trim();if(!prompt||busy||!enabled||!check.checked)return;
   if(!window.confirm('Este teste usa créditos da OpenAI com o modelo '+model.value+'. Deseja enviar esta mensagem?'))return;
@@ -1002,8 +1004,8 @@ function createLab(item){
    history.push({role:'user',content:prompt},{role:'assistant',content:result.answer});
    input.value='';messages();
    spent+=Number(result.usage?.estimatedUsd||0);
-   stateText.textContent='Última resposta: '+(result.usage?.inputTokens||0)+' tokens de entrada + '+(result.usage?.outputTokens||0)+' saída. Custo calculado: US$ '+Number(result.usage?.estimatedUsd||0).toFixed(5)+' · Acumulado nesta conversa: US$ '+spent.toFixed(5)+'.';
-   meter.textContent='Reserva: US$ '+(Number(result.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(result.budgetCents||0)/100).toFixed(2);
+   stateText.textContent='Última resposta: '+(result.usage?.inputTokens||0)+' tokens de entrada + '+(result.usage?.outputTokens||0)+' saída. Estimativa desta resposta: US$ '+Number(result.usage?.estimatedUsd||0).toFixed(5)+' · Nesta conversa: US$ '+spent.toFixed(5)+'.';
+   try{renderCosts(await backend('onboarding?lab=1&id='+encodeURIComponent(item.id)))}catch{meter.textContent='Reserva interna (não é gasto): US$ '+(Number(result.reservedCents||0)/100).toFixed(2)+' / US$ '+(Number(result.budgetCents||0)/100).toFixed(2);}
   }catch(e){stateText.textContent='Erro: '+e.message}
   finally{busy=false;send.disabled=!enabled||!check.checked}
  };
