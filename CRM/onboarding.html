@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>Ricky AI — Informações da sua empresa</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#0a1119;color:#e9f6ef}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 15% 0%,#19342c 0%,transparent 48%),#0a1119}
+main{max-width:650px;margin:0 auto;padding:35px 20px 90px}.brand{color:#b9e8d0;font-weight:850;letter-spacing:-.05em;font-size:25px}.brand span{color:#75d8a5}
+header{padding:25px 0 17px}h1{font-size:clamp(28px,5vw,39px);letter-spacing:-.045em;line-height:1.15;margin:22px 0 10px}p{color:#9bb6ab;line-height:1.65;font-size:14px}
+.card{background:#121f28;border:1px solid #2a433c;border-radius:18px;padding:25px;box-shadow:0 20px 60px #0002}
+h2{font-size:19px;margin:0 0 8px}label{display:block;font-size:13px;font-weight:700;margin:22px 0 8px}.optional{color:#849e92;font-size:12px;font-weight:400}
+input,textarea{width:100%;font:inherit;color:#f1fff5;border:1px solid #375148;background:#0b1720;border-radius:10px;padding:13px 14px;outline:none}
+textarea{resize:vertical;min-height:100px}input:focus,textarea:focus{border-color:#80d5a6;box-shadow:0 0 0 3px #80d5a622}
+.hint{font-size:12px;color:#a8beb4;margin:6px 0}.prefill{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.chip{background:#20382f;color:#c6efda;border:1px solid #3a6450;border-radius:30px;padding:8px 12px;font-size:12px}
+.checks{display:flex;flex-wrap:wrap;gap:10px}.checks label{margin:0;background:#0d1921;border:1px solid #334c44;border-radius:10px;padding:11px 14px;cursor:pointer;font-weight:500}.checks input{width:auto;margin-right:7px;accent-color:#7cdbad}
+button{background:#87dfaf;border:0;color:#0b2219;font-weight:800;font-size:14px;padding:15px 22px;border-radius:11px;cursor:pointer;width:100%;margin-top:25px}button:disabled{opacity:.5;cursor:wait}
+.status{min-height:18px;margin-top:14px;font-size:13px;color:#f3b2a4}.success{color:#9fe8ba}.intro{margin-bottom:20px}.footer{font-size:12px;color:#789489;margin-top:18px}
+</style></head><body><main><div class="brand">ricky<span>.</span> AI</div>
+<header><h1>Só precisamos de algumas informações sobre seu negócio.</h1><p class="intro">Vamos preparar seu atendimento automático. É rapidinho e você não precisa entender de tecnologia.</p></header>
+<div class="card" id="panel"><h2 id="company">Carregando formulário...</h2><div class="prefill" id="prefill"></div>
+<form id="form" hidden>
+<label for="services">Serviços ou produtos e preços *</label>
+<p class="hint">Escreva o que você oferece e o valor. Pode copiar sua tabela de preços. Ex.: Corte — R$ 35; Barba — R$ 25. Se não houver preço fixo, escreva “sob consulta”.</p>
+<textarea id="services" maxlength="4500" required placeholder="Corte masculino — R$ 35&#10;Barba — R$ 25"></textarea>
+<label for="hours">Horário de funcionamento *</label>
+<input id="hours" maxlength="300" required placeholder="Ex.: Seg a sáb, das 9h às 18h">
+<label>Formas de pagamento *</label><div class="checks" id="payments"></div>
+<label for="address">Endereço <span class="optional">(se atende presencialmente)</span></label>
+<input id="address" maxlength="300" placeholder="Rua, número, bairro e cidade">
+<label for="link">Site, Instagram ou catálogo <span class="optional">(opcional)</span></label>
+<input id="link" type="url" maxlength="500" placeholder="https://...">
+<label for="policy">Informações importantes <span class="optional">(opcional)</span></label>
+<p class="hint">Por exemplo: atende com agendamento? Tem regra de cancelamento, entrega ou troca? Só escreva o que for necessário para não passarmos informações erradas.</p>
+<textarea id="policy" maxlength="1600" rows="3" placeholder="Ex.: Atendimento somente com agendamento."></textarea>
+<label for="notes">Quer acrescentar algo? <span class="optional">(opcional)</span></label>
+<textarea id="notes" maxlength="1600" rows="2" placeholder="Pode deixar em branco."></textarea>
+<button id="send" type="submit">Enviar informações</button><div class="status" id="status" role="status"></div>
+</form></div><p class="footer">Suas informações serão usadas para preparar o atendimento da sua empresa. Elas serão revisadas antes da ativação.</p>
+</main><script>
+(()=>{'use strict';
+const $=s=>document.querySelector(s),token=new URLSearchParams(location.search).get('token');
+const status=(s,good=false)=>{$('#status').textContent=s;$('#status').className=good?'status success':'status'};
+const labels=['Pix','Cartão','Dinheiro','Boleto','Outro'];
+labels.forEach(label=>{const l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.value=label;l.append(c,document.createTextNode(label));$('#payments').append(l)});
+async function request(method,body){const r=await fetch('/api/onboarding?token='+encodeURIComponent(token||''),{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,cache:'no-store'});const data=await r.json().catch(()=>({message:'Erro de conexão'}));if(!r.ok)throw Error(data.message||'Falha de comunicação');return data}
+async function init(){if(!token){$('#company').textContent='Link inválido';return}try{const d=await request('GET');$('#company').textContent=d.company;[d.segment].filter(Boolean).forEach(v=>{const s=document.createElement('span');s.className='chip';s.textContent=v;$('#prefill').append(s)});if(d.status==='recebido'){$('#company').textContent='Informações já recebidas!';return}$('#form').hidden=false;}catch(e){$('#company').textContent=e.message}}
+$('#form').addEventListener('submit',async e=>{e.preventDefault();const btn=$('#send');btn.disabled=true;status('Enviando...');
+try{const a={services:$('#services').value,hours:$('#hours').value,payments:[...$('#payments input:checked')].map(x=>x.value),address:$('#address').value,link:$('#link').value,policy:$('#policy').value,notes:$('#notes').value};
+if(!a.payments.length)throw Error('Selecione pelo menos uma forma de pagamento.');
+await request('POST',{answers:a});$('#form').hidden=true;$('#company').textContent='Tudo certo! Recebemos suas informações.';$('#prefill').replaceChildren();}catch(err){status(err.message)}finally{btn.disabled=false}});
+init();
+})();
+</script></body></html>
