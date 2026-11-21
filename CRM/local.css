@@ -367,3 +367,14 @@
 .onboard-edit-knowledge-question legend{font-size:12px;font-weight:700;color:#d0e9d8;padding:0 5px}
 .onboard-edit-knowledge-question label{display:inline-flex;align-items:center;margin:5px 14px 5px 0;gap:4px;font-size:12px;cursor:pointer}
 .onboard-edit-knowledge-question input{accent-color:#8cdbb0}
+
+/* Manual verification of photo/link price lists */
+.price-review-panel{margin:18px 0;padding:17px;border:1px solid rgba(125,193,153,.32);border-radius:14px;background:rgba(28,51,44,.36)}
+.price-review-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:9px}
+.price-review-heading strong{font-size:14px}.price-review-status{font-size:11px;color:#b2ddc7}
+.price-review-link{display:inline-flex;margin:4px 0 13px;color:#9cddb8;font-size:13px;text-decoration:underline;overflow-wrap:anywhere}
+.price-review-editor{width:100%;min-height:115px;margin:9px 0;padding:12px;background:rgba(6,22,22,.55);border:1px solid rgba(125,193,153,.3);color:inherit;border-radius:10px;font:inherit;font-size:13px}
+.price-review-gallery{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0}
+.price-review-image{display:block;max-width:100%}.price-review-image img{width:160px;height:145px;max-width:100%;object-fit:contain;background:#111;border:1px solid rgba(150,185,166,.3);border-radius:9px;cursor:zoom-in}
+.price-review-image img.expanded{width:min(100%,650px);height:auto;max-height:none}
+@media(max-width:600px){.price-review-panel{padding:12px}.price-review-image img{width:125px;height:125px}}
