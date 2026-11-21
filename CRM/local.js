@@ -674,6 +674,15 @@ const COSTS_ICONS={
 };
 const usd=value=>Number(value).toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2});
 const count=value=>Number(value||0).toLocaleString('pt-BR');
+const quotaText=q=>q&&Number(q.limit)>0?count(q.used)+' de '+count(q.limit)+' usados ('+count(q.remaining)+' restantes)':'Não disponível';
+function costProgress(q){
+ if(!q||!(Number(q.limit)>0))return null;
+ const block=dom('div','costs-simple-progress'),track=dom('div','costs-simple-track');
+ const percent=Math.min(100,Math.max(0,100*Number(q.used||0)/Number(q.limit)));
+ const bar=dom('span');bar.style.width=percent+'%';track.append(bar);
+ const label=dom('small','',Math.round(percent)+'% utilizado · '+Math.round(100-percent)+'% restante');
+ block.append(track,label);return block;
+}
 function providerIcon(provider){
  const settings=COSTS_ICONS[provider];
  const icon=dom('span','costs-provider-icon costs-provider-'+provider,settings.fallback);
@@ -688,10 +697,12 @@ function costMetric(label,value,highlight=false){
  line.append(dom('span','',label),dom('strong','',String(value)));
  return line;
 }
-function costCard({provider,title,subtitle,connected,mainLabel,mainValue,secondLabel,secondValue,extraLabel,extraValue,details,link,linkLabel,attention}){
+function costCard({provider,title,subtitle,connected,mainLabel,mainValue,secondLabel,secondValue,extraLabel,extraValue,details,link,linkLabel,attention,pricing,progress,warning}){
  const card=dom('article','costs-service');
  const head=dom('div','costs-service-head'),left=dom('div','costs-service-name'),labels=dom('div','costs-service-labels');
- labels.append(dom('strong','',title),dom('small','',subtitle));left.append(providerIcon(provider),labels);
+ labels.append(dom('strong','',title),dom('small','',subtitle));
+ if(pricing)labels.append(dom('span','costs-pricing',pricing));
+ left.append(providerIcon(provider),labels);
  const status=dom('span','costs-state '+(connected?'connected':'offline')+(attention?' attention':''),attention?'Atenção':connected?'Configurado':'Sem conexão');
  head.append(left,status);card.append(head);
  const stats=dom('div','costs-card-metrics');
@@ -699,6 +710,8 @@ function costCard({provider,title,subtitle,connected,mainLabel,mainValue,secondL
  if(secondLabel)stats.append(costMetric(secondLabel,secondValue));
  if(extraLabel)stats.append(costMetric(extraLabel,extraValue));
  card.append(stats);
+ if(progress){const bar=costProgress(progress);if(bar)card.append(bar)}
+ if(warning)card.append(dom('p','costs-card-warning',warning));
  const disclosure=dom('details','costs-card-details');
  const summary=dom('summary','','Ver detalhes');
  disclosure.append(summary);
@@ -735,39 +748,39 @@ async function loadCosts(){
   $('#costsAiRemaining').textContent=count(ai.requestsMonth.remaining)+' solicitações disponíveis no CRM';
   const cards=$('#costsCards');cards.replaceChildren();
   cards.append(
-   costCard({provider:'openai',title:'OpenAI',subtitle:'Ricky AI · respostas e análises',connected:ai.connected,attention:!!aiBudget.warning,
-    mainLabel:'Fatura OpenAI · mês',mainValue:ai.official?usd(ai.billedAmount):'Não disponível',
-    secondLabel:'Solicitações · mês',secondValue:count(ai.requestsMonth.used)+' / '+count(ai.requestsMonth.limit),
-    extraLabel:'Tokens medidos',extraValue:Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)>0?count(Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)):'Aguardando novos usos',
-    details:[{label:'Consultas hoje',value:count(ai.requestsDay.used)+' / '+count(ai.requestsDay.limit)},
-     {label:'Tokens entrada / saída',value:Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)>0?count(ai.tokens?.inputMonth)+' / '+count(ai.tokens?.outputMonth):'Sem registros posteriores à atualização',note:'Solicitações antigas ou interrompidas podem contar no limite sem informar tokens.'},
-     {label:'Reserva interna · mês',value:hasBudget?usd(Number(aiBudget.reservedCents||0)/100)+' / '+usd(Number(aiBudget.limitCents)/100):'Não configurada',note:'Reserva preventiva das novas chamadas. Não é o valor cobrado pela OpenAI.'},
-     {label:'Fonte do gasto',value:ai.billingSource||'Não conectada'}],
-    link:'https://platform.openai.com/usage',linkLabel:'Abrir OpenAI'}),
-   costCard({provider:'maps',title:'Google Maps',subtitle:'Places · busca de negócios',connected:places.connected,
-    mainLabel:'Chamadas · mês',mainValue:count(places.callsMonth.used)+' / '+count(places.callsMonth.limit),
-    secondLabel:'Chamadas · hoje',secondValue:count(places.callsDay.used),
-    extraLabel:'Custo oficial',extraValue:'Não conectado',
-    details:[{label:'Varreduras · mês',value:count(places.scansMonth.used)+' / '+count(places.scansMonth.limit)},
-     {label:'Faturamento do Google',value:'Não conectado',note:'Os contadores são apenas do Ricky CRM; não são a fatura Google.'}],
-    link:'https://console.cloud.google.com/billing',linkLabel:'Abrir Google Cloud'}),
-   costCard({provider:'brave',title:'Brave Search',subtitle:'Busca do Radar antigo',connected:brave.connected,
-    mainLabel:'Buscas · mês',mainValue:brave.requestsMonth?count(brave.requestsMonth.used)+' / '+count(brave.requestsMonth.limit):'Não disponível',
-    secondLabel:'Buscas · hoje',secondValue:brave.requestsDay?count(brave.requestsDay.used):'—',
-    extraLabel:'Custo oficial',extraValue:'Não conectado',
-    details:[{label:'Reserva interna acumulada',value:brave.reservedBudgetCents?usd(Number(brave.reservedBudgetCents.used)/100):'Não configurada',note:'Não é uma cobrança real do Brave.'},
-     {label:'Faturamento do Brave',value:'Não conectado'}],
-    link:'https://api-dashboard.search.brave.com/',linkLabel:'Abrir Brave'}),
-   costCard({provider:'upstash',title:'Upstash',subtitle:'Banco Redis · contadores',connected:data.upstash.connected,
-    mainLabel:'Conexão',mainValue:data.upstash.connected?'Configurada':'Sem conexão',
-    secondLabel:'Consumo oficial',secondValue:'Não conectado',
-    details:[{label:'Uso do Upstash',value:'Consultar painel externo',note:'A API do Ricky não coleta consumo total nem fatura do Redis.'}],
-    link:'https://console.upstash.com/',linkLabel:'Abrir Upstash'}),
-   costCard({provider:'vercel',title:'Vercel',subtitle:'Hospedagem do Ricky CRM',connected:data.vercel.connected,
-    mainLabel:'Hospedagem',mainValue:'Configurada',
-    secondLabel:'Consumo oficial',secondValue:'Não conectado',
-    details:[{label:'Faturamento da Vercel',value:'Consultar painel externo',note:'A API do Ricky não coleta a fatura de hospedagem.'}],
-    link:'https://vercel.com/dashboard',linkLabel:'Abrir Vercel'})
+   costCard({provider:'openai',title:'OpenAI',subtitle:'Cria abordagens e ajuda a analisar clientes. Modelo padrão: GPT-4.1 mini.',pricing:'Pago por uso · saldo informado: US$ 4,65 (não sincronizado)',connected:ai.connected,attention:!!aiBudget.warning,
+    mainLabel:'Gasto oficial neste mês',mainValue:ai.official?usd(ai.billedAmount):'Aguardando integração',
+    secondLabel:'Análises disponíveis no CRM',secondValue:quotaText(ai.requestsMonth),progress:ai.requestsMonth,
+    warning:'O saldo de US$ 4,65 foi informado manualmente. Não subtraímos a fatura mensal desse saldo porque não sabemos quando ele foi consultado. O modelo ativo pode ser alterado na Vercel.',
+    details:[{label:'Análises hoje',value:quotaText(ai.requestsDay)},
+     {label:'Tokens registrados neste mês',value:count(Number(ai.tokens?.inputMonth||0)+Number(ai.tokens?.outputMonth||0)),note:'Contador do CRM; não é uma cobrança.'},
+     {label:'Limite interno de reserva',value:hasBudget?usd(Number(aiBudget.reservedCents||0)/100)+' / '+usd(Number(aiBudget.limitCents)/100):'Não configurado',note:'Reserva de segurança, diferente de dinheiro gasto.'},
+     {label:'Consulta do custo oficial',value:ai.billingSource||'Indisponível'}],
+    link:'https://platform.openai.com/usage',linkLabel:'Conferir saldo e fatura'}),
+   costCard({provider:'maps',title:'Google Maps',subtitle:'Encontra empresas, endereços e avaliações para o Radar.',pricing:'Tem franquias gratuitas por serviço · excedentes podem ser cobrados',connected:places.connected,
+    mainLabel:'Chamadas do CRM neste mês',mainValue:quotaText(places.callsMonth),progress:places.callsMonth,
+    secondLabel:'Cobrança real do Google',secondValue:'Ainda não integrada',
+    details:[{label:'Chamadas hoje',value:count(places.callsDay.used)},
+     {label:'Varreduras do mês',value:quotaText(places.scansMonth)},
+     {label:'Importante',value:'200 é o limite interno do CRM',note:'Não confundir com franquia gratuita ou limite oficial do Google Cloud.'}],
+    link:'https://console.cloud.google.com/billing',linkLabel:'Ver gastos no Google Cloud'}),
+   costCard({provider:'brave',title:'Brave Search',subtitle:'Pesquisa sites e informações de negócios na internet.',pricing:'Plano com cota e possíveis cobranças · conferir contrato',connected:brave.connected,
+    mainLabel:'Buscas do CRM neste mês',mainValue:brave.requestsMonth?quotaText(brave.requestsMonth):'Não disponível',progress:brave.requestsMonth,
+    secondLabel:'Cobrança real do Brave',secondValue:'Ainda não integrada',
+    details:[{label:'Buscas hoje',value:brave.requestsDay?count(brave.requestsDay.used):'—'},
+     {label:'Reserva interna',value:brave.reservedBudgetCents?usd(Number(brave.reservedBudgetCents.used)/100):'Não configurada',note:'Reserva interna não significa custo cobrado.'}],
+    link:'https://api-dashboard.search.brave.com/',linkLabel:'Conferir plano e custos'}),
+   costCard({provider:'upstash',title:'Upstash',subtitle:'Guarda contadores e ajuda a controlar os limites do CRM.',pricing:'Plano gratuito disponível · excedentes dependem do plano',connected:data.upstash.connected,
+    mainLabel:'Situação do serviço',mainValue:data.upstash.connected?'Configurado':'Sem conexão',
+    secondLabel:'Uso e gasto reais',secondValue:'Ainda não integrados',
+    details:[{label:'Medição',value:'Painel do Upstash',note:'O CRM não recebe dados de faturamento desse serviço.'}],
+    link:'https://console.upstash.com/',linkLabel:'Conferir uso no Upstash'}),
+   costCard({provider:'vercel',title:'Vercel',subtitle:'Hospeda o Ricky CRM e executa suas funções online.',pricing:'Plano gratuito disponível · planos pagos e excedentes possíveis',connected:data.vercel.connected,
+    mainLabel:'Situação do site',mainValue:'Hospedagem configurada',
+    secondLabel:'Uso e gasto reais',secondValue:'Ainda não integrados',
+    details:[{label:'Medição',value:'Painel da Vercel',note:'O CRM não recebe dados de faturamento desse serviço.'}],
+    link:'https://vercel.com/dashboard',linkLabel:'Conferir uso na Vercel'})
+
   );
  }catch(e){
   $('#costsUpdated').textContent='Falha ao atualizar';
