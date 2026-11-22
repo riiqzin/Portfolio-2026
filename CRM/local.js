@@ -1430,6 +1430,20 @@ async function createOnboarding(e){
 
 function bind(){
  window.addEventListener('hashchange',setNav);
+ const radarVisual=$('#radarVisual'),motionButton=$('#radarMotionToggle'),reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
+ const motionPref=localStorage.getItem('ricky:radar:motion-v1');
+ let radarMoving=motionPref==='on'||(motionPref!=='off'&&!reduced);
+ const setRadarMotion=()=>{
+  radarVisual.classList.toggle('radar-paused',!radarMoving);
+  radarVisual.classList.toggle('radar-force-motion',radarMoving&&reduced);
+  motionButton.setAttribute('aria-pressed',String(radarMoving));
+  motionButton.setAttribute('aria-label',radarMoving?'Pausar movimento do radar':'Ativar movimento do radar');
+  motionButton.title=radarMoving?'Pausar animação':'Ativar animação';
+  motionButton.textContent=radarMoving?'Ⅱ':'▶';
+  $('#radarSignalText').textContent=radarMoving?'SINAL ATIVO':'SINAL EM PAUSA';
+ };
+ motionButton.addEventListener('click',()=>{radarMoving=!radarMoving;try{localStorage.setItem('ricky:radar:motion-v1',radarMoving?'on':'off')}catch{}setRadarMotion()});
+ setRadarMotion();
  $$('[data-client-view]').forEach(button=>button.addEventListener('click',()=>{clientView=button.dataset.clientView;$$('[data-client-view]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));renderClients()}));
  $('#loginForm').addEventListener('submit',e=>{e.preventDefault();signIn()});
  $('#refreshApp').onclick=()=>refresh().then(()=>toast('Carteira atualizada.')).catch(e=>toast(e.message));
