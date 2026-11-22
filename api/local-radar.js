@@ -104,6 +104,32 @@ export function createHandler({env=process.env,fetcher=fetch,clock=()=>new Date(
   const countryCode=String(body?.countryCode||'BR').trim().toUpperCase();
   const country=COUNTRIES[countryCode];
   if(!country)return json({message:'País não suportado. Escolha uma opção da lista.'},400);
+  // Re-fetch stored Place IDs on demand. Google Places permits persistent Place IDs,
+  // not a persistent offline cache of business names, ratings and contact details.
+  // Details are requested only after the dashboard user explicitly approves the billed refresh.
+  if(body?.action==='restore-history'){
+   const placeIds=body?.placeIds;
+   if(!Array.isArray(placeIds)||placeIds.length<1||placeIds.length>8||placeIds.some(id=>typeof id!=='string'||id.length<5||id.length>250||!/^[a-zA-Z0-9_-]+$/.test(id))||new Set(placeIds).size!==placeIds.length)return json({message:'IDs inválidos. Selecione de 1 a 8 registros históricos.'},400);
+   const fieldMask=FIELD_MASK.replace(/(?:^|,)nextPageToken,?/,'').replaceAll('places.','');
+   let calls=0;
+   const results=await Promise.all(placeIds.map(async id=>{
+    calls++;
+    try{
+     const response=await fetcher('https://places.googleapis.com/v1/places/'+encodeURIComponent(id),{
+      method:'GET',redirect:'error',signal:AbortSignal.timeout(10500),
+      headers:{'X-Goog-Api-Key':env.GOOGLE_PLACES_API_KEY,'X-Goog-FieldMask':fieldMask}
+     });
+     if(!response.ok)return null;
+     const raw=await response.json();
+     if(!raw?.id||raw.id!==id||!raw.displayName?.text)return null;
+     const place=normalizePlace(raw);
+     place.country_code=countryCode;
+     if(countryCode!=='BR')place.mobile_probable=false;
+     return assessCandidate(place);
+    }catch{return null}
+   }));
+   return json({results:results.filter(Boolean),missing:placeIds.filter(id=>!results.some(item=>item?.place_id===id)),calls,countryCode,refreshedAt:clock().toISOString(),source:'Google Places (New)'});
+  }
   if(!valid(niche)||!valid(city))return json({message:'Informe segmento e cidade válidos.'},400);
   if(body.goal&&body.goal!=='both')return json({message:'Modo disponível: Ambos.'},400);
   const queries=[...new Set(queryPlan(niche,city,body.neighborhoods,country))];
