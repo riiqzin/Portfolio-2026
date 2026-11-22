@@ -430,3 +430,30 @@ body.legacy-workbench{background:var(--bg)!important}
  .workbench .launch-scope{width:180px;height:180px;right:-42px;top:-28px}
  .workbench .radar-launch>strong{max-width:70%}
 }
+
+/* Historical scan retrieval: polished status instead of nameless records */
+.workbench .archive-refresh-empty,.workbench .archive-refresh-status{
+ grid-column:1/-1;width:100%;border:1px solid rgba(190,180,128,.32);
+ background:linear-gradient(125deg,rgba(42,47,33,.64),rgba(19,24,20,.92));
+ padding:22px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:12px;
+}
+.workbench .archive-refresh-empty strong,.workbench .archive-refresh-status strong{
+ font-size:17px;color:#e8d9b3;letter-spacing:-.015em;
+}
+.workbench .archive-refresh-empty p,.workbench .archive-refresh-status p{
+ margin:0;color:#b9c1ad;font-size:13px;line-height:1.65;max-width:770px;
+}
+.workbench .archive-refresh-empty .btn,.workbench .archive-refresh-status .btn{
+ margin-top:4px;min-width:180px;
+}
+.workbench .archive-refresh-status progress{
+ display:block;width:100%;height:5px;max-width:760px;
+ border:0;border-radius:0;background:#343c2c;accent-color:#e4c77d;
+}
+.workbench .archive-refresh-status progress::-webkit-progress-bar{background:#343c2c}
+.workbench .archive-refresh-status progress::-webkit-progress-value{background:#e4c77d;transition:width .22s ease}
+.workbench .archive-refresh-status progress::-moz-progress-bar{background:#e4c77d}
+@media(max-width:640px){
+ .workbench .archive-refresh-empty,.workbench .archive-refresh-status{padding:16px}
+ .workbench .archive-refresh-empty .btn,.workbench .archive-refresh-status .btn{width:100%}
+}
