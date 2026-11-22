@@ -47,7 +47,20 @@
 <section class="page" id="page-radar" hidden>
  <div class="page-intro inline-intro"><div><span class="eyebrow">PROSPECÇÃO</span><h1>Radar</h1></div><a class="quiet-link" href="#recent-scans" data-scroll-target="recent-scans">Varreduras recentes</a></div>
  <div class="radar-switch"><button type="button" class="switch active" id="switchLocal">⌖ Negócios locais</button><a href="/CRM/legacy.html#radar" target="_blank" rel="noopener noreferrer" class="switch" title="Radar antigo de e-commerce; leads desse modo não entram automaticamente na nova carteira">▣ E-commerce antigo ↗</a></div>
- <div class="scanner glass"><div class="scanner-art"><div class="scope-coordinates" aria-hidden="true"><span>N</span><span>E</span><span>S</span><span>W</span></div><span class="scanner-overline">ÁREA DE BUSCA</span><div class="scanner-circle"><i></i><i></i><b>r<span>RADAR</span></b></div><span class="scanner-art-foot" id="scopeState" role="status">PRONTO PARA CONFIGURAR</span></div>
+ <div class="scanner glass"><div class="scanner-art radar-motion-enabled" id="radarVisual">
+ <div class="scope-coordinates" aria-hidden="true"><span>N</span><span>E</span><span>S</span><span>W</span></div>
+ <div class="radar-visual-head"><span class="scanner-overline">ÁREA DE BUSCA</span><button id="radarMotionToggle" class="radar-motion-toggle" type="button" aria-pressed="true" aria-label="Pausar movimento do radar" title="Pausar ou retomar animação">Ⅱ</button></div>
+ <div class="scanner-circle" aria-label="Radar animado decorativo">
+  <span class="radar-ambient" aria-hidden="true"></span>
+  <span class="radar-ticks" aria-hidden="true"></span>
+  <span class="radar-gridline radar-gridline-h" aria-hidden="true"></span><span class="radar-gridline radar-gridline-v" aria-hidden="true"></span>
+  <i class="radar-sweep"></i><i class="radar-orbit"></i>
+  <span class="radar-blip radar-blip-1" aria-hidden="true"></span><span class="radar-blip radar-blip-2" aria-hidden="true"></span><span class="radar-blip radar-blip-3" aria-hidden="true"></span><span class="radar-blip radar-blip-4" aria-hidden="true"></span><span class="radar-blip radar-blip-5" aria-hidden="true"></span>
+  <span class="radar-pulse radar-pulse-1" aria-hidden="true"></span><span class="radar-pulse radar-pulse-2" aria-hidden="true"></span>
+  <b>r<span>RADAR</span></b>
+ </div>
+ <div class="radar-visual-bottom"><span class="radar-telemetry" aria-hidden="true"><span class="radar-live-dot"></span><span id="radarSignalText">SINAL ATIVO</span></span><span class="scanner-art-foot" id="scopeState" role="status">PRONTO PARA CONFIGURAR</span></div>
+ </div>
  <form id="localForm" class="scanner-form">
   <span class="eyebrow">NOVA VARREDURA</span><h2>Definir busca</h2><div class="radar-target"><strong>◎ Ambos · até 40 candidatos</strong><span>Landing pages + automação de atendimento. Não presumimos necessidade de bot nem ausência de site.</span></div>
   <div class="quick-niches"><button type="button" data-niche="Barbearias" class="chip active">✂ Barbearias</button><button type="button" data-niche="Clínicas de estética" class="chip">✦ Estética</button><button type="button" data-niche="Estúdios de tatuagem" class="chip">◈ Tatuagem</button><button type="button" data-niche="Personal trainer" class="chip">◎ Personal</button></div>
