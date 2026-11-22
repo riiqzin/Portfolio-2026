@@ -313,22 +313,80 @@ function renderClients(){
   }
  }
 }
+let archiveRestoreEpoch=0;
 function showArchivedScan(a){
- state.archiveView=a;
- state.niche=a.niche;state.city=a.city;
+ const epoch=++archiveRestoreEpoch;
+ state.archiveView=a;state.niche=a.niche;state.city=a.city;state.countryCode=a.countryCode||'BR';
  const snapshot=state.archiveSnapshots[a.id];
  if(Array.isArray(snapshot)){
-  state.results=snapshot.map(c=>({...c}));
-  state.archiveView=null;
-  $('#radarExplain').textContent='Varredura recuperada desta sessão · '+state.results.length+' negócios apresentados anteriormente. Nenhuma nova consulta ao Google.';
-  $('#radarUsage').textContent='Histórico recuperado sem consumir chamadas ou cotas de varredura.';
+  state.results=snapshot.map(c=>({...c}));state.archiveView=null;
+  $('#radarExplain').textContent='Resultados desta sessão · '+state.results.length+' estabelecimentos. Nenhuma consulta adicional ao Google.';
+  $('#radarUsage').textContent='Dados da varredura aberta nesta sessão. Para outras sessões, as informações precisam ser consultadas novamente.';
+  renderRadar();
  }else{
   state.results=[];
-  $('#radarExplain').textContent='Histórico de '+formatDate(a.date)+' · os nomes não foram arquivados. Referências para abrir no Maps, sem novas consultas ao Google.';
-  $('#radarUsage').textContent='A lista exata completa só permanece enquanto esta aba estiver aberta. O histórico permanente guarda IDs dos estabelecimentos e registros que você salvou na carteira.';
+  $('#radarExplain').textContent='Histórico de '+formatDate(a.date)+' · '+a.niche+' / '+a.city;
+  $('#radarUsage').textContent='Os identificadores foram preservados. Os dados completos precisam ser consultados novamente ao Google Places.';
+  renderRadar();
+  // The user's historical entries can require dozens of billable Place Details requests.
+  // Ask first; never silently turn an archive click into 50+ paid API calls.
+  const ids=Array.isArray(a.placeIds)?a.placeIds:[];
+  if(ids.length&&window.confirm('Restaurar '+ids.length+' estabelecimentos com nomes, avaliações, contatos e links atualizados?\\n\\nIsso fará até '+ids.length+' consultas ao Google Places, que podem gerar cobrança na sua conta Google Cloud.\\n\\nDeseja continuar?'))void refreshArchivedScan(a,epoch);
  }
- renderRadar();
  $('#radarResults').scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function refreshArchivedScan(a,epoch=archiveRestoreEpoch){
+ if(state.scanning)return;
+ const ids=[...new Set((Array.isArray(a.placeIds)?a.placeIds:[]).filter(id=>typeof id==='string'&&id.length>=5))];
+ if(!ids.length){renderArchivePlaceIds(a);return}
+ state.archiveView=null;state.results=[];
+ state.filterOutside=false;state.offerFilter='all';
+ $('#filterEligible').classList.add('active');$('#filterOutside').classList.remove('active');
+ $$('[data-offer]').forEach(b=>b.classList.toggle('active',b.dataset.offer==='all'));
+ for(const id of ['radarSearch','radarLink','radarContact','radarReviews'])$('#'+id).value=id==='radarSearch'?'':'all';
+ $('#minRating').value='0';$('#minReviews').value='0';
+ const area=$('#radarResults'),results=new Map(),missing=new Set();
+ let used=0;
+ const header=dom('section','archive-refresh-status');
+ const message=dom('strong','','Consultando registros no Google Maps…');
+ const note=dom('p','field-note','Carregando os estabelecimentos originais com informações atuais. Cada registro pode consumir uma chamada faturável.');
+ const progress=dom('progress','');progress.max=ids.length;progress.value=0;
+ header.append(message,note,progress);area.replaceChildren(header);
+ $('#radarExplain').textContent='Restaurando varredura · '+a.niche+' / '+a.city;
+ $('#radarUsage').textContent='Os dados estão sendo consultados novamente ao Google Places.';
+ for(let i=0;i<ids.length;i+=8){
+  if(epoch!==archiveRestoreEpoch)return;
+  const batch=ids.slice(i,i+8);
+  try{
+   const data=await backend('local-radar','POST',{action:'restore-history',countryCode:a.countryCode||'BR',niche:a.niche,city:a.city,placeIds:batch});
+   if(epoch!==archiveRestoreEpoch)return;
+   used+=data.calls||0;
+   for(const c of data.results||[])results.set(c.place_id,c);
+   for(const id of data.missing||[])missing.add(id);
+  }catch(e){
+   if(epoch!==archiveRestoreEpoch)return;
+   batch.forEach(id=>missing.add(id));
+   note.textContent='Alguns dados não puderam ser consultados: '+e.message+'. Você pode tentar novamente depois.';
+  }
+  const done=Math.min(i+8,ids.length);progress.value=done;
+  message.textContent='Recuperando '+done+' de '+ids.length+' estabelecimentos…';
+  $('#radarMatchCount').textContent=done+' / '+ids.length+' consultados';
+ }
+ if(epoch!==archiveRestoreEpoch)return;
+ const restored=ids.map(id=>results.get(id)||state.leads.find(x=>x.place_id===id)).filter(Boolean);
+ state.results=restored;
+ state.archiveView=null;
+ if(!missing.size&&results.size===ids.length)state.archiveSnapshots[a.id]=restored.map(c=>({...c}));
+ $('#radarExplain').textContent='Histórico de '+formatDate(a.date)+' · '+restored.length+' negócios exibidos com dados atualizados. '+(missing.size?missing.size+' registros não puderam ser recuperados.':'');
+ $('#radarUsage').textContent=used+' consultas ao Google Places nesta atualização (sujeitas à cobrança). As informações podem ter mudado desde a busca original.';
+ renderRadar();
+ if(missing.size){
+  const warning=dom('section','archive-refresh-status');
+  warning.append(dom('strong','','Não foi possível atualizar '+missing.size+' registros.'));
+  const retry=dom('button','btn btn-outline compact','Tentar atualizar novamente');retry.type='button';
+  retry.onclick=()=>{if(window.confirm('Nova tentativa pode gerar até '+ids.length+' chamadas cobradas pelo Google Places. Continuar?'))void refreshArchivedScan(a,++archiveRestoreEpoch)};
+  warning.append(retry);area.prepend(warning);
+ }
 }
 function renderArchive(){
  const box=$('#radarArchive');box.replaceChildren();
@@ -336,7 +394,7 @@ function renderArchive(){
  for(const a of state.archive){
   const b=dom('button','archive-item');b.type='button';
   const hasIds=Array.isArray(a.placeIds)&&a.placeIds.length>0;
-  b.append(dom('small','',formatDate(a.date)+' · '+(COUNTRY_DATA[a.countryCode||'BR']?.flag||'🌍')+' GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' referências · abrir histórico (sem custo de API)'));
+  b.append(dom('small','',formatDate(a.date)+' · '+(COUNTRY_DATA[a.countryCode||'BR']?.flag||'🌍')+' GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' negócios · reabrir resultados'));
   b.title=hasIds||state.archiveSnapshots[a.id]?'Abrir os resultados disponíveis sem usar o Google Places.':'Pesquisa antiga sem lista nem identificadores salvos. Repetir não é automático.';
   b.addEventListener('click',()=>showArchivedScan(a));
   box.append(b);
@@ -344,60 +402,18 @@ function renderArchive(){
 }
 function renderArchivePlaceIds(a){
  const area=$('#radarResults');area.replaceChildren();
- const ids=Array.isArray(a.placeIds)?a.placeIds:[];
- if(!ids.length){
-  area.innerHTML=placeholder('Histórico anterior sem lista recuperável','Esta busca não possui referências dos estabelecimentos. Nenhuma consulta ao Google foi realizada.');
-  $('#radarMatchCount').textContent='Histórico antigo · 0 consultas consumidas';
-  return;
- }
- const saved=ids.map((id,i)=>({id,i,lead:state.leads.find(x=>x.place_id===id)})).filter(x=>x.lead);
- const missing=ids.map((id,i)=>({id,i})).filter(x=>!state.leads.some(c=>c.place_id===x.id));
- const info=dom('section','archive-info');
- info.append(dom('strong','','Histórico da pesquisa · '+ids.length+' referências'));
- info.append(dom('p','','Esta busca antiga preservou os identificadores dos negócios, mas não seus nomes e avaliações. Apenas os negócios que você salvou aparecem com os dados da carteira. Não houve uma nova consulta nem cobrança da API.'));
- area.append(info);
- const savedSection=dom('section','archive-saved');
- savedSection.append(dom('strong','','Salvos na carteira ('+saved.length+')'));
- if(!saved.length)savedSection.append(dom('p','field-note','Nenhum destes estabelecimentos está salvo na carteira.'));
- for(const {lead} of saved){
-  const card=dom('div','archive-list-row');
-  const label=dom('div','archive-list-copy');
-  label.append(dom('strong','',lead.name),dom('small','',lead.city||'Cadastrado na carteira'));
-  const btn=dom('button','btn btn-outline compact','Abrir lead');btn.type='button';btn.onclick=()=>openLead(lead);
-  card.append(label,btn);savedSection.append(card);
- }
- area.append(savedSection);
- if(missing.length){
-  const group=dom('details','archive-missing');
-  const header=dom('summary','','Outros '+missing.length+' estabelecimentos · ver referências no Google Maps');
-  group.append(header);
-  group.append(dom('p','field-note','Os nomes não foram guardados nesta pesquisa. Abra o registro no Maps para conferir o negócio. Se tiver interesse, você pode cadastrá-lo manualmente sem refazer a varredura.'));
-  const list=dom('div','archive-list');
-  const counter=dom('div','archive-list-counter');const footer=dom('div','archive-list-footer');
-  let visible=0;const pageSize=10;
-  function appendPage(){
-   const next=Math.min(missing.length,visible+pageSize);
-   for(let k=visible;k<next;k++){
-    const {id,i}=missing[k],row=dom('div','archive-list-row');
-    const label=dom('div','archive-list-copy');
-    label.append(dom('strong','','Registro '+String(i+1).padStart(2,'0')),dom('small','','Nome disponível no Google Maps'));
-    const actions=dom('div','archive-list-actions');
-    const query=encodeURIComponent(a.niche+' '+a.city),maps=dom('a','btn btn-outline compact','Abrir no Maps ↗');
-    const url='https://www.google.com/maps/search/?api=1&query='+query+'&query_place_id='+encodeURIComponent(id);
-    maps.href=url;maps.rel='noopener noreferrer';maps.target='_blank';
-    const register=dom('button','btn btn-outline compact','Cadastrar');register.type='button';
-    register.title='Confira o nome no Google Maps antes de preencher os dados';
-    register.onclick=()=>openLead({place_id:id,maps_url:url,city:a.city});
-    actions.append(maps,register);row.append(label,actions);list.append(row);
-   }
-   visible=next;counter.textContent='Mostrando '+visible+' de '+missing.length+' registros sem cadastro';
-   more.hidden=visible>=missing.length;
-  }
-  const more=dom('button','btn btn-outline compact','Mostrar mais 10');more.type='button';more.onclick=appendPage;
-  footer.append(counter,more);group.append(list,footer);area.append(group);
-  group.addEventListener('toggle',()=>{if(group.open&&!visible)appendPage()});
- }
- $('#radarMatchCount').textContent=ids.length+' referências históricas · '+saved.length+' salvos · 0 consultas consumidas';
+ const count=Array.isArray(a.placeIds)?a.placeIds.length:0;
+ const section=dom('section','archive-refresh-empty');
+ section.append(dom('strong','','Reabrir resultados completos'));
+ section.append(dom('p','','Esta varredura tem '+count+' identificadores preservados. Para exibir os mesmos cards da pesquisa, com nome, nota, avaliações, contato e site atualizados, precisamos consultar novamente o Google Places.'));
+ if(count){
+  const button=dom('button','btn btn-primary compact','Atualizar '+count+' estabelecimentos');
+  button.type='button';
+  button.onclick=()=>{if(window.confirm('Consultar até '+count+' estabelecimentos no Google Places? Pode haver cobrança de até '+count+' chamadas.'))void refreshArchivedScan(a,++archiveRestoreEpoch)};
+  section.append(button);
+ }else section.append(dom('p','field-note','Esta pesquisa antiga não possui identificadores recuperáveis.'));
+ area.append(section);
+ $('#radarMatchCount').textContent=count+' referências preservadas · atualização sob demanda';
 }
 function resultsReason(c){
  const p=priority(c);
@@ -463,6 +479,7 @@ async function checkPlaces(){
 }
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function scan(ev){
+ ++archiveRestoreEpoch;
  ev.preventDefault();if(state.scanning||!state.placesReady)return;
  state.scanning=true;$('#page-radar').classList.add('is-scanning');$('#scopeState').textContent='VARREDURA EM ANDAMENTO';state.filterOutside=false;state.archiveView=null;
  $('#filterEligible').classList.add('active');$('#filterOutside').classList.remove('active');
