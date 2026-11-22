@@ -1436,6 +1436,8 @@ function bind(){
  const setRadarMotion=()=>{
   radarVisual.classList.toggle('radar-paused',!radarMoving);
   radarVisual.classList.toggle('radar-force-motion',radarMoving&&reduced);
+  const centralRadar=$('#centralRadarLaunch');
+  if(centralRadar){centralRadar.classList.toggle('radar-paused',!radarMoving);centralRadar.classList.toggle('radar-force-motion',radarMoving&&reduced)}
   motionButton.setAttribute('aria-pressed',String(radarMoving));
   motionButton.setAttribute('aria-label',radarMoving?'Pausar movimento do radar':'Ativar movimento do radar');
   motionButton.title=radarMoving?'Pausar animação':'Ativar animação';
