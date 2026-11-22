@@ -379,3 +379,54 @@ body.legacy-workbench{background:var(--bg)!important}
 @media(max-width:840px){.workbench .sidebar{display:flex;flex-direction:column;align-items:stretch;height:auto}.workbench .logo{display:flex;flex-shrink:0}.workbench .logo-name{display:flex}.workbench .top-actions .conn{display:flex}.workbench .main-nav{width:auto;flex:initial}.workbench .main-nav a{min-width:max-content}.workbench .top-actions{justify-content:flex-end}.workbench .scanner-art{min-height:180px}}
 @media(max-width:550px){.workbench .top-actions .conn{font-size:11px;gap:6px}.workbench .top-actions{gap:8px}.workbench .topbar{padding-inline:16px}.workbench .radar-country-head .globe-open{font-size:12px}.workbench .scanner-form label .muted-inline{display:inline}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}.workbench *,.workbench *:before,.workbench *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.workbench button:active{translate:none}.launch-scope i{transform:none!important}}
+
+/* CENTRAL · live micro-radar. Runs independently of the full Radar page. */
+.workbench .radar-launch{transition:border-color .25s ease,background-color .25s ease,box-shadow .25s ease;will-change:auto}
+.workbench .radar-launch:focus-visible{outline:2px solid #d5c283;outline-offset:4px}
+.workbench .radar-launch:hover,.workbench .radar-launch:focus-visible{border-color:rgba(215,195,126,.74);box-shadow:inset 0 0 32px rgba(217,206,136,.055)}
+.workbench .radar-launch>.eyebrow,.workbench .radar-launch>strong,.workbench .radar-launch>span:last-child{position:relative;z-index:3}
+.workbench .launch-scope{isolation:isolate;z-index:1;pointer-events:none;background:radial-gradient(circle,#3c4229 0%,rgba(35,42,27,.1) 62%,transparent 73%);box-shadow:inset 0 0 22px rgba(216,196,116,.035)}
+.workbench .launch-scope::before,.workbench .launch-scope::after{pointer-events:none}
+.workbench .launch-scope .launch-orbit{position:absolute;border-radius:50%;border:1px dashed rgba(221,209,147,.24);pointer-events:none}
+.workbench .launch-scope .launch-orbit-one{inset:10%;animation:central-orbit 29s linear infinite}
+.workbench .launch-scope .launch-orbit-two{inset:31%;border-style:solid;border-color:rgba(221,209,147,.15)}
+.workbench .launch-scope .launch-grid{position:absolute;z-index:1;pointer-events:none}
+.workbench .launch-scope .launch-grid-h{left:8%;width:84%;height:1px;top:50%;background:linear-gradient(90deg,transparent,rgba(238,219,149,.16),transparent)}
+.workbench .launch-scope .launch-grid-v{top:8%;height:84%;width:1px;left:50%;background:linear-gradient(180deg,transparent,rgba(238,219,149,.15),transparent)}
+.workbench .launch-scope i.launch-sweep{position:absolute;inset:0;z-index:2;transform-origin:50% 50%;transform:rotate(0deg);border-radius:50%;background:conic-gradient(from 0deg,rgba(233,215,153,.46),rgba(212,201,132,.20) 32deg,rgba(215,207,142,.08) 65deg,transparent 105deg,transparent 360deg);animation:central-sweep 7.5s linear infinite!important;transition:none}
+.workbench .radar-launch:hover .launch-scope i.launch-sweep,.workbench .radar-launch:focus-visible .launch-scope i.launch-sweep{animation-duration:3.8s!important}
+.workbench .launch-scope i.launch-sweep::after{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(253,237,171,.50) 0deg,transparent 2deg,transparent 360deg)}
+.workbench .launch-scope .launch-blip{position:absolute;z-index:3;width:5px;height:5px;border-radius:50%;background:#f2df9d;box-shadow:0 0 10px rgba(246,226,140,.6);animation:central-blip 7.5s ease-in-out infinite;opacity:.12}
+.workbench .launch-scope .launch-blip-one{top:25%;left:58%;animation-delay:-5s}
+.workbench .launch-scope .launch-blip-two{top:62%;left:24%;animation-delay:-2s}
+.workbench .launch-scope .launch-blip-three{top:72%;left:71%;animation-delay:-6.5s}
+.workbench .launch-scope .launch-blip::after{content:"";position:absolute;inset:-5px;border:1px solid rgba(238,228,156,.23);border-radius:50%}
+.workbench .launch-scope .launch-pulse{position:absolute;z-index:2;inset:44%;border-radius:50%;border:1px solid rgba(230,219,142,.34);opacity:0;animation:central-pulse 6.2s ease-out infinite}
+.workbench .launch-scope .launch-pulse-two{animation-delay:3.1s}
+.workbench .launch-scope b{position:relative;z-index:4;text-shadow:0 0 12px rgba(243,220,132,.5);animation:central-center 4.5s ease-in-out infinite}
+@keyframes central-sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes central-orbit{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+@keyframes central-blip{0%,10%,66%,100%{opacity:.12;transform:scale(.8)}21%,28%{opacity:1;transform:scale(1.35)}42%{opacity:.43;transform:scale(1)}}
+@keyframes central-pulse{0%{opacity:.44;transform:scale(.4)}75%,100%{opacity:0;transform:scale(8)}}
+@keyframes central-center{0%,100%{opacity:.75}50%{opacity:1}}
+.workbench .radar-launch.radar-paused .launch-scope i.launch-sweep,
+.workbench .radar-launch.radar-paused .launch-scope .launch-orbit,
+.workbench .radar-launch.radar-paused .launch-scope .launch-blip,
+.workbench .radar-launch.radar-paused .launch-scope .launch-pulse,
+.workbench .radar-launch.radar-paused .launch-scope b{animation-play-state:paused!important}
+@media(prefers-reduced-motion:reduce){
+ .workbench .radar-launch:not(.radar-force-motion) .launch-scope i.launch-sweep,
+ .workbench .radar-launch:not(.radar-force-motion) .launch-scope .launch-orbit,
+ .workbench .radar-launch:not(.radar-force-motion) .launch-scope .launch-blip,
+ .workbench .radar-launch:not(.radar-force-motion) .launch-scope .launch-pulse,
+ .workbench .radar-launch:not(.radar-force-motion) .launch-scope b{animation:none!important}
+ .workbench .radar-launch.radar-force-motion:not(.radar-paused) .launch-scope i.launch-sweep{animation:central-sweep 7.5s linear infinite!important}
+ .workbench .radar-launch.radar-force-motion:not(.radar-paused) .launch-scope .launch-orbit-one{animation:central-orbit 29s linear infinite!important}
+ .workbench .radar-launch.radar-force-motion:not(.radar-paused) .launch-scope .launch-blip{animation:central-blip 7.5s ease-in-out infinite!important}
+ .workbench .radar-launch.radar-force-motion:not(.radar-paused) .launch-scope .launch-pulse{animation:central-pulse 6.2s ease-out infinite!important}
+ .workbench .radar-launch.radar-force-motion:not(.radar-paused) .launch-scope b{animation:central-center 4.5s ease-in-out infinite!important}
+}
+@media(max-width:600px){
+ .workbench .launch-scope{width:180px;height:180px;right:-42px;top:-28px}
+ .workbench .radar-launch>strong{max-width:70%}
+}
