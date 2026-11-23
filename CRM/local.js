@@ -64,7 +64,7 @@ function closeCountryGlobe(){
  $('#countryGlobeModal').hidden=true;document.body.classList.remove('globe-modal-open');window.RickyGlobe?.close();$('#openCountryGlobe').focus();
 }
 
-const state={key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',countryCode:'BR',filterOutside:false,offerFilter:'all',todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],archiveSnapshots:Object.create(null),archiveView:null,gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
+const state={todaySelected:null,key:localStorage.getItem(KEY_NAME)||sessionStorage.getItem(KEY_NAME)||'',leads:[],results:[],niche:'Barbearias',city:'São Paulo, SP',countryCode:'BR',filterOutside:false,offerFilter:'all',todayFilter:'all',current:null,draft:null,editing:false,placesReady:false,scanning:false,archive:[],archiveSnapshots:Object.create(null),archiveView:null,gmail:{connected:false,canSend:false,items:[]},emailQueue:[],pendingSend:false,toastTimer:0,sequence:0,lastGmailSync:0,aiBusy:false,aiDraftEpoch:0};
 const VERIFY=[
  ['whatsapp_confirmed','WhatsApp confirmado (conferi o perfil)'],
  ['instagram_found','Tem Instagram (confirmei)'],
@@ -213,10 +213,11 @@ function dueFor(c){
 function getTodos(){
  const todos=[];
  for(const c of state.leads){
-  if(c.status==='novo')todos.push({c,type:'new',label:'Preparar abordagem',detail:'Ainda não abordado · escolha um ângulo e revise a mensagem',order:2});
-  else if(dueFor(c))todos.push({c,type:'followup',label:'Follow-up pendente',detail:'Último contato há '+daysSince(c.contacted_at)+' dias · confira a conversa antes de enviar',order:0});
-  else if(['respondeu','interessado'].includes(c.status))todos.push({c,type:'reply',label:c.status==='interessado'?'Oportunidade quente':'Responder contato',detail:'A conversa precisa de uma próxima ação',order:1});
-  else if(c.status==='proposta'&&c.followup_at&&Date.parse(c.followup_at)<=Date.now())todos.push({c,type:'reply',label:'Acompanhar proposta',detail:'Já passaram quatro dias desde a proposta · confira a conversa',order:1});
+  if(['fechou','sem_interesse'].includes(c.status))continue;
+  const meta={novo:['new','Iniciar contato','Salvo · pronto para abordar',3],abordado:['followup','Acompanhar','Contato realizado · aguardar resposta',2],respondeu:['reply','Continuar conversa','Respondeu · descobrir a necessidade',1],interessado:['reply','Negociar','Demonstrou interesse · definir próximo passo',0],proposta:['reply','Acompanhar proposta','Proposta enviada · negociar ou concluir',1]}[c.status];
+  if(!meta)continue;
+  const due=c.verified?.next_date&&Date.parse(c.verified.next_date+'T23:59:59')<Date.now();
+  todos.push({c,type:meta[0],label:meta[1],detail:due?'Próxima ação vencida · '+(c.verified?.next_action||'retomar contato'):meta[2],order:due?-1:meta[3]});
  }
  return todos.sort((a,b)=>a.order-b.order||new Date(b.c.updated_at)-new Date(a.c.updated_at));
 }
@@ -260,7 +261,7 @@ function actionCard(item){
  const left=dom('div','action-left'),icon=dom('div','action-icon',item.type==='followup'?'↻':item.type==='reply'?'✉':'✦'),copy=dom('div','action-copy');
  copy.append(dom('strong','',item.c.name),dom('p','',item.detail));
  left.append(icon,copy);
- const actions=dom('div','action-card-controls');const btn=dom('button','btn btn-outline compact',item.label+' ↗');btn.type='button';btn.addEventListener('click',()=>openLead(item.c));const remove=dom('button','btn btn-danger-quiet compact','Excluir');remove.type='button';remove.title='Excluir este lead da carteira';remove.addEventListener('click',()=>deleteLeadById(item.c.id));actions.append(btn,remove);article.append(left,actions);
+ const actions=dom('div','action-card-controls');const btn=dom('button','btn btn-outline compact',item.label+' ↗');btn.type='button';btn.addEventListener('click',()=>{state.todaySelected=item.c.id;location.hash='#hoje';renderToday()});const remove=dom('button','btn btn-danger-quiet compact','Excluir');remove.type='button';remove.title='Excluir este lead da carteira';remove.addEventListener('click',()=>deleteLeadById(item.c.id));actions.append(btn,remove);article.append(left,actions);
  return article;
 }
 function renderCentral(){
@@ -278,8 +279,59 @@ function renderToday(){
  const area=$('#todayList');area.replaceChildren();
  const todos=getTodos().filter(x=>state.todayFilter==='all'||x.type===state.todayFilter);
  if(!todos.length)area.innerHTML=placeholder('Nada pendente nesta lista','Seu próximo contato aparece aqui depois que você salva uma oportunidade.');
- else todos.forEach(x=>area.append(actionCard(x)));
+ else todos.forEach(x=>area.append(todayCard(x)));
 }
+const FLOW=['novo','abordado','respondeu','interessado','proposta','fechou'];
+const FLOW_NAMES=['Salvo','Contatado','Respondeu','Interesse','Proposta','Fechou'];
+const STEP_ACTIONS={novo:[['abordado','Marcar contato feito']],abordado:[['respondeu','Respondeu'],['followup','Registrar follow-up']],respondeu:[['interessado','Demonstrou interesse']],interessado:[['proposta','Enviei proposta']],proposta:[['fechou','Fechou!']]};
+const OPTIONS_OBJECTION=[['','Selecione'],['caro','Achou caro'],['ja_tem_sistema','Já tem outra solução'],['sem_orcamento','Sem orçamento'],['sem_interesse','Sem interesse'],['sumiu','Parou de responder'],['vai_ver','Disse que ia avaliar'],['outro','Outro']];
+const OPTIONS_NEXT=[['','Nenhum definido'],['aguardar','Aguardar resposta'],['followup','Fazer follow-up'],['demo','Mostrar exemplo'],['proposta','Enviar proposta'],['negociar','Negociar']];
+function todayCard(item){
+ const c=item.c,expanded=state.todaySelected===c.id,article=dom('article','today-lead');
+ const header=dom('div','today-lead-head'),info=dom('div','today-lead-info');
+ info.append(dom('strong','',c.name),dom('span','',[(c.verified?.prospect_niche||'Nicho não informado'),c.reviews==null?'Sem dados de avaliações':c.reviews+' avaliações',STATUSES[c.status]||'Novo'].join(' · ')));
+ const open=dom('button','btn btn-outline compact',expanded?'Fechar −':item.label+' →');
+ open.type='button';open.setAttribute('aria-expanded',String(expanded));open.onclick=()=>{state.todaySelected=expanded?null:c.id;renderToday()};
+ header.append(info,open);article.append(header);
+ if(expanded)article.append(workflow(c));
+ return article;
+}
+function workflow(c){
+ const area=dom('div','today-workflow'),index=Math.max(0,FLOW.indexOf(c.status));
+ const timeline=dom('div','today-timeline');
+ FLOW_NAMES.forEach((name,i)=>{const step=dom('div','today-timeline-step '+(i<=index?'completed':i===index+1?'next':'locked'));step.append(dom('span','today-step-number',i<=index?'✓':String(i+1)),dom('small','',name));timeline.append(step)});
+ area.append(timeline);
+ const subtitle={novo:'Envie sua primeira mensagem como preferir. Não é preciso registrá-la.',abordado:'Acompanhe o retorno. Se ele responder, avance.',respondeu:'Entenda o contexto da conversa antes de oferecer uma solução.',interessado:'Mostre o valor da sua solução e defina o próximo movimento.',proposta:'Continue a negociação até chegar a um desfecho.'}[c.status]||'Registre o andamento da conversa.';
+ area.append(dom('p','today-guidance',subtitle));
+ const noteLabel=dom('label','today-input-label','O que aconteceu na conversa?'),notes=dom('textarea');notes.rows=3;notes.maxLength=1500;notes.placeholder='Resumo do que o cliente disse, dúvidas, contexto...';notes.value=c.verified?.conversation_notes||'';noteLabel.append(notes);area.append(noteLabel);
+ const row=dom('div','today-fields'),nextLabel=dom('label','','Próxima ação'),next=dom('select'),dateLabel=dom('label','','Quando?'),date=dom('input');
+ for(const [value,name] of OPTIONS_NEXT){const o=dom('option','',name);o.value=value;next.append(o)}next.value=c.verified?.next_action||'';nextLabel.append(next);
+ date.type='date';date.value=c.verified?.next_date||'';dateLabel.append(date);row.append(nextLabel,dateLabel);area.append(row);
+ const extra=dom('details','today-optional'),sum=dom('summary','','Objeção, preço e outros detalhes (opcional)'),objectionLabel=dom('label','','Objeção / motivo da perda'),objection=dom('select');
+ for(const [value,name] of OPTIONS_OBJECTION){const o=dom('option','',name);o.value=value;objection.append(o)}
+ objection.value=c.verified?.objection||'';objectionLabel.append(objection);
+ const priceLabel=dom('label','today-checkbox'),price=dom('input');price.type='checkbox';price.checked=!!c.verified?.price_discussion;priceLabel.append(price,dom('span','','Já conversamos sobre preço'));extra.append(sum,objectionLabel,priceLabel);area.append(extra);
+ const buttons=dom('div','today-buttons'),feedback=dom('p','field-note',''),all=[];
+ const add=(label,style,handler)=>{const b=dom('button',style,label);b.type='button';b.onclick=handler;buttons.append(b);all.push(b)};
+ const persist=async(type)=>{
+  if(all.some(b=>b.disabled))return;
+  all.forEach(b=>b.disabled=true);feedback.textContent='Salvando...';
+  try{
+   const verified={...(c.verified||{}),conversation_notes:notes.value.trim(),next_action:next.value,next_date:date.value,objection:objection.value,price_discussion:price.checked};
+   const saved=await rpc('crm_local_save',{p_data:{...c,verified,place_id:c.place_id||null}});
+   if(type)await rpc('crm_local_action',{p_lead_id:saved.id,p_type:type,p_note:notes.value.trim()||'Etapa registrada pelo usuário',p_channel:c.channel||'whatsapp',p_offer:c.offer,p_angle:c.angle});
+   if(type==='fechou'||type==='sem_interesse')state.todaySelected=null;
+   await refresh();toast(type?'Etapa registrada.':'Informações salvas.');
+  }catch(e){feedback.textContent='Erro ao salvar: '+e.message;all.forEach(b=>b.disabled=false)}
+ };
+ add('Salvar anotações','btn btn-outline compact',()=>persist(null));
+ for(const [type,label] of STEP_ACTIONS[c.status]||[])add(label,'btn btn-primary compact',()=>persist(type));
+ if(c.status!=='novo')add('Encerrar sem fechar','btn btn-danger-quiet compact',()=>{extra.open=true;if(!objection.value){feedback.textContent='Informe o motivo de perda antes de encerrar.';objection.focus();return}void persist('sem_interesse')});
+ add('Editar cadastro','btn btn-outline compact',()=>openLead(c));
+ const number=normalizePhone(c.phone);if(number){const link=dom('a','btn btn-outline compact','WhatsApp ↗');link.href='https://wa.me/'+number;link.target='_blank';link.rel='noopener noreferrer';buttons.append(link)}
+ area.append(buttons,feedback);return area;
+}
+
 let clientView='board';
 function renderClients(){
  const previous=new Map([...$('#clientList').querySelectorAll('[data-lead-id]')].map(row=>[row.dataset.leadId,{status:row.dataset.status,rect:row.getBoundingClientRect()}]));
