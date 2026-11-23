@@ -328,10 +328,7 @@ function showArchivedScan(a){
   $('#radarExplain').textContent='Histórico de '+formatDate(a.date)+' · '+a.niche+' / '+a.city;
   $('#radarUsage').textContent='IDs preservados. Abrir o histórico não consulta o Google Places; atualização é opcional.';
   renderRadar();
-  // The user's historical entries can require dozens of billable Place Details requests.
-  // Ask first; never silently turn an archive click into 50+ paid API calls.
-  const ids=Array.isArray(a.placeIds)?a.placeIds:[];
-  if(ids.length&&window.confirm('Restaurar '+ids.length+' estabelecimentos com nomes, avaliações, contatos e links atualizados?\\n\\nIsso fará até '+ids.length+' consultas ao Google Places, que podem gerar cobrança na sua conta Google Cloud.\\n\\nDeseja continuar?'))void refreshArchivedScan(a,epoch);
+  // A leitura de históricos nunca dispara consultas externas automaticamente.
  }
  $('#radarResults').scrollIntoView({behavior:'smooth',block:'start'});
 }
