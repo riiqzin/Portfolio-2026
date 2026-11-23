@@ -26,6 +26,7 @@
   <a href="#clientes" data-nav="clientes"><span class="nav-symbol">♧</span> Pipeline</a>
   <a href="#implantacoes" data-nav="implantacoes"><span class="nav-symbol">✦</span> Implantações</a>
   <a href="#custos" data-nav="custos"><span class="nav-symbol">◫</span> Custos e APIs</a>
+  <a href="#configuracoes" data-nav="configuracoes"><span class="nav-symbol">⚙</span> Configurações</a>
  </nav>
  <div class="side-bottom"><span class="side-online"><i></i> CENTRAL PRIVADA</span><a href="../" target="_blank" rel="noopener">Meu portfólio ↗</a><button class="logout" id="logoutButton" type="button">Sair da conta ↗</button></div>
 </aside>
@@ -113,9 +114,23 @@
 </section>
 <section class="page" id="page-hoje" hidden>
  <div class="page-intro inline-intro"><div><span class="eyebrow">CONTATOS</span><h1>Pra hoje</h1></div></div>
+ <div id="todayReminders" class="today-reminders" hidden role="status" aria-live="polite"></div>
  <div class="today-tabs"><button class="chip active" data-today="all">Tudo</button><button class="chip" data-today="new">Para abordar</button><button class="chip" data-today="followup">Follow-ups</button><button class="chip" data-today="reply">Responderam</button></div>
  <div id="todayList" class="action-list"></div><details class="gmail-integrated glass" id="whatsappAI"><summary><span><strong>✦ Ricky AI · Resposta no WhatsApp</strong><small>Cole uma resposta recebida para entender o contexto e preparar sua resposta. Não envia nada.</small></span><span>Abrir assistente ↗</span></summary><div class="ai-reply-panel"><label class="textarea-label">Mensagem recebida<textarea id="aiIncoming" rows="4" maxlength="2500" placeholder="Cole aqui o que o cliente respondeu no WhatsApp..."></textarea></label><button id="analyzeReply" class="btn btn-primary compact" type="button">✦ Sugerir resposta</button><div class="ai-result" id="replyAIResult" hidden><strong id="replyAIClassification"></strong><p id="replyAISummary"></p><label class="textarea-label">Resposta sugerida (editável)<textarea id="replyAISuggestion" rows="4" maxlength="850"></textarea></label><button class="btn btn-outline compact" type="button" id="copyReplyAI">Copiar resposta</button><p class="field-note">Confira a conversa. O CRM não altera status ou envia mensagens por conta própria.</p></div><p class="field-note" id="replyAIStatus"></p></div></details>
  <details class="gmail-integrated glass" id="gmailDetails"><summary><span><strong>✉ Respostas do Gmail</strong><small>Sincronização e classificação automáticas para contatos por e-mail</small></span><span>Gerenciar ↗</span></summary><div class="gmail-in"><div class="gmail-toolbar"><span id="gmailState">Verificando conexão…</span><div><button class="btn btn-outline compact" type="button" id="gmailConnect">Conectar Gmail</button><button class="btn btn-outline compact" type="button" id="gmailSync">Sincronizar respostas</button></div></div><div id="gmailReplyList" class="gmail-replies"></div><p class="field-note">O Gmail reconhece somente mensagens de leads com e-mail registrado. Respostas de WhatsApp são marcadas manualmente.</p></div></details>
+</section>
+<section class="page" id="page-configuracoes" hidden>
+ <div class="page-intro"><span class="eyebrow">PREFERÊNCIAS</span><h1>Configurações</h1><p class="field-note">Organize o acompanhamento automático dos seus contatos.</p></div>
+ <div class="settings-panel glass">
+  <div class="settings-heading"><span class="settings-icon">◷</span><div><h2>Follow-ups automáticos</h2><p>O CRM calcula a próxima data assim que você registra um contato. Nenhuma mensagem é enviada automaticamente.</p></div></div>
+  <label class="setting-switch"><input type="checkbox" id="settingAutoFollowup" checked><span><strong>Agendar lembretes automaticamente</strong><small>Exibir os contatos pendentes em Pra Hoje</small></span></label>
+  <div class="setting-grid">
+   <label>Primeiro follow-up após <select id="settingFollowupDays"><option value="1">1 dia</option><option value="2">2 dias</option><option value="3">3 dias</option><option value="4">4 dias</option><option value="5">5 dias</option><option value="7">7 dias</option></select></label>
+   <label>Próximo follow-up após <select id="settingSecondDays"><option value="2">2 dias</option><option value="3">3 dias</option><option value="4">4 dias</option><option value="5">5 dias</option><option value="7">7 dias</option></select></label>
+  </div>
+  <label class="setting-switch"><input type="checkbox" id="settingDueHighlight" checked><span><strong>Destacar prazos vencidos e de hoje</strong><small>Contador e avisos na aba Pra Hoje e na Central</small></span></label>
+  <div class="settings-footer"><span id="settingsStatus" class="field-note">Preferências salvas neste navegador. Não enviamos WhatsApp automaticamente.</span><button type="button" class="btn btn-primary" id="saveFollowupSettings">Salvar configurações</button></div>
+ </div>
 </section>
 <section class="page" id="page-abordagens" hidden>
  <div class="page-intro inline-intro"><div><span class="eyebrow">MENSAGENS</span><h1>Abordagens</h1><p>Edite, copie e personalize.</p></div></div>
