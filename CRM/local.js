@@ -14,6 +14,47 @@ const daysSince=v=>v?Math.floor((Date.now()-Date.parse(v))/86400000):0;
 const formatStars=v=>Number.isFinite(Number(v))&&v!==null&&v!==''?Number(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
 const placeholder=(title,description)=>'<div class="action-card"><div class="action-left"><div class="action-icon">✧</div><div class="action-copy"><strong>'+escapeHTML(title)+'</strong><p>'+escapeHTML(description)+'</p></div></div></div>';
 const prefsKey='ricky:local:archive-v1';
+const FOLLOWUP_PREF_KEY='ricky:followups:settings-v1';
+function loadFollowupPrefs(){
+ try{
+  const p=JSON.parse(localStorage.getItem(FOLLOWUP_PREF_KEY)||'{}');
+  const safe=(n,fallback)=>[1,2,3,4,5,7].includes(Number(n))?Number(n):fallback;
+  return {enabled:p.enabled!==false,first:safe(p.first,2),second:safe(p.second,3),highlight:p.highlight!==false};
+ }catch{return {enabled:true,first:2,second:3,highlight:true}}
+}
+let followupPrefs=loadFollowupPrefs();
+function localDay(value){
+ const d=value?new Date(value):new Date();if(Number.isNaN(d.getTime()))return '';
+ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+ return y+'-'+m+'-'+day;
+}
+function plusCalendarDays(date,days){
+ const d=new Date(date);if(Number.isNaN(d.getTime()))return '';
+ d.setHours(12,0,0,0);d.setDate(d.getDate()+days);return localDay(d);
+}
+function scheduleFor(lead,type){
+ if(!followupPrefs.enabled||!['abordado','followup'].includes(type))return null;
+ const count=type==='followup'?Number(lead.followup_count||0):0;
+ if(type==='followup'&&count>=2)return null;
+ return {next_action:'followup',next_date:plusCalendarDays(new Date(),type==='followup'?followupPrefs.second:followupPrefs.first),auto_followup:true};
+}
+function dueInfo(c){
+ const d=c.verified?.next_date||'';
+ if(!d||!/^\d{4}-\d{2}-\d{2}$/.test(d))return null;
+ const today=localDay();return {date:d,overdue:d<today,today:d===today};
+}
+function renderDueNotice(){
+ const target=$('#todayReminders');if(!target)return;
+ const all=state.leads.filter(c=>!['fechou','sem_interesse'].includes(c.status)&&dueInfo(c));
+ const due=all.filter(c=>{const x=dueInfo(c);return x.overdue||x.today});
+ const late=due.filter(c=>dueInfo(c).overdue).length;
+ target.hidden=!followupPrefs.highlight||!due.length;
+ if(target.hidden){target.replaceChildren();return}
+ target.replaceChildren();
+ const copy=dom('div','today-reminder-copy');copy.append(dom('strong','',late?late+' atrasado(s) · '+(due.length-late)+' para hoje':due.length+' acompanhamento(s) para hoje'),dom('span','','Os lembretes aparecem ao abrir ou atualizar o CRM; o sistema não envia mensagens por você.'));
+ target.append(dom('span','today-reminder-icon','◷'),copy);
+}
+
 const COUNTRY_PREFS='ricky:radar:country-v1';
 const COUNTRY_DATA={
  BR:{city:'São Paulo, SP',areas:'',name:'Brasil',lang:'português',flag:'🇧🇷',terms:['Barbearias','Clínicas de estética','Estúdios de tatuagem','Personal trainer']},
@@ -216,17 +257,17 @@ function getTodos(){
   if(['fechou','sem_interesse'].includes(c.status))continue;
   const meta={novo:['new','Iniciar contato','Salvo · pronto para abordar',3],abordado:['followup','Acompanhar','Contato realizado · aguardar resposta',2],respondeu:['reply','Continuar conversa','Respondeu · descobrir a necessidade',1],interessado:['reply','Negociar','Demonstrou interesse · definir próximo passo',0],proposta:['reply','Acompanhar proposta','Proposta enviada · negociar ou concluir',1]}[c.status];
   if(!meta)continue;
-  const due=c.verified?.next_date&&Date.parse(c.verified.next_date+'T23:59:59')<Date.now();
+  const reminder=dueInfo(c);const due=!!(reminder&&(reminder.overdue||reminder.today));
   todos.push({c,type:meta[0],label:meta[1],detail:due?'Próxima ação vencida · '+(c.verified?.next_action||'retomar contato'):meta[2],order:due?-1:meta[3]});
  }
  return todos.sort((a,b)=>a.order-b.order||new Date(b.c.updated_at)-new Date(a.c.updated_at));
 }
 function setNav(){
  let page=(location.hash||'#central').replace('#','');
- if(!['central','radar','hoje','abordagens','clientes','implantacoes','custos'].includes(page))page='central';
+ if(!['central','radar','hoje','abordagens','clientes','implantacoes','custos','configuracoes'].includes(page))page='central';
  $$('.page').forEach(x=>x.hidden=x.id!=='page-'+page);
  $$('[data-nav]').forEach(a=>{a.classList.toggle('active',a.dataset.nav===page);if(a.dataset.nav===page)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
- $('#headerSection').textContent=({central:'Central',radar:'Radar Internacional',hoje:'Pra Hoje',abordagens:'Abordagens',clientes:'Pipeline',implantacoes:'Implantações',custos:'Custos & APIs'})[page];
+ $('#headerSection').textContent=({central:'Central',radar:'Radar Internacional',hoje:'Pra Hoje',abordagens:'Abordagens',clientes:'Pipeline',implantacoes:'Implantações',custos:'Custos & APIs',configuracoes:'Configurações'})[page];
  if(page==='hoje')loadGmail(true);
  if(page==='custos'&&state.key)void loadCosts();
  if(page==='implantacoes'&&state.key)void loadOnboardings();
@@ -234,6 +275,7 @@ function setNav(){
 async function refresh(){
  const list=await rpc('crm_local_list',{});
  state.leads=Array.isArray(list)?list:[];
+ renderDueNotice();
  $('#connectionState').innerHTML='<i></i> Sincronizado';
  $('#connectionState').classList.remove('error');
  render();
@@ -276,6 +318,7 @@ function renderCentral(){
  $('#experimentSummary').textContent=replies+' responderam · '+wins+' fecharam · resultados ainda exploratórios.';
 }
 function renderToday(){
+ renderDueNotice();
  const area=$('#todayList');area.replaceChildren();
  const todos=getTodos().filter(x=>state.todayFilter==='all'||x.type===state.todayFilter);
  if(!todos.length)area.innerHTML=placeholder('Nada pendente nesta lista','Seu próximo contato aparece aqui depois que você salva uma oportunidade.');
@@ -322,9 +365,9 @@ function todayCard(item){
  metrics.append(stars,reviews);header.append(metrics);
  const detail=dom('div','today-card-next');
  const date=String(c.verified?.next_date||'');
- const overdue=date&&Date.parse(date+'T23:59:59')<Date.now();
+ const due=dueInfo(c);const overdue=!!due?.overdue;
  const nextMap={aguardar:'Aguardar resposta',followup:'Enviar follow-up',demo:'Mostrar exemplo',proposta:'Enviar proposta',negociar:'Negociar'};
- if(date||c.verified?.next_action)detail.append(dom('span','today-next-label',overdue?'● RETORNO PENDENTE':'PRÓXIMA AÇÃO'),dom('strong','',nextMap[c.verified?.next_action]||'Acompanhar cliente'),dom('small','',date?'📅 '+todayDateLabel(date):'Sem data marcada'));
+ if(date||c.verified?.next_action)detail.append(dom('span','today-next-label',overdue?'● RETORNO ATRASADO':due?.today?'● PARA HOJE':'PRÓXIMA AÇÃO'),dom('strong','',nextMap[c.verified?.next_action]||'Acompanhar cliente'),dom('small','',date?'📅 '+todayDateLabel(date):'Sem data marcada'));
  else detail.append(dom('span','today-next-label','SITUAÇÃO ATUAL'),dom('strong','',item.label),dom('small','',item.detail));
  header.append(detail);
  const footer=dom('div','today-card-footer');
@@ -343,7 +386,12 @@ function workflow(c){
  area.append(timeline);
  const subtitle={novo:'Envie sua primeira mensagem como preferir. Não é preciso registrá-la.',abordado:'Acompanhe o retorno. Se ele responder, avance.',respondeu:'Entenda o contexto da conversa antes de oferecer uma solução.',interessado:'Mostre o valor da sua solução e defina o próximo movimento.',proposta:'Continue a negociação até chegar a um desfecho.'}[c.status]||'Registre o andamento da conversa.';
  area.append(dom('p','today-guidance',subtitle));
- const noteLabel=dom('label','today-input-label','O que aconteceu na conversa?'),notes=dom('textarea');notes.rows=3;notes.maxLength=1500;notes.placeholder='Resumo do que o cliente disse, dúvidas, contexto...';notes.value=c.verified?.conversation_notes||'';noteLabel.append(notes);area.append(noteLabel);
+ const notesPanel=dom('details','today-notes-details');
+ const notesSummary=dom('summary','','✎ Observações da conversa (opcional)');
+ const noteLabel=dom('label','today-input-label','Anotações pessoais'),notes=dom('textarea');
+ notes.rows=3;notes.maxLength=1500;notes.placeholder='Anote somente se houver algo relevante para lembrar...';
+ notes.value=c.verified?.conversation_notes||'';noteLabel.append(notes);notesPanel.append(notesSummary,noteLabel);
+ area.append(notesPanel);
  const row=dom('div','today-fields'),nextLabel=dom('label','','Próxima ação'),next=dom('select'),dateLabel=dom('label','','Quando?'),date=dom('input');
  for(const [value,name] of OPTIONS_NEXT){const o=dom('option','',name);o.value=value;next.append(o)}next.value=c.verified?.next_action||'';nextLabel.append(next);
  date.type='date';date.value=c.verified?.next_date||'';dateLabel.append(date);row.append(nextLabel,dateLabel);area.append(row);
@@ -352,20 +400,52 @@ function workflow(c){
  objection.value=c.verified?.objection||'';objectionLabel.append(objection);
  const priceLabel=dom('label','today-checkbox'),price=dom('input');price.type='checkbox';price.checked=!!c.verified?.price_discussion;priceLabel.append(price,dom('span','','Já conversamos sobre preço'));extra.append(sum,objectionLabel,priceLabel);area.append(extra);
  const buttons=dom('div','today-buttons'),feedback=dom('p','field-note',''),all=[];
+ const wasAuto=!c.verified?.next_date&&['abordado','followup'].includes(c.status);
+ if(wasAuto&&followupPrefs.enabled&&c.contacted_at&&Number(c.followup_count||0)<2){
+  const fallback=plusCalendarDays(c.contacted_at,Number(c.followup_count||0)?followupPrefs.second:followupPrefs.first);
+  if(fallback&&!date.value){date.value=fallback;next.value='followup'}
+ }
  const add=(label,style,handler)=>{const b=dom('button',style,label);b.type='button';b.onclick=handler;buttons.append(b);all.push(b)};
  const persist=async(type)=>{
   if(all.some(b=>b.disabled))return;
   all.forEach(b=>b.disabled=true);feedback.textContent='Salvando...';
   try{
-   const verified={...(c.verified||{}),conversation_notes:notes.value.trim(),next_action:next.value,next_date:date.value,objection:objection.value,price_discussion:price.checked};
+   const verified={...(c.verified||{}),conversation_notes:notes.value.trim(),next_action:next.value,next_date:date.value,objection:objection.value,price_discussion:price.checked,auto_followup:false};
    const saved=await rpc('crm_local_save',{p_data:{...c,verified,place_id:c.place_id||null}});
-   if(type)await rpc('crm_local_action',{p_lead_id:saved.id,p_type:type,p_note:notes.value.trim()||'Etapa registrada pelo usuário',p_channel:c.channel||'whatsapp',p_offer:c.offer,p_angle:c.angle});
+   let updated=saved;
+   if(type)updated=await rpc('crm_local_action',{p_lead_id:saved.id,p_type:type,p_note:notes.value.trim()||'Etapa registrada pelo usuário',p_channel:c.channel||'whatsapp',p_offer:c.offer,p_angle:c.angle});
+   const auto=type?scheduleFor(updated,type):null;
+   if(type){
+    const nextVerified={...verified};
+    if(auto)Object.assign(nextVerified,auto);
+    else if(['respondeu','interessado','proposta','fechou','sem_interesse'].includes(type)&&c.verified?.auto_followup){
+     nextVerified.next_action='';nextVerified.next_date='';nextVerified.auto_followup=false;
+    }
+    if(auto||nextVerified.next_date!==verified.next_date){
+     const iso=auto?new Date(auto.next_date+'T12:00:00').toISOString():null;
+     updated=await rpc('crm_local_save',{p_data:{...updated,verified:nextVerified,followup_at:auto?iso:updated.followup_at}});
+    }
+   }
    if(type==='fechou'||type==='sem_interesse')state.todaySelected=null;
    await refresh();toast(type?'Etapa registrada.':'Informações salvas.');
   }catch(e){feedback.textContent='Erro ao salvar: '+e.message;all.forEach(b=>b.disabled=false)}
  };
- add('Salvar anotações','btn btn-outline compact',()=>persist(null));
+ const revert=async()=>{
+  const current=FLOW.indexOf(c.status);if(current<1)return;
+  const previous=FLOW[current-1];
+  if(!window.confirm('Corrigir o estágio de '+c.name+' de "'+(STATUSES[c.status]||c.status)+'" para "'+(STATUSES[previous]||previous)+'"? O histórico registrará a correção.'))return;
+  all.forEach(b=>b.disabled=true);feedback.textContent='Corrigindo etapa...';
+  try{
+   const verified={...(c.verified||{}),next_date:'',next_action:'',auto_followup:false};
+   const base={...c,status:previous,verified,followup_at:null,followup_count:previous==='novo'?0:c.followup_count,contacted_at:previous==='novo'?null:c.contacted_at,place_id:c.place_id||null};
+   const saved=await rpc('crm_local_save',{p_data:base});
+   await rpc('crm_local_action',{p_lead_id:saved.id,p_type:'observacao',p_note:'Correção manual de etapa: '+(STATUSES[c.status]||c.status)+' → '+(STATUSES[previous]||previous),p_channel:c.channel||'whatsapp'});
+   await refresh();toast('Etapa corrigida; histórico preservado.');
+  }catch(e){feedback.textContent='Não foi possível voltar: '+e.message;all.forEach(b=>b.disabled=false)}
+ };
+ add('Salvar alterações','btn btn-outline compact',()=>persist(null));
  for(const [type,label] of STEP_ACTIONS[c.status]||[])add(label,'btn btn-primary compact',()=>persist(type));
+ if(FLOW.indexOf(c.status)>0)add('↶ Voltar uma etapa','btn btn-outline compact today-back-button',revert);
  if(c.status!=='novo')add('Encerrar sem fechar','btn btn-danger-quiet compact',()=>{extra.open=true;if(!objection.value){feedback.textContent='Informe o motivo de perda antes de encerrar.';objection.focus();return}void persist('sem_interesse')});
  add('Editar cadastro','btn btn-outline compact',()=>openLead(c));
  const number=normalizePhone(c.phone);if(number){const link=dom('a','btn btn-outline compact','WhatsApp ↗');link.href='https://wa.me/'+number;link.target='_blank';link.rel='noopener noreferrer';buttons.append(link)}
@@ -1604,8 +1684,22 @@ async function createOnboarding(e){
  finally{button.disabled=false}
 }
 
+function renderFollowupSettings(){
+ $('#settingAutoFollowup').checked=followupPrefs.enabled;
+ $('#settingFollowupDays').value=String(followupPrefs.first);
+ $('#settingSecondDays').value=String(followupPrefs.second);
+ $('#settingDueHighlight').checked=followupPrefs.highlight;
+}
+function saveFollowupSettings(){
+ followupPrefs={enabled:$('#settingAutoFollowup').checked,first:Number($('#settingFollowupDays').value),second:Number($('#settingSecondDays').value),highlight:$('#settingDueHighlight').checked};
+ try{localStorage.setItem(FOLLOWUP_PREF_KEY,JSON.stringify(followupPrefs))}catch(e){$('#settingsStatus').textContent='Não foi possível salvar as preferências neste navegador.';return}
+ $('#settingsStatus').textContent='Configurações salvas neste navegador. Próximos contatos usarão os novos prazos.';
+ render();toast('Preferências de follow-up atualizadas.');
+}
 function bind(){
  window.addEventListener('hashchange',setNav);
+ renderFollowupSettings();
+ $('#saveFollowupSettings').addEventListener('click',saveFollowupSettings);
  const radarVisual=$('#radarVisual'),motionButton=$('#radarMotionToggle'),reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false;
  const motionPref=localStorage.getItem('ricky:radar:motion-v1');
  let radarMoving=motionPref==='on'||(motionPref!=='off'&&!reduced);
