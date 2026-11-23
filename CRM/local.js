@@ -286,15 +286,55 @@ const FLOW_NAMES=['Salvo','Contatado','Respondeu','Interesse','Proposta','Fechou
 const STEP_ACTIONS={novo:[['abordado','Marcar contato feito']],abordado:[['respondeu','Respondeu'],['followup','Registrar follow-up']],respondeu:[['interessado','Demonstrou interesse']],interessado:[['proposta','Enviei proposta']],proposta:[['fechou','Fechou!']]};
 const OPTIONS_OBJECTION=[['','Selecione'],['caro','Achou caro'],['ja_tem_sistema','Já tem outra solução'],['sem_orcamento','Sem orçamento'],['sem_interesse','Sem interesse'],['sumiu','Parou de responder'],['vai_ver','Disse que ia avaliar'],['outro','Outro']];
 const OPTIONS_NEXT=[['','Nenhum definido'],['aguardar','Aguardar resposta'],['followup','Fazer follow-up'],['demo','Mostrar exemplo'],['proposta','Enviar proposta'],['negociar','Negociar']];
+function todayIndustry(c){
+ const explicit=String(c.verified?.prospect_niche||'').trim();
+ const raw=(explicit+' '+String(c.name||'')).toLocaleLowerCase('pt-BR');
+ if(/barbear|barber|corte masculino/.test(raw))return {label:'Barbearia',icon:'✂',kind:'barber'};
+ if(/salão|salao|cabeleireir|hair|beauty/.test(raw))return {label:'Salão de beleza',icon:'✦',kind:'beauty'};
+ if(/estética|estetica|spa|clínica|clinica/.test(raw))return {label:'Estética',icon:'✧',kind:'beauty'};
+ if(/restaurante|pizzaria|lanchonete|hamburg|caf[eé]/.test(raw))return {label:'Alimentação',icon:'♨',kind:'food'};
+ if(/academia|fitness|gym|personal/.test(raw))return {label:'Fitness',icon:'◆',kind:'fitness'};
+ if(/pet|veterin|banho e tosa/.test(raw))return {label:'Pet',icon:'♣',kind:'pet'};
+ if(/loja|store|comércio|comercio/.test(raw))return {label:explicit||'Comércio',icon:'▣',kind:'shop'};
+ return {label:explicit||'Segmento não informado',icon:'⌂',kind:'other'};
+}
+function todayDateLabel(value){
+ if(!value)return '';
+ const date=new Date(value+'T12:00:00');
+ return Number.isNaN(date.getTime())?'':date.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+}
 function todayCard(item){
- const c=item.c,expanded=state.todaySelected===c.id,article=dom('article','today-lead');
- const header=dom('div','today-lead-head'),info=dom('div','today-lead-info');
- info.append(dom('strong','',c.name),dom('span','',[(c.verified?.prospect_niche||'Nicho não informado'),c.reviews==null?'Sem dados de avaliações':c.reviews+' avaliações',STATUSES[c.status]||'Novo'].join(' · ')));
- const open=dom('button','btn btn-outline compact',expanded?'Fechar −':item.label+' →');
- open.type='button';open.setAttribute('aria-expanded',String(expanded));open.onclick=()=>{state.todaySelected=expanded?null:c.id;renderToday()};
- header.append(info,open);article.append(header);
- if(expanded)article.append(workflow(c));
- return article;
+ const c=item.c,expanded=state.todaySelected===c.id,industry=todayIndustry(c),card=dom('article','today-lead today-status-'+(c.status||'novo')+(expanded?' today-lead-expanded':''));
+ const header=dom('div','today-lead-head'),top=dom('div','today-card-top');
+ const emblem=dom('span','today-industry-icon today-kind-'+industry.kind,industry.icon);
+ emblem.setAttribute('aria-hidden','true');
+ const pill=dom('span','today-stage-chip',c.status==='novo'?'● Novo':c.status==='abordado'?'◷ Aguardando':c.status==='respondeu'?'↗ Respondeu':c.status==='interessado'?'✦ Em negociação':c.status==='proposta'?'◈ Proposta enviada':(STATUSES[c.status]||'Em andamento'));
+ top.append(emblem,pill);header.append(top);
+ const info=dom('div','today-lead-info');
+ info.append(dom('span','today-industry-label',industry.label),dom('strong','',c.name));
+ if(c.city)info.append(dom('p','today-card-location','⌖ '+c.city));
+ header.append(info);
+ const metrics=dom('div','today-card-metrics');
+ const stars=dom('div','today-metric');
+ stars.append(dom('span','today-metric-icon','★'),dom('span','',c.rating!=null?formatStars(c.rating):'—'),dom('small','', 'nota'));
+ const reviews=dom('div','today-metric');
+ reviews.append(dom('span','today-metric-icon','◉'),dom('span','',c.reviews!=null?Number(c.reviews).toLocaleString('pt-BR'):'—'),dom('small','','avaliações'));
+ metrics.append(stars,reviews);header.append(metrics);
+ const detail=dom('div','today-card-next');
+ const date=String(c.verified?.next_date||'');
+ const overdue=date&&Date.parse(date+'T23:59:59')<Date.now();
+ const nextMap={aguardar:'Aguardar resposta',followup:'Enviar follow-up',demo:'Mostrar exemplo',proposta:'Enviar proposta',negociar:'Negociar'};
+ if(date||c.verified?.next_action)detail.append(dom('span','today-next-label',overdue?'● RETORNO PENDENTE':'PRÓXIMA AÇÃO'),dom('strong','',nextMap[c.verified?.next_action]||'Acompanhar cliente'),dom('small','',date?'📅 '+todayDateLabel(date):'Sem data marcada'));
+ else detail.append(dom('span','today-next-label','SITUAÇÃO ATUAL'),dom('strong','',item.label),dom('small','',item.detail));
+ header.append(detail);
+ const footer=dom('div','today-card-footer');
+ const open=dom('button','btn today-card-action',expanded?'Recolher acompanhamento ↑':'Abrir acompanhamento →');
+ open.type='button';open.setAttribute('aria-expanded',String(expanded));
+ open.addEventListener('click',()=>{state.todaySelected=expanded?null:c.id;renderToday()});
+ footer.append(open);header.append(footer);
+ card.append(header);
+ if(expanded)card.append(workflow(c));
+ return card;
 }
 function workflow(c){
  const area=dom('div','today-workflow'),index=Math.max(0,FLOW.indexOf(c.status));
