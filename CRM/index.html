@@ -119,6 +119,10 @@
 </section>
 <section class="page" id="page-abordagens" hidden>
  <div class="page-intro inline-intro"><div><span class="eyebrow">MENSAGENS</span><h1>Abordagens</h1><p>Edite, copie e personalize.</p></div></div>
+ <section class="approach-insights glass" aria-label="Análise das abordagens">
+ <div class="compose-title"><h2>O que está funcionando</h2><small>Métricas dos leads registrados · não são estimativas</small></div>
+ <div id="approachInsights"></div>
+ </section>
  <div class="templates glass templates-standalone"><div id="templateLibrary" class="template-grid"></div></div>
 </section>
 <section class="page" id="page-clientes" hidden>
@@ -181,6 +185,16 @@
  <div id="leadSource" class="lead-source"></div>
  <div class="edit-grid"><label>Nome do negócio<input id="leadName" maxlength="180"></label><label>Cidade / bairro<input id="leadCity" maxlength="180"></label><label>Telefone comercial<input id="leadPhone" maxlength="45" placeholder="DDD + número"></label><label>Site ou link cadastrado<input id="leadWebsite" maxlength="1500" placeholder="https://..."></label><label>E-mail comercial (se houver)<input id="leadEmail" type="email" maxlength="254" placeholder="contato@..."></label><label>Canal<select id="leadChannel"><option value="whatsapp">WhatsApp</option><option value="email">E-mail</option></select></label></div>
  <div class="quick-review"><strong>Revisão rápida · 2–5 minutos</strong><p>Os dados encontrados já estão preenchidos acima. Confira o contato, veja o site e anote apenas algo relevante. Nada aqui é obrigatório.</p><label class="textarea-label">Sua observação (opcional)<textarea id="leadNotes" rows="3" maxlength="2800" placeholder="Ex.: site desatualizado; Instagram ativo; atendimento via WhatsApp..."></textarea></label><details id="advancedVerification" class="verification-details"><summary>Verificações adicionais (opcional) <span>Expandir ↗</span></summary><p class="field-note">Marque somente o que confirmou. Uma caixa desmarcada significa desconhecido.</p><div id="verificationGrid" class="verification-grid"></div></details></div>
+ <section class="approach-tracking"><div class="compose-title"><h3>Acompanhamento comercial</h3><small>Os dados são salvos com o negócio</small></div>
+ <div id="leadTrackingSummary" class="field-note"></div>
+ <div class="edit-grid">
+ <label>Nicho do negócio<input id="leadProspectNiche" maxlength="90" placeholder="Ex.: Barbearia"></label>
+ <label>Objeção ou motivo de perda<select id="leadObjection"><option value="">Nenhuma / ainda não sei</option><option value="caro">Achou caro</option><option value="ja_tem_sistema">Já usa outra solução</option><option value="sem_interesse">Não tem interesse</option><option value="sem_orcamento">Sem orçamento</option><option value="sumiu">Parou de responder</option><option value="vai_ver">Disse que ia avaliar</option><option value="outro">Outro motivo</option></select></label>
+ <label>Próximo passo<select id="leadNextAction"><option value="">Nenhum definido</option><option value="aguardar">Aguardar resposta</option><option value="followup">Enviar follow-up</option><option value="demo">Apresentar exemplo</option><option value="proposta">Enviar proposta</option><option value="negociar">Negociar</option></select></label>
+ <label>Data da próxima ação<input type="date" id="leadNextDate"></label></div>
+ <label class="tracking-check"><input type="checkbox" id="leadPriceTalk"> Já conversamos sobre preço (antes ou depois da proposta)</label>
+ <label class="textarea-label">O que aconteceu na conversa?<textarea id="leadConversationNotes" rows="3" maxlength="1500" placeholder="Ex.: pediu exemplos, mostrou interesse mas achou caro; combinar retorno quinta-feira."></textarea></label>
+ </section>
  <div class="recommendation" id="leadRecommendation"></div>
  <div class="compose-title"><h3>Abordagem</h3><small>Escolha o ângulo e ajuste antes de enviar</small></div>
  <div class="edit-grid"><label>Oferta<select id="leadOffer"><option value="landing">Landing page</option><option value="bot">Bot de WhatsApp</option></select></label><label>Ângulo<select id="leadAngle"><option value="A">A · Pergunta</option><option value="B">B · Tempo economizado</option><option value="C">C · Mostrar antes</option></select></label></div>
