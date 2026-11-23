@@ -488,8 +488,21 @@ function resultCard(c,i){
  art.append(insight);
  const actions=dom('div','prospect-actions');
  const saved=state.leads.some(lead=>lead.place_id&&lead.place_id===c.place_id);
- const open=dom('button','btn btn-primary compact',saved?'Abrir na carteira':'Salvar / verificar'),site=dom('a','btn btn-outline compact','Ver link ↗');
- open.type='button';open.addEventListener('click',()=>openLead(c));
+ const open=dom('button','btn btn-primary compact',saved?'Ver no Pra Hoje →':'Salvar cliente +'),site=dom('a','btn btn-outline compact','Ver link ↗');
+ open.type='button';
+ open.addEventListener('click',async()=>{
+  const existing=state.leads.find(lead=>lead.place_id&&lead.place_id===c.place_id);
+  if(existing){state.todaySelected=existing.id;location.hash='#hoje';renderToday();return}
+  if(open.disabled)return;
+  open.disabled=true;open.textContent='Salvando...';
+  try{
+   const lead=blankLead(c);
+   lead.verified.prospect_niche=state.niche||'';
+   const created=await rpc('crm_local_save',{p_data:{...lead,place_id:lead.place_id||null}});
+   await refresh();
+   toast(created.name+' salvo! Acompanhe em Pra Hoje.');
+  }catch(err){toast('Erro ao salvar: '+err.message);open.disabled=false;open.textContent='Salvar cliente +'}
+ });
  if(c.website||c.maps_url){site.href=safeUrl(c.website)||safeUrl(c.maps_url)||'#';site.target='_blank';site.rel='noopener noreferrer'}else{site.href='#';site.addEventListener('click',ev=>ev.preventDefault());site.setAttribute('aria-disabled','true')}
  actions.append(open,site);art.append(actions);
  return art;
