@@ -472,7 +472,44 @@ function renderRadar(){
  if(!filtered.length){area.innerHTML=placeholder('Nenhum candidato com esses filtros','Altere os filtros, a nota mínima ou use Limpar filtros para ampliar a lista.');return}
  filtered.forEach((c,i)=>area.append(resultCard(c,i)));
 }
-function render(){renderCentral();renderToday();renderClients();renderArchive();renderRadar();}
+function render(){renderCentral();renderToday();renderClients();renderArchive();renderRadar();renderApproachInsights();}
+function renderApproachInsights(){
+ const root=$('#approachInsights');if(!root)return;root.replaceChildren();
+ const leads=state.leads.filter(c=>c.status&&c.status!=='novo');
+ const stats=[
+  ['Contatados',leads.length],
+  ['Responderam',leads.filter(c=>['respondeu','interessado','proposta','fechou'].includes(c.status)).length],
+  ['Interessados',leads.filter(c=>['interessado','proposta','fechou'].includes(c.status)).length],
+  ['Fechados',leads.filter(c=>c.status==='fechou').length]
+ ];
+ const summary=dom('div','tracking-stats');
+ for(const [name,num] of stats){const el=dom('div','tracking-stat');el.append(dom('strong','',String(num)),dom('span','',name));summary.append(el)}root.append(summary);
+ const grouped=new Map();
+ const bucket=n=>n==null?'Sem dado':Number(n)<10?'0–9':Number(n)<30?'10–29':Number(n)<100?'30–99':'100+';
+ for(const c of leads){
+  const group=(c.verified?.prospect_niche||'Nicho não informado').toLowerCase().trim();
+  const segments=[['Oferta',c.offer==='bot'?'Bot':'Landing page'],['Nicho',group],['Avaliações',bucket(c.reviews)]];
+  for(const [dimension,value] of segments){
+   const k=dimension+'|'+value, v=grouped.get(k)||{dimension,value,total:0,responded:0,won:0};
+   v.total++;if(['respondeu','interessado','proposta','fechou'].includes(c.status))v.responded++;
+   if(c.status==='fechou')v.won++;grouped.set(k,v);
+  }
+ }
+ const heading=dom('strong','tracking-subhead','Respostas e fechamentos por perfil');root.append(heading);
+ if(!leads.length){root.append(dom('p','field-note','Registre o primeiro envio nos clientes para começar a medir os resultados.'));return}
+ const table=dom('table','tracking-table');
+ const head=dom('thead'),tr=dom('tr');
+ for(const x of ['Segmento','Contatados','Responderam','Taxa de resposta','Fechados'])tr.append(dom('th','',x));
+ head.append(tr);table.append(head);
+ const tbody=dom('tbody');
+ for(const v of [...grouped.values()].sort((a,b)=>a.dimension.localeCompare(b.dimension)||b.total-a.total)){
+  const row=dom('tr');
+  for(const x of [v.dimension+' · '+v.value,String(v.total),String(v.responded),Math.round(v.responded/v.total*100)+'%',String(v.won)])row.append(dom('td','',x));
+  tbody.append(row);
+ }
+ table.append(tbody);const wrap=dom('div','tracking-table-wrap');wrap.append(table);root.append(wrap);
+ root.append(dom('p','field-note','Taxas baseadas no estágio atual. Conversas perdidas podem ter respondido antes; a análise por eventos será mais precisa quando houver histórico estruturado por tentativa. Amostras pequenas não provam padrões.'));
+}
 async function checkPlaces(){
  try{const x=await backend('local-radar');state.placesReady=!!x.ready;
  $('#placesNotice').textContent=x.ready?'Google Places conectado · varreduras ilimitadas · até '+x.maxCallsPerScan+' chamadas por busca. Uso sujeito à cobrança do Google Cloud.':'Google Places ainda não configurado. Cadastro manual liberado; buscas ficam desabilitadas até configurar a chave na Vercel.';
@@ -528,6 +565,12 @@ function fromFields(){
  d.link_type=websiteType(d.website);
  d.offer=$('#leadOffer').value;d.angle=$('#leadAngle').value;d.notes=$('#leadNotes').value.trim();
  d.last_message=$('#leadMessage').value.trim();
+ d.verified.prospect_niche=$('#leadProspectNiche').value.trim();
+ d.verified.objection=$('#leadObjection').value;
+ d.verified.next_action=$('#leadNextAction').value;
+ d.verified.next_date=$('#leadNextDate').value;
+ d.verified.price_discussion=$('#leadPriceTalk').checked;
+ d.verified.conversation_notes=$('#leadConversationNotes').value.trim();
  $$('[data-check]').forEach(c=>d.verified[c.dataset.check]=c.checked);
  const name=$('#verifiedPlatform');if(name)d.verified.platform_name=name.value.trim();
  d.priority=priority(d).type;
@@ -560,6 +603,13 @@ function populateLead(){
  const phone=normalizePhone(d.phone);
  if(phone){const a=dom('a','','Conferir WhatsApp ↗');a.href='https://wa.me/'+phone;a.target='_blank';a.rel='noopener noreferrer';source.append(a)}
  for(const [id,key] of [['leadName','name'],['leadCity','city'],['leadPhone','phone'],['leadWebsite','website'],['leadEmail','email'],['leadChannel','channel'],['leadOffer','offer'],['leadAngle','angle'],['leadNotes','notes']])$('#'+id).value=d[key]??'';
+ $('#leadProspectNiche').value=d.verified.prospect_niche||'';
+ $('#leadObjection').value=d.verified.objection||'';
+ $('#leadNextAction').value=d.verified.next_action||'';
+ $('#leadNextDate').value=d.verified.next_date||'';
+ $('#leadPriceTalk').checked=!!d.verified.price_discussion;
+ $('#leadConversationNotes').value=d.verified.conversation_notes||'';
+ $('#leadTrackingSummary').textContent=(STATUSES[d.status]||'Novo')+' · '+(d.reviews??'avaliações não disponíveis')+' avaliações · '+(d.contacted_at?'primeiro contato '+new Date(d.contacted_at).toLocaleDateString('pt-BR'):'ainda sem contato registrado');
  const grid=$('#verificationGrid');grid.replaceChildren();
  for(const [key,label] of VERIFY){
   const lab=dom('label','verification'),check=dom('input');check.type='checkbox';check.dataset.check=key;check.checked=!!d.verified[key];
@@ -590,6 +640,8 @@ function openLead(candidate){
  $('#draftAIStatus').textContent='A IA só recebe os fatos disponíveis e suas verificações marcadas.';
  const stored=candidate.id?state.leads.find(x=>x.id===candidate.id):state.leads.find(x=>candidate.place_id&&x.place_id===candidate.place_id);
  state.draft=blankLead(stored||candidate);
+ // Classificar automaticamente o nicho somente no cadastro vindo do Radar; não inferir dados manuais.
+ if(!stored&&candidate.place_id&&!state.draft.verified.prospect_niche)state.draft.verified.prospect_niche=state.niche;
  $('#deleteLead').hidden=!state.draft.id;
  populateLead();
  $('#leadOverlay').hidden=false;document.body.style.overflow='hidden';
