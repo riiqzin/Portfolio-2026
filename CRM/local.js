@@ -321,12 +321,12 @@ function showArchivedScan(a){
  if(Array.isArray(snapshot)){
   state.results=snapshot.map(c=>({...c}));state.archiveView=null;
   $('#radarExplain').textContent='Resultados desta sessão · '+state.results.length+' estabelecimentos. Nenhuma consulta adicional ao Google.';
-  $('#radarUsage').textContent='Dados da varredura aberta nesta sessão. Para outras sessões, as informações precisam ser consultadas novamente.';
+  $('#radarUsage').textContent='Dados disponíveis nesta sessão · nenhuma consulta adicional ao Google Places.';
   renderRadar();
  }else{
   state.results=[];
   $('#radarExplain').textContent='Histórico de '+formatDate(a.date)+' · '+a.niche+' / '+a.city;
-  $('#radarUsage').textContent='Os identificadores foram preservados. Os dados completos precisam ser consultados novamente ao Google Places.';
+  $('#radarUsage').textContent='IDs preservados. Abrir o histórico não consulta o Google Places; atualização é opcional.';
   renderRadar();
   // The user's historical entries can require dozens of billable Place Details requests.
   // Ask first; never silently turn an archive click into 50+ paid API calls.
@@ -394,26 +394,31 @@ function renderArchive(){
  for(const a of state.archive){
   const b=dom('button','archive-item');b.type='button';
   const hasIds=Array.isArray(a.placeIds)&&a.placeIds.length>0;
-  b.append(dom('small','',formatDate(a.date)+' · '+(COUNTRY_DATA[a.countryCode||'BR']?.flag||'🌍')+' GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' negócios · reabrir resultados'));
-  b.title=hasIds||state.archiveSnapshots[a.id]?'Abrir os resultados disponíveis sem usar o Google Places.':'Pesquisa antiga sem lista nem identificadores salvos. Repetir não é automático.';
+  b.append(dom('small','',formatDate(a.date)+' · '+(COUNTRY_DATA[a.countryCode||'BR']?.flag||'🌍')+' GOOGLE PLACES'),dom('strong','',a.niche+' / '+a.city),dom('span','',a.count+' negócios · abrir sem novas consultas'));
+  b.title=hasIds||state.archiveSnapshots[a.id]?'Abrir o histórico gratuitamente, com os dados disponíveis.':'Pesquisa antiga sem lista nem identificadores salvos. Repetir não é automático.';
   b.addEventListener('click',()=>showArchivedScan(a));
   box.append(b);
  }
 }
 function renderArchivePlaceIds(a){
  const area=$('#radarResults');area.replaceChildren();
- const count=Array.isArray(a.placeIds)?a.placeIds.length:0;
+ const ids=Array.isArray(a.placeIds)?a.placeIds:[];
+ const saved=ids.map(id=>state.leads.find(lead=>lead.place_id===id)).filter(Boolean);
  const section=dom('section','archive-refresh-empty');
- section.append(dom('strong','','Reabrir resultados completos'));
- section.append(dom('p','','Esta varredura tem '+count+' identificadores preservados. Para exibir os mesmos cards da pesquisa, com nome, nota, avaliações, contato e site atualizados, precisamos consultar novamente o Google Places.'));
- if(count){
-  const button=dom('button','btn btn-primary compact','Atualizar '+count+' estabelecimentos');
+ section.append(dom('strong','','Histórico aberto · sem custo adicional'));
+ section.append(dom('p','','Esta varredura preservou '+ids.length+' identificadores. '+saved.length+' negócios estão salvos na carteira e aparecem abaixo. Os dados originais do Google Places não podem ser recuperados exatamente nesta sessão sem um registro permitido; uma atualização consulta os dados atuais, que podem ter mudado.'));
+ if(ids.length){
+  const button=dom('button','btn btn-outline compact','Atualizar dados · até '+ids.length+' consultas');
   button.type='button';
-  button.onclick=()=>{if(window.confirm('Consultar até '+count+' estabelecimentos no Google Places? Pode haver cobrança de até '+count+' chamadas.'))void refreshArchivedScan(a,++archiveRestoreEpoch)};
+  button.onclick=()=>{if(window.confirm('Esta ação é opcional e pode gerar até '+ids.length+' consultas cobradas pelo Google Places. Os dados retornados serão atuais, não uma cópia da varredura original. Deseja continuar?'))void refreshArchivedScan(a,++archiveRestoreEpoch)};
   section.append(button);
  }else section.append(dom('p','field-note','Esta pesquisa antiga não possui identificadores recuperáveis.'));
  area.append(section);
- $('#radarMatchCount').textContent=count+' referências preservadas · atualização sob demanda';
+ if(saved.length){
+  area.append(dom('p','field-note','Negócios desta varredura já salvos na carteira'));
+  saved.forEach((lead,i)=>area.append(resultCard(lead,i)));
+ }
+ $('#radarMatchCount').textContent=ids.length+' referências · '+saved.length+' salvos na carteira · nenhuma chamada adicional';
 }
 function resultsReason(c){
  const p=priority(c);
