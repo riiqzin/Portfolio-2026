@@ -457,3 +457,24 @@ body.legacy-workbench{background:var(--bg)!important}
  .workbench .archive-refresh-empty,.workbench .archive-refresh-status{padding:16px}
  .workbench .archive-refresh-empty .btn,.workbench .archive-refresh-status .btn{width:100%}
 }
+
+
+/* Registro comercial e aprendizagem por segmento */
+.workbench .approach-tracking{border:1px solid rgba(191,181,138,.23);background:rgba(25,31,26,.52);padding:18px;display:grid;gap:13px;margin:17px 0}
+.workbench .approach-tracking .compose-title{margin:0}
+.workbench .approach-tracking .edit-grid{margin:0}
+.workbench .tracking-check{display:flex;align-items:center;gap:10px;font-size:13px;color:#d6ddcc;cursor:pointer}
+.workbench .tracking-check input{accent-color:#d9c58e;width:17px;height:17px}
+.workbench .approach-insights{padding:22px;margin-bottom:20px}
+.workbench .tracking-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}
+.workbench .tracking-stat{padding:16px;border:1px solid rgba(193,182,135,.18);background:rgba(19,25,21,.48);display:flex;flex-direction:column;gap:6px}
+.workbench .tracking-stat strong{font-size:27px;color:#ecdfb9;line-height:1.1}
+.workbench .tracking-stat span{font-size:12px;color:#adb7a9}
+.workbench .tracking-subhead{display:block;margin:17px 0 10px;font-size:14px;color:#e4dac0}
+.workbench .tracking-table-wrap{width:100%;overflow-x:auto}
+.workbench .tracking-table{width:100%;border-collapse:collapse;min-width:570px;font-size:12px}
+.workbench .tracking-table th{text-align:left;font-weight:600;color:#c8c5b5;background:rgba(27,32,27,.65)}
+.workbench .tracking-table td,.workbench .tracking-table th{padding:12px 10px;border-bottom:1px solid rgba(206,197,153,.12)}
+.workbench .tracking-table td{color:#e0e5db}
+.workbench .approach-insights>.field-note,.workbench #approachInsights>.field-note{margin-top:10px}
+@media(max-width:650px){.workbench .tracking-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.workbench .approach-insights{padding:15px}.workbench .approach-tracking{padding:13px}}
